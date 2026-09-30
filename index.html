@@ -1,0 +1,2610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#F5F4EC">
+<title>Alvor</title>
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E7EDE8; --surface:#F6F9F6; --ink:#17221C; --muted:#56675D; --line:#C7D3CA;
+  --fern:#2E6A4E; --fern-soft:#D5E6DA; --on-fern:#FFFFFF;
+  --frost:#2C6C99; --frost-bg:#DAE8F3;
+  --danger:#A3303D; --danger-bg:#F5DDE0;
+  --heat:#8C5A0E; --heat-bg:#F4E5C8;
+  --wind:#4F5A7A; --wind-bg:#E1E4EF;
+  --info-bg:#DDEBE1; --house-bg:#E3E5EE;
+  --radius-lg:18px; --radius-sm:10px;
+  --head:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101713; --surface:#18221C; --ink:#E4ECE6; --muted:#9AAAA0; --line:#2C3A31;
+    --fern:#5FAE86; --fern-soft:#223528; --on-fern:#0C1510;
+    --frost:#7FB6DE; --frost-bg:#1A2B38;
+    --danger:#EE8A94; --danger-bg:#3A1E22;
+    --heat:#E3B35E; --heat-bg:#352A15;
+    --wind:#AEB6D6; --wind-bg:#22263A;
+    --info-bg:#1D2D23; --house-bg:#1E2230;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101713; --surface:#18221C; --ink:#E4ECE6; --muted:#9AAAA0; --line:#2C3A31;
+  --fern:#5FAE86; --fern-soft:#223528; --on-fern:#0C1510;
+  --frost:#7FB6DE; --frost-bg:#1A2B38;
+  --danger:#EE8A94; --danger-bg:#3A1E22;
+  --heat:#E3B35E; --heat-bg:#352A15;
+  --wind:#AEB6D6; --wind-bg:#22263A;
+  --info-bg:#1D2D23; --house-bg:#1E2230;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--head);line-height:1.15;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--frost);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 110px}
+
+/* Header */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:22px 0 14px}
+.top h1{font-size:2.1rem;font-weight:700;letter-spacing:-.02em}
+.top p{margin:4px 0 0;color:var(--muted);font-size:.95rem}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 16px;font-weight:700}
+.btn.primary{background:var(--fern);border-color:var(--fern);color:var(--on-fern)}
+.btn.small{padding:5px 12px;font-size:.88rem}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn:disabled{opacity:.5}
+
+/* Forecast strip: the one bold element */
+.forecast{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 12px 12px;margin-bottom:18px}
+.forecast h2{font-size:1.05rem;padding:0 4px 10px}
+.strip{position:relative;display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.day{display:flex;flex-direction:column;align-items:center;font-size:.8rem;min-width:0}
+.day .dn{font-weight:700;font-size:.85rem}
+.day.today .dn{color:var(--fern)}
+.col{position:relative;width:100%;height:132px;margin:4px 0}
+.bar{position:absolute;left:50%;width:12px;margin-left:-6px;border-radius:6px;background:var(--fern)}
+.bar.cold{background:linear-gradient(to bottom,var(--fern) 0%,var(--fern) var(--zero,60%),var(--frost) var(--zero,60%),var(--frost) 100%)}
+.tmax,.tmin{position:absolute;left:0;right:0;text-align:center;font-weight:700;font-size:.82rem}
+.tmin.freeze{color:var(--frost)}
+.zero{position:absolute;left:-4px;right:-4px;border-top:2px dashed var(--frost);opacity:.7;pointer-events:none}
+.zero span{position:absolute;right:0;top:-18px;font-size:.7rem;color:var(--frost);font-weight:700}
+.meta{color:var(--muted);font-size:.74rem;text-align:center;line-height:1.3}
+.meta .rain{color:var(--frost)}
+.fc-note{color:var(--muted);font-size:.85rem;padding:8px 4px 0}
+
+/* Alerts */
+.alerts{display:flex;flex-direction:column;gap:12px}
+.alert{border-radius:var(--radius-lg);padding:14px 16px;border-left:6px solid transparent;background:var(--surface)}
+.alert h3{font-size:1.15rem;margin-bottom:2px}
+.alert p{margin:0 0 8px;color:var(--muted);font-size:.93rem}
+.alert.danger{background:var(--danger-bg);border-color:var(--danger)} .alert.danger h3{color:var(--danger)}
+.alert.warn{background:var(--frost-bg);border-color:var(--frost)} .alert.warn h3{color:var(--frost)}
+.alert.heat{background:var(--heat-bg);border-color:var(--heat)} .alert.heat h3{color:var(--heat)}
+.alert.wind{background:var(--wind-bg);border-color:var(--wind)} .alert.wind h3{color:var(--wind)}
+.alert.water{background:var(--surface);border-color:var(--fern)}
+.alert.info{background:var(--info-bg);border-color:var(--fern)}
+.alert ul{list-style:none;margin:0 0 10px;padding:0}
+.alert li{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.alert li:first-child{border-top:0}
+.alert li .why{color:var(--muted);font-size:.86rem;text-align:right;flex-shrink:0}
+.alert li .pn{font-weight:700}
+.alert .note{font-size:.85rem;color:var(--muted);margin:2px 0 0;font-weight:400}
+.calm{padding:22px 18px;border-radius:var(--radius-lg);background:var(--fern-soft)}
+.calm h3{font-size:1.2rem;margin-bottom:4px}
+.calm p{margin:0;color:var(--muted)}
+
+/* Plants */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar input[type=search]{flex:1;min-width:160px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 12px;font-size:.9rem;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.group-h{font-size:1.2rem;margin:18px 0 8px;display:flex;align-items:baseline;gap:8px}
+.group-h small{font-family:var(--body);font-weight:400;color:var(--muted);font-size:.9rem}
+.plant{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px}
+.plant .nm{font-weight:700;background:none;border:0;padding:0;text-align:left}
+.plant .sp{color:var(--muted);font-size:.88rem;font-style:italic}
+.plant .facts{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px;font-size:.8rem}
+.tag{border-radius:6px;padding:1px 7px;background:var(--bg);color:var(--muted)}
+.tag.due{background:var(--fern);color:var(--on-fern)}
+.tag.cold{background:var(--frost-bg);color:var(--frost)}
+.plant .acts{display:flex;gap:6px}
+.thumb{grid-row:1/3;width:64px;height:64px;border-radius:12px;border:0;padding:0;overflow:hidden;background:var(--fern-soft);color:var(--fern);font-family:var(--head);font-weight:700;font-size:1.5rem;display:flex;align-items:center;justify-content:center}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.photos{margin-bottom:14px}
+.gallery{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px}
+.gallery .none{color:var(--muted);font-size:.9rem;padding:6px 0}
+.ph{flex:0 0 auto;border:0;padding:0;background:none;text-align:center;font-size:.75rem;color:var(--muted)}
+.ph img{width:96px;height:96px;object-fit:cover;border-radius:12px;display:block;margin-bottom:2px}
+.ph:first-child img{outline:3px solid var(--fern);outline-offset:-3px}
+#viewer img{display:block;width:100%;max-height:70vh;object-fit:contain;background:#000}
+.empty{padding:28px 20px;text-align:center;border:2px dashed var(--line);border-radius:var(--radius-lg)}
+.empty h3{margin-bottom:6px}
+.empty p{color:var(--muted);margin:0 0 14px}
+
+/* Log */
+.log-day{font-family:var(--head);font-weight:700;margin:16px 0 6px}
+.log-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.94rem}
+.log-row span:last-child{color:var(--muted)}
+
+/* Settings */
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{font-weight:700;font-size:.92rem}
+.field .hint{color:var(--muted);font-size:.82rem}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:9px 11px;width:100%}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.check{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.check input{width:20px;height:20px;margin-top:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px}
+.card h2{font-size:1.15rem;margin-bottom:10px}
+/* Scene */
+.scene-wrap{position:relative;border-radius:var(--radius-lg);overflow:hidden;background:var(--s-sky);border:1px solid var(--line)}
+.scene-wrap > svg{display:block;width:100%;height:auto;aspect-ratio:4/3;touch-action:manipulation;font-family:var(--body)}
+.scene-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.scene-top h2{font-size:1.3rem}
+.scene-hint{color:var(--muted);font-size:.88rem;margin:8px 2px 0}
+:root{--s-sky:#DDE9EC;--s-grass:#93C06F;--s-grass-l:#6F9950;--s-grass-r:#5E8743;--s-soil:#7B5A3E;--s-soil-l:#6A4C33;--s-soil-r:#5A3F2A;
+  --s-pave:#DCD3C5;--s-wall-l:#F0EADF;--s-wall-r:#D9D0C2;--s-roof:#5F6C7B;--s-roof-d:#4B5663;--s-in-wall:#EFE9DE;--s-in-wall-d:#E0D7C8;
+  --s-floor:#CDAE82;--s-glass:rgba(196,230,244,.85);--s-gh:rgba(200,236,228,.42);--s-gh-line:#7DB3A7;--s-leaf:#4F8C3F;--s-leaf-2:#6BA650;--s-leaf-3:#3E7432;
+  --s-trunk:#7A5A3C;--s-pot:#C27A49;--s-pot-d:#A5623A;--s-shadow:rgba(28,48,28,.28);--s-light:rgba(255,212,92,.55);--s-dark:rgba(35,38,70,.22);--s-sun:#F5C542;--s-edge:rgba(0,0,0,.08)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--s-sky:#1B2733;--s-grass:#4F7A3D;--s-grass-l:#3D6030;--s-grass-r:#334F28;--s-soil:#5A4230;--s-soil-l:#4A3526;--s-soil-r:#3E2C20;
+  --s-pave:#8E877C;--s-wall-l:#B9B2A6;--s-wall-r:#9E978B;--s-roof:#3E4855;--s-roof-d:#323A45;--s-in-wall:#B3AC9F;--s-in-wall-d:#A29B8E;--s-floor:#8C734F;
+  --s-glass:rgba(150,190,210,.7);--s-gh:rgba(140,190,180,.3);--s-gh-line:#5E9489;--s-leaf:#3C6E30;--s-leaf-2:#4E8440;--s-leaf-3:#2F5A27;--s-trunk:#5A4230;--s-pot:#9A5E38;--s-pot-d:#7F4C2D;
+  --s-shadow:rgba(0,0,0,.35);--s-light:rgba(255,205,90,.35);--s-dark:rgba(0,0,20,.3);--s-sun:#E8D9A0;--s-edge:rgba(0,0,0,.2)}}
+:root[data-theme="dark"]{--s-sky:#1B2733;--s-grass:#4F7A3D;--s-grass-l:#3D6030;--s-grass-r:#334F28;--s-soil:#5A4230;--s-soil-l:#4A3526;--s-soil-r:#3E2C20;
+  --s-pave:#8E877C;--s-wall-l:#B9B2A6;--s-wall-r:#9E978B;--s-roof:#3E4855;--s-roof-d:#323A45;--s-in-wall:#B3AC9F;--s-in-wall-d:#A29B8E;--s-floor:#8C734F;
+  --s-glass:rgba(150,190,210,.7);--s-gh:rgba(140,190,180,.3);--s-gh-line:#5E9489;--s-leaf:#3C6E30;--s-leaf-2:#4E8440;--s-leaf-3:#2F5A27;--s-trunk:#5A4230;--s-pot:#9A5E38;--s-pot-d:#7F4C2D;
+  --s-shadow:rgba(0,0,0,.35);--s-light:rgba(255,205,90,.35);--s-dark:rgba(0,0,20,.3);--s-sun:#E8D9A0;--s-edge:rgba(0,0,0,.2)}
+.scene polygon,.scene path{stroke:var(--s-edge);stroke-width:.6;stroke-linejoin:round}
+.f-grass{fill:var(--s-grass)} .f-grass-l{fill:var(--s-grass-l)} .f-grass-r{fill:var(--s-grass-r)}
+.f-soil{fill:var(--s-soil)} .f-soil-l{fill:var(--s-soil-l)} .f-soil-r{fill:var(--s-soil-r)}
+.f-pave{fill:var(--s-pave)} .f-wall-l{fill:var(--s-wall-l)} .f-wall-r{fill:var(--s-wall-r)}
+.f-roof{fill:var(--s-roof)} .f-roof-d{fill:var(--s-roof-d)} .f-in{fill:var(--s-in-wall)} .f-in-d{fill:var(--s-in-wall-d)}
+.f-floor{fill:var(--s-floor)} .f-glass{fill:var(--s-glass)} .f-gh{fill:var(--s-gh);stroke:var(--s-gh-line)!important;stroke-width:1.2!important}
+.f-leaf{fill:var(--s-leaf)} .f-leaf2{fill:var(--s-leaf-2)} .f-leaf3{fill:var(--s-leaf-3)} .f-trunk{fill:var(--s-trunk)}
+.f-pot{fill:var(--s-pot)} .f-pot-d{fill:var(--s-pot-d)} .f-shadow{fill:var(--s-shadow);stroke:none!important}
+.f-light{fill:var(--s-light);stroke:none!important} .f-dark{fill:var(--s-dark);stroke:none!important} .f-sun{fill:var(--s-sun)}
+.beam{fill:var(--s-light);opacity:.45;stroke:none!important}
+.hit{cursor:pointer}
+.area{fill:transparent;stroke:transparent!important}
+.scene.m-garden .area.ga, .scene.m-house .area.ha{stroke:rgba(255,255,255,.85)!important;stroke-width:2!important;stroke-dasharray:6 5}
+.cutaway{transition:opacity .45s ease}
+.scene.m-house .cutaway{opacity:0;pointer-events:none}
+.interior{opacity:0;transition:opacity .45s ease}
+.scene.m-house .interior{opacity:1}
+.outside,.sun{transition:opacity .45s ease}
+.scene.m-house .outside{opacity:.3;pointer-events:none}
+.scene.m-house .sun{opacity:0}
+.badges{transition:opacity .2s ease}
+.scene.moving .badges{opacity:0}
+.b-pill{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.b-pill.risk{stroke:var(--frost);stroke-width:2.5}
+.b-label{fill:var(--ink);font-size:13px;font-weight:700}
+.m-garden .b-label,.m-house .b-label{font-size:12px}
+.b-count{fill:var(--ink);font-size:15px;font-weight:700;font-family:var(--head)}
+.b-count.risk{fill:var(--frost)}
+.b-icon{color:var(--fern)}
+.scene .b-icon path,.scene .b-icon rect,.scene .b-icon circle{stroke:currentColor;stroke-width:1.8}
+.b-empty{opacity:.6}
+.b-face{stroke:var(--surface);stroke-width:2}
+.b-face.risk{stroke:var(--frost)}
+.b-init{fill:var(--bg)} .b-init-t{fill:var(--muted);font-size:10px;font-weight:700}
+@media (prefers-reduced-motion:reduce){.cutaway,.interior,.badges{transition:none}}
+/* Where the plants are */
+.places{display:grid;gap:12px;margin-top:22px}
+.places > h2{font-size:1.3rem}
+.place{border-radius:var(--radius-lg);padding:12px}
+.place.house{background:var(--house-bg)}
+.place.garden{background:var(--fern-soft)}
+.place h3{font-size:1rem;margin:0 2px 10px;color:var(--muted);font-family:var(--body);font-weight:700}
+.zones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:600px){.place.garden .zones{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.zone{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;border:0;border-radius:14px;padding:10px;background:var(--surface);min-height:108px}
+.zone.empty-z{opacity:.55}
+.zone .zt{display:flex;align-items:center;gap:8px;width:100%}
+.zone .zi{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--zone-ink);background:var(--zone-bg)}
+.zone .zi svg{width:20px;height:20px}
+.zone .zl{font-weight:700;font-size:.92rem;line-height:1.2;flex:1}
+.zone .zc{font-family:var(--head);font-weight:700;font-size:1.25rem}
+.faces{display:flex;flex-wrap:wrap;gap:4px}
+.face{width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--bg);color:var(--muted);font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--surface)}
+.face img{width:100%;height:100%;object-fit:cover}
+.face.cold{box-shadow:0 0 0 2px var(--frost)}
+.face.more{background:transparent;box-shadow:none;font-size:.78rem}
+.z-window{--zone-bg:#F3E7B8;--zone-ink:#7A5B00}
+.z-shade{--zone-bg:#DCDDEA;--zone-ink:#474C6E}
+.z-greenhouse{--zone-bg:#D4ECE6;--zone-ink:#1F6656}
+.z-covered{--zone-bg:#E6DED3;--zone-ink:#6A5236}
+.z-pots{--zone-bg:#F6DDB4;--zone-ink:#8A5211}
+.z-potsShade{--zone-bg:#D6E0E6;--zone-ink:#3D5663}
+.z-ground{--zone-bg:#D9E6C9;--zone-ink:#3F6224}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .zone .zi{background:color-mix(in srgb,var(--zone-bg) 18%,transparent);color:var(--zone-bg)}}
+:root[data-theme="dark"] .zone .zi{background:color-mix(in srgb,var(--zone-bg) 18%,transparent);color:var(--zone-bg)}
+.zone-pick{display:grid;gap:8px}
+.zone-pick h3{font-size:.95rem;color:var(--muted);font-family:var(--body);margin:6px 0 0}
+.zone-opt{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 12px;text-align:left;width:100%}
+.zone-opt .zi{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--zone-ink);background:var(--zone-bg);flex-shrink:0}
+.zone-opt .zi svg{width:22px;height:22px}
+.zone-opt b{display:block}
+.zone-opt small{color:var(--muted)}
+.zone-opt[aria-current=true]{border:2px solid var(--fern)}
+.zone-opt[aria-current=true] small::after{content:" (here now)"}
+.group-h .zi{width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--zone-ink);background:var(--zone-bg);align-self:center}
+.group-h .zi svg{width:17px;height:17px}
+.status{color:var(--muted);font-size:.88rem;margin:8px 0 0}
+.auth{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));overflow-y:auto}
+.auth-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:24px 20px}
+.auth-card h1{font-size:2rem;margin-bottom:4px}
+.auth-logo svg{height:52px;width:auto;display:block;margin-bottom:6px}
+.seg{display:flex;background:var(--bg);border-radius:999px;padding:4px;margin:16px 0}
+.seg button{flex:1;border:0;background:transparent;border-radius:999px;padding:8px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px color-mix(in srgb,var(--ink) 15%,transparent)}
+/* Add-plant steps */
+.steps{display:flex;gap:6px;margin-bottom:8px}
+.steps span{width:26px;height:5px;border-radius:3px;background:var(--line)}
+.steps span.on{background:var(--fern)}
+.wiz-lead{color:var(--muted);margin:0 0 14px}
+.wiz-photos{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.wiz-photos .ph{position:relative}
+.wiz-photos img{width:96px;height:96px;object-fit:cover;border-radius:12px;display:block}
+.wiz-photos .rm{position:absolute;top:4px;right:4px;border:0;border-radius:999px;width:26px;height:26px;background:rgba(0,0,0,.6);color:#fff;font-weight:700;line-height:1}
+.shot-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shot.alt{color:var(--muted);border-style:solid;background:var(--surface)}
+.shot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;min-height:130px;border:2px dashed var(--line);border-radius:var(--radius-lg);background:var(--bg);font-weight:700;color:var(--fern)}
+.shot svg{width:40px;height:40px}
+.linkish{background:none;border:0;padding:6px 0;color:var(--fern);font-weight:700;text-decoration:underline}
+.id-list{display:grid;gap:8px;margin-bottom:12px}
+.id-opt{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:8px}
+.id-opt[aria-pressed=true]{border:2px solid var(--fern);background:var(--fern-soft)}
+.id-opt img,.id-opt .noimg{width:64px;height:64px;border-radius:10px;object-fit:cover;background:var(--bg);display:block}
+.id-opt i{font-weight:700;display:block}
+.id-opt small{color:var(--muted);display:block;line-height:1.3}
+.conf{text-align:right;font-family:var(--head);font-weight:700;min-width:48px}
+.conf .bar{display:block;width:48px;height:5px;border-radius:3px;background:var(--line);margin-top:4px;overflow:hidden}
+.conf .bar span{display:block;height:100%;background:var(--fern)}
+.warn{background:var(--frost-bg);color:var(--ink);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;font-size:.92rem}
+.loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 0;color:var(--muted)}
+.spin{width:36px;height:36px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--fern);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.credit{color:var(--muted);font-size:.78rem;margin-top:10px}
+.loc-now{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px}
+.loc-now b{display:block}
+.loc-now small{color:var(--muted)}
+.loc-now svg{width:22px;height:22px;flex-shrink:0;color:var(--fern)}
+.loc-results{display:grid;gap:6px;margin-bottom:10px}
+.loc-results button{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:8px 12px}
+.loc-results small{color:var(--muted);display:block}
+.loc-manual{margin-top:12px}
+.loc-manual summary{cursor:pointer;color:var(--fern);font-weight:700}
+.invite-out{margin-top:12px;background:var(--fern-soft);border-radius:var(--radius-sm);padding:12px}
+.invite-out .code{font-family:var(--head);font-size:1.6rem;font-weight:700;letter-spacing:.06em;margin:4px 0}
+
+/* Tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.tabs button{flex:1;max-width:180px;background:none;border:0;padding:12px 4px;font-weight:700;color:var(--muted);border-top:3px solid transparent}
+.tabs button[aria-current=page]{color:var(--fern);border-top-color:var(--fern)}
+.fab{position:fixed;right:18px;bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:6;box-shadow:0 4px 14px color-mix(in srgb,var(--ink) 25%,transparent)}
+
+/* Dialog */
+dialog{border:0;border-radius:var(--radius-lg);padding:0;width:min(560px,94vw);max-height:90vh;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:color-mix(in srgb,#000 45%,transparent)}
+.dlg-h{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:1}
+.dlg-b{padding:16px 18px}
+.dlg-f{display:flex;justify-content:space-between;gap:8px;padding:12px 18px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--surface)}
+.preset-note{background:var(--fern-soft);border-radius:var(--radius-sm);padding:10px 12px;font-size:.9rem;margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:700;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+@media (max-width:420px){.top h1{font-size:1.75rem}.col{height:118px}.meta{font-size:.68rem}}
+/* ================= Light botanical theme ================= */
+:root{
+  --bg:#F5F4EC; --surface:#FFFFFF; --ink:#223127; --muted:#6B7970; --line:#E2E5DA;
+  --fern:#3F6E4C; --fern-soft:#E7F0E2; --on-fern:#FFFFFF;
+  --frost:#2F7AB0; --frost-bg:#DDECF7; --heat:#A4531D; --heat-bg:#FBE4D0;
+  --radius-lg:22px; --radius-sm:12px;
+  --shadow:0 1px 2px rgba(40,60,40,.05), 0 6px 20px rgba(40,70,40,.07);
+  --head:"Nunito", "Segoe UI", system-ui, sans-serif; --body:"Nunito", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#141A16; --surface:#1C241E; --ink:#E6EDE7; --muted:#9DAAA1; --line:#2C3830; --fern:#7CB88E; --fern-soft:#223328; --on-fern:#0E1711; --shadow:none; } }
+:root[data-theme="dark"]{ --bg:#141A16; --surface:#1C241E; --ink:#E6EDE7; --muted:#9DAAA1; --line:#2C3830; --fern:#7CB88E; --fern-soft:#223328; --on-fern:#0E1711; --shadow:none; }
+body{font-weight:500;background:var(--bg)}
+h1,h2,h3{font-weight:800;letter-spacing:-.01em}
+.wrap{max-width:560px;padding:0 16px calc(130px + env(safe-area-inset-bottom,0px))}
+.btn{font-weight:800}
+.btn.primary{box-shadow:0 3px 10px color-mix(in srgb,var(--fern) 30%,transparent)}
+.tabs,.fab{display:none!important}
+
+/* Header */
+.top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:20px 0 14px}
+.brand svg{width:40px;height:40px;display:block}
+.where-now .loc{display:flex;align-items:center;gap:6px}
+.where-now .pin svg{width:18px;height:18px;color:var(--fern);display:block}
+.top h1{font-size:1.35rem;font-weight:800;letter-spacing:0}
+.top p{margin:2px 0 0 24px;font-size:.82rem;color:var(--muted)}
+.now-wx{display:flex;align-items:center;gap:6px;border:0;background:none;padding:0;text-align:left;color:var(--ink)}
+.now-wx .wi{width:44px;height:44px}
+.now-wx b{display:block;font-size:1.9rem;line-height:1;font-weight:800}
+.now-wx small{display:block;color:var(--muted);font-size:.78rem;font-weight:700;white-space:pre}
+
+/* Forecast */
+.fc{display:grid;grid-template-columns:auto repeat(7,minmax(0,1fr));gap:4px;background:var(--surface);border-radius:var(--radius-lg);padding:12px 8px 10px;box-shadow:var(--shadow);margin-bottom:10px}
+.fc-empty{grid-column:1/-1;color:var(--muted);margin:6px}
+.fc-day{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:transparent;border-radius:14px;padding:8px 0 6px;color:var(--ink);min-width:0}
+.fc-dn{font-weight:800;font-size:.8rem}
+.fc-day .wi{width:28px;height:28px;margin:2px 0}
+.fc-day b{font-size:.95rem;font-weight:800}
+.fc-day small{font-size:.7rem;color:var(--muted);font-weight:700}
+:root{--hi:#D2604C;--lo:#3F86C4}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--hi:#F0917F;--lo:#86B9E6}}
+:root[data-theme="dark"]{--hi:#F0917F;--lo:#86B9E6}
+.fc .hi{color:var(--hi)} .fc .lo{color:var(--lo);font-size:.82rem;font-weight:800}
+.now-wx .hi{color:var(--hi)} .now-wx .lo{color:var(--lo)}
+.fc-lab{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 2px 6px 4px}
+.fc-lab .fc-sp{height:32px}
+.fc-lab b,.fc-lab small{font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;font-weight:800;line-height:1.45rem}
+.fc-lab small{line-height:1.2rem}
+.fc .rn{color:#4E7C99;font-size:.78rem;font-weight:800;margin-top:2px}
+.fc .rn.dry{color:var(--muted);opacity:.6}
+.fc-lab .rn{font-size:.62rem;white-space:nowrap}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fc .rn{color:#8FB8D3}}
+.fc-day.frost{background:var(--frost-bg)} .fc-day.heat{background:var(--heat-bg)}
+.fc-day.open{outline:2px solid var(--fern);outline-offset:-2px}
+.fc-badge{position:absolute;top:-8px;right:-2px;width:22px;height:22px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.fc-badge svg{width:14px;height:14px}
+.fc-badge.frost,.dot.frost{color:var(--frost)} .fc-badge.heat,.dot.heat{color:var(--heat)}
+.fc-detail{background:var(--surface);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;box-shadow:var(--shadow);font-size:.92rem}
+.fc-detail p{margin:4px 0 0;display:flex;gap:8px;align-items:flex-start}
+.dot svg{width:16px;height:16px;margin-top:3px}
+
+/* Scene */
+.places{margin:22px 0 18px}
+.scene-top{display:flex;align-items:center;justify-content:flex-start;gap:10px;height:0;opacity:0;overflow:hidden;transition:height .3s,opacity .3s}
+.scene-top.show{height:48px;opacity:1}
+.scene-top h2{font-size:1.25rem}
+.round-back{width:40px;height:40px;border-radius:50%;border:0;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;color:var(--fern)}
+.round-back svg{width:20px;height:20px}
+.orb{position:relative;width:min(100%,500px);aspect-ratio:1;margin:0 auto;border-radius:50%;overflow:hidden;background:#F1EFE3;
+  box-shadow:0 0 0 6px var(--surface),0 0 0 8px #CFE0C8,0 14px 34px rgba(50,80,50,.14);isolation:isolate}
+.stage{position:absolute;inset:0;transform-origin:50% 50%;transition:transform .8s cubic-bezier(.65,0,.35,1);--inv:1}
+.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none;transition:opacity 1s ease,filter 1s ease}
+.img-night,.img-in{opacity:0}
+.ph-night .img-night{opacity:1} .ph-dusk .img-night{opacity:.3}
+.inside .img-in{opacity:1} .inside .img-day,.inside .img-night{opacity:0!important}
+.ph-night.inside .img-in{filter:brightness(.7) saturate(.85) hue-rotate(-8deg)}
+.glow-cab{position:absolute;left:33%;top:20%;width:24%;height:36%;border-radius:40%;background:radial-gradient(closest-side,rgba(205,120,255,.55),transparent);opacity:0;transition:opacity 1s;mix-blend-mode:screen;pointer-events:none}
+.inside .glow-cab{opacity:.25} .inside.ph-night .glow-cab{opacity:.8}
+.hot{position:absolute;border:0;background:transparent;border-radius:45%;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hot.base{z-index:0} .hot:not(.base){z-index:1}
+.zoomed .hot,.inside .hot{pointer-events:none}
+.pills{position:absolute;inset:0;z-index:4;pointer-events:none}
+.pill{position:absolute;pointer-events:auto;display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border:0;border-radius:999px;background:rgba(255,255,255,.95);color:#223127;
+  box-shadow:0 2px 8px rgba(30,50,30,.18);font-weight:800;font-size:.95rem;white-space:nowrap;transform:translate(-50%,-50%);animation:pillIn .45s ease both}
+@keyframes pillIn{from{opacity:0;transform:translate(-50%,-30%)}to{opacity:1;transform:translate(-50%,-50%)}}
+.pill svg{width:17px;height:17px;color:#3F6E4C}
+.pill.spot span{font-size:.85rem}
+.pill.risk{box-shadow:0 0 0 2.5px var(--frost),0 2px 8px rgba(30,50,30,.18)}
+.pill.empty{opacity:.72}
+.orb > div[class^="fx-"],.orb canvas.fx{position:absolute;inset:0;pointer-events:none;z-index:2;transition:opacity 1s,background 1s}
+canvas.fx{width:100%;height:100%}
+.fx-tint{mix-blend-mode:multiply}
+.sky-cloudy .fx-tint{background:rgba(120,130,140,.12)} .sky-fog .fx-tint{background:rgba(190,196,200,.14)}
+.sky-rain .fx-tint{background:rgba(70,92,125,.2)} .sky-storm .fx-tint{background:rgba(48,58,92,.3)} .sky-snow .fx-tint{background:rgba(150,170,200,.1)}
+.ph-dusk .fx-tint{background:rgba(255,170,100,.16)}
+.ph-day.sky-clear .fx-glow{background:radial-gradient(circle at 16% 10%,rgba(255,238,170,.6),transparent 46%)}
+.ph-day.sky-partly .fx-glow{background:radial-gradient(circle at 16% 10%,rgba(255,238,170,.35),transparent 38%)}
+.ph-day.sky-clear .img-day{filter:brightness(1.05) saturate(1.12)}
+.sky-cloudy .img-day,.sky-cloudy .img-night{filter:saturate(.84) brightness(.97)}
+.sky-rain .img-day,.sky-storm .img-day{filter:saturate(.72) brightness(.9)}
+.sky-rain .img-night,.sky-storm .img-night{filter:saturate(.8) brightness(.85)}
+.sky-fog .img-day{filter:saturate(.72) contrast(.9) brightness(1.02)}
+.sky-snow .img-day{filter:saturate(.72) brightness(1.04)}
+.sky-fog .fx-haze{background:linear-gradient(to top,rgba(255,255,255,.62),rgba(255,255,255,.22) 55%,rgba(255,255,255,.04) 85%);animation:drift 14s ease-in-out infinite alternate}
+.frosty .fx-frost{background:radial-gradient(circle,rgba(255,255,255,.75) 0 .9px,transparent 1.5px) 0 0/19px 19px,linear-gradient(to top,rgba(220,238,255,.38),rgba(220,238,255,.1) 45%,transparent 65%);-webkit-mask:linear-gradient(to top,#000 40%,transparent 75%);mask:linear-gradient(to top,#000 40%,transparent 75%)}
+.inside canvas.fx,.inside .fx-haze,.inside .fx-frost,.inside .fx-glow{opacity:0}
+.fx-flash{background:#fff;opacity:0}
+.fx-flash.on{animation:flash .7s ease-out}
+@keyframes flash{0%{opacity:0}10%{opacity:.55}30%{opacity:.1}45%{opacity:.4}100%{opacity:0}}
+@keyframes drift{from{transform:translateX(-3%)}to{transform:translateX(3%)}}
+.scene-hint{text-align:center;color:var(--muted);font-size:.85rem;margin:14px 0 0}
+@media (prefers-reduced-motion:reduce){.stage,.pill,.stage img{transition:none}.sky-fog .fx-haze{animation:none}}
+
+/* Alert cards */
+.alerts{gap:14px}
+.acard{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;padding:16px;border-radius:var(--radius-lg);background:var(--a-bg);box-shadow:var(--shadow);
+  --a-bg:#F0F4EA;--a-ic:#DCE8D2;--a-ink:#46663F}
+.t-frost{--a-bg:#FBF4E1;--a-ic:#F6E2A8;--a-ink:#8A6414}
+.t-heat{--a-bg:#FCEEE3;--a-ic:#F8D2B4;--a-ink:#9A4E1C}
+.t-wind{--a-bg:#EEF0F6;--a-ic:#D9DEEC;--a-ink:#4A5474}
+.t-water{--a-bg:#EAF3EC;--a-ic:#CFE5D3;--a-ink:#2F6B45}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .acard{background:color-mix(in srgb,var(--a-ic) 14%,var(--surface))}}
+:root[data-theme="dark"] .acard{background:color-mix(in srgb,var(--a-ic) 14%,var(--surface))}
+.a-ic{width:52px;height:52px;border-radius:50%;background:var(--a-ic);color:var(--a-ink);display:flex;align-items:center;justify-content:center;grid-row:1/3}
+.a-ic svg{width:26px;height:26px}
+.a-main{min-width:0}
+.a-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.a-lab{text-transform:uppercase;font-size:.72rem;letter-spacing:.08em;font-weight:800;color:var(--a-ink)}
+.a-chip{font-size:.8rem;color:var(--muted);font-weight:700;white-space:nowrap}
+.acard h3{font-size:1.2rem;margin:2px 0 2px}
+.a-lead{margin:0 0 6px;color:var(--muted);font-weight:600}
+.acard ul{list-style:none;margin:4px 0 0;padding:0}
+.acard li{display:flex;align-items:center;gap:8px;padding:3px 0}
+.acard li > svg{width:16px;height:16px;color:#6E9A5E;flex-shrink:0}
+.acard li i{color:var(--muted);font-weight:500}
+.acard li{align-items:flex-start}.acard li > svg{margin-top:4px}
+.acard li small{display:block;color:var(--muted);font-size:.78rem;font-weight:600}
+.a-tip{font-size:.85rem;color:var(--muted);margin:8px 0 0}
+.a-act{grid-column:2;justify-self:end;margin-top:8px}
+.a-act .btn{padding:9px 18px}
+
+/* Round menu: compact, floating over a fade */
+.dial{position:fixed;left:0;right:0;bottom:0;height:calc(96px + env(safe-area-inset-bottom,0px));z-index:20;pointer-events:none}
+.dial-fade{position:absolute;left:0;right:0;bottom:calc(100% - 28px);height:56px;background:linear-gradient(to bottom,color-mix(in srgb,var(--bg) 0%,transparent),color-mix(in srgb,var(--bg) 85%,transparent));pointer-events:none}
+.dial-panel{position:absolute;left:-12%;right:-12%;top:18px;bottom:0;border-radius:50% 50% 0 0 / 30px 30px 0 0;background:color-mix(in srgb,var(--bg) 84%,transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);box-shadow:0 -1px 0 var(--line);pointer-events:none}
+.dial-inner{position:relative;max-width:420px;height:96px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:clamp(28px,12vw,64px)}
+.dial-btn{position:relative;width:48px;height:48px;border-radius:50%;border:0;background:var(--surface);color:var(--fern);pointer-events:auto;margin-top:2px;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(50,80,50,.14);transition:background .2s,color .2s}
+.dial-btn svg{width:22px;height:22px}
+.dial-btn span{position:absolute;top:calc(100% + 3px);left:50%;transform:translateX(-50%);font-weight:800;font-size:.74rem;color:var(--ink);white-space:nowrap}
+.dial-btn[aria-current=page]{background:var(--fern);color:var(--on-fern)}
+.dial-add{width:72px;height:72px;border-radius:50%;border:0;pointer-events:auto;margin-top:-18px;
+  background:radial-gradient(circle at 40% 30%,#5A8E64,#3A6846);color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--surface) 92%,transparent),0 0 0 6.5px #D2E1CB,0 8px 20px rgba(40,80,50,.28)}
+.dial-add svg{width:34px;height:34px}
+.dial-add:active,.dial-btn:active{transform:scale(.95)}
+.gear-btn{width:40px;height:40px;border-radius:50%;border:0;background:var(--surface);color:var(--fern);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.gear-btn svg{width:21px;height:21px}
+.gear-btn[aria-current=page]{background:var(--fern);color:var(--on-fern)}
+.top{grid-template-columns:auto minmax(0,1fr) auto auto;gap:8px}
+.where-now{min-width:0}.top h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.now-wx .wi{width:34px;height:34px}.now-wx b{font-size:1.55rem}.now-wx small{font-size:.7rem}
+.brand svg{width:38px;height:38px;display:block}
+.page-head{display:flex;align-items:center;gap:10px;margin:4px 0 8px}
+.page-head h2{font-size:1.25rem}
+.p-hist{background:var(--bg);border-radius:var(--radius-sm);padding:6px 12px;max-height:220px;overflow-y:auto}
+.ph-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.ph-row:last-child{border-bottom:0}
+.ph-row small{margin-left:auto;color:var(--muted);font-weight:700;white-space:nowrap}
+.ph-dot{width:8px;height:8px;border-radius:50%;background:var(--fern);flex-shrink:0}
+.ph-dot.t-water{background:#2E77B5} .ph-dot.t-move{background:#A4531D} .ph-dot.t-photo{background:#8A6414}
+@media (max-width:430px){.where-now .pin{display:none}.top p{margin-left:0}}
+@media (max-width:370px){.now-wx small{display:none}.now-wx b{font-size:1.5rem}}
+
+/* Area colours */
+.zi{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;background:var(--zbg);color:var(--zink);flex-shrink:0}
+.zi svg{width:18px;height:18px}
+.a-house{--zbg:#F6EBC9;--zink:#8A6414} .a-porch{--zbg:#EFE3D2;--zink:#7A5530} .a-outside{--zbg:#DDEBD3;--zink:#3F6E3A} .a-greenhouse{--zbg:#D5ECE6;--zink:#1F6656}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .zi{background:color-mix(in srgb,var(--zbg) 18%,transparent);color:var(--zbg)}}
+
+/* Plants */
+.toolbar{flex-wrap:nowrap}
+.viewtog{display:flex;background:var(--surface);border-radius:999px;padding:3px;box-shadow:var(--shadow)}
+.viewtog button{width:38px;height:34px;border:0;background:transparent;border-radius:999px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.viewtog button svg{width:20px;height:20px}
+.viewtog button[aria-pressed=true]{background:var(--fern);color:var(--on-fern)}
+.chip{font-weight:700;background:var(--surface)}
+.group-h{align-items:center}
+.plist .plant{grid-template-columns:64px 1fr auto;border:0;box-shadow:var(--shadow);border-radius:18px;padding:10px 12px;margin-bottom:10px;gap:6px 12px}
+.plant .thumb{grid-row:1;width:64px;height:64px;border-radius:16px}
+.initial{display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--zbg);color:var(--zink);font-family:var(--head);font-weight:800;font-size:1.5rem}
+.pmain{min-width:0}
+.plant .nm{font-size:1.02rem;font-weight:800}
+.where{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.8rem;font-weight:700;margin-top:3px}
+.where .zi{width:22px;height:22px;border-radius:7px}.where .zi svg{width:14px;height:14px}
+.flags{display:flex;gap:4px;align-self:start;flex-wrap:wrap;justify-content:flex-end;max-width:90px}
+.flag{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
+.flag svg{width:15px;height:15px}
+.f-frost{background:var(--frost-bg);color:var(--frost)} .f-heat{background:var(--heat-bg);color:var(--heat)}
+.f-wind{background:#E4E7F0;color:#4A5474} .f-water{background:#D8ECF8;color:#2E77B5} .f-move{background:#E3EFDD;color:#3F6E4C}
+.plant .facts{grid-column:1/-1;align-items:center}
+.plant .facts .acts{margin-left:auto;display:flex;gap:6px}
+.v-grid .pgroup{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px}
+.pcard{background:var(--surface);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.pc-photo{position:relative;display:block;width:100%;aspect-ratio:1;border:0;padding:0;background:var(--bg)}
+.pc-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.pc-photo .initial{font-size:2.4rem;background:color-mix(in srgb,var(--zbg) 55%,var(--surface))}
+.pc-flags{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+.pc-flags .flag{box-shadow:0 0 0 2px var(--surface)}
+.pc-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:2px;flex:1}
+.pc-body .nm{font-weight:800;background:none;border:0;padding:0;text-align:left;font-size:1rem}
+.pc-body .sp{font-size:.8rem}
+.pc-acts{display:flex;gap:8px;margin-top:auto;padding-top:8px}
+.icon-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fern);display:flex;align-items:center;justify-content:center}
+.icon-btn svg{width:19px;height:19px}
+.icon-btn.water{color:#2E77B5}
+
+/* Welcome setup */
+.onb{z-index:45;align-items:flex-start}
+.onb-card{width:min(460px,100%);margin:auto 0}
+.onb-top{display:flex;align-items:center;gap:12px;min-height:40px;margin-bottom:10px}
+.onb-top .steps{margin:0 0 0 auto}
+.onb-card h1{font-size:1.6rem;margin-bottom:4px}
+.onb-lead{color:var(--muted);font-weight:600;margin:0 0 16px}
+.home-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.home-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 10px 14px;border:2px solid var(--line);border-radius:22px;background:var(--surface);text-align:center}
+.home-card img{width:100%;aspect-ratio:1;border-radius:50%;object-fit:cover;margin-bottom:6px;box-shadow:0 0 0 4px var(--surface),0 0 0 5.5px #D2E1CB}
+.home-card b{font-size:1rem}.home-card small{color:var(--muted);font-weight:600;font-size:.8rem;line-height:1.3}
+.home-card[aria-pressed=true]{border-color:var(--fern);background:var(--fern-soft)}
+.onb-q{margin-top:16px}.onb-q p{margin:0 0 4px}
+.btn.wide{width:100%;padding:13px 16px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.gps svg{width:20px;height:20px}
+.onb-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-weight:700;margin:16px 0 8px}
+.onb-or::before,.onb-or::after{content:"";flex:1;height:1px;background:var(--line)}
+.onb-place{margin-bottom:14px}.onb-place svg{color:var(--fern)}
+.onb-card .linkish{display:block;margin:10px auto 0}
+.onb-msg{color:var(--heat)}
+.onb-alerts{display:grid;gap:10px;margin:14px 0 18px}
+.onb-alert{display:flex;gap:12px;align-items:flex-start;background:var(--bg);border-radius:var(--radius-sm);padding:12px}
+.onb-alert p{margin:0;color:var(--muted);font-weight:600}.onb-alert b{color:var(--ink)}
+.onb-alert .zi{width:36px;height:36px;border-radius:12px}.onb-alert .zi svg{width:22px;height:22px}
+.onb-done{text-align:center}
+.onb-done img{width:62%;aspect-ratio:1;border-radius:50%;object-fit:cover;margin:4px auto 14px;display:block;box-shadow:0 0 0 5px var(--surface),0 0 0 7px #D2E1CB}
+
+/* Species suggestions */
+.sg-wrap{position:relative}
+.sg-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(30,50,30,.16);max-height:260px;overflow-y:auto;padding:4px}
+.sg-item{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:10px;padding:8px 10px;color:var(--ink)}
+.sg-item:hover,.sg-item:focus{background:var(--fern-soft)}
+.sg-item i{font-weight:800}
+.sg-item small{display:block;color:var(--muted);font-weight:600}
+.sg-tag{font-size:.72rem;color:var(--fern);font-weight:800;margin-left:6px;text-transform:uppercase;letter-spacing:.04em}
+.sg-h{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;padding:8px 10px 4px}
+.a-balcony{--zbg:#E6E1F0;--zink:#5B4F80}
+
+/* Spot picker */
+.area-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.area-opt{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 2px;border-radius:16px;border:1px solid var(--line);background:var(--surface);font-size:.76rem;min-width:0}
+.area-opt b{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.area-opt .zi{width:40px;height:40px;border-radius:12px}.area-opt .zi svg{width:24px;height:24px}
+.area-opt.on{border:2px solid var(--fern);background:var(--fern-soft)}
+.pick-lead{color:var(--muted);font-size:.88rem;margin:12px 0 8px;font-weight:700}
+.zone-pick .pick-h{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-family:var(--body);margin:6px 0 0}
+.zone-pick .pick-h span{text-transform:none;letter-spacing:0;font-weight:600}
+.plant-seg{margin-top:0}
+.zone-opt[aria-pressed=true]{border:2px solid var(--fern);background:var(--fern-soft)}
+.zone-opt .zi{width:36px;height:36px;border-radius:10px}
+.seg.small{margin:10px 0 0}
+.seg button svg{width:16px;height:16px;vertical-align:-3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <span class="brand" aria-hidden="true"><svg class="mark" xmlns="http://www.w3.org/2000/svg" viewBox="12 12 76 76"><circle cx="50" cy="50" r="36" fill="#E4EFDD"/><path d="M36 56a14 14 0 0 1 28 0z" fill="#F2B45A"/><path d="M14.5 56A36 36 0 0 0 85.5 56Z" fill="#8DBB78"/><path d="M50 79V60" stroke="#3F6E4C" stroke-width="3" stroke-linecap="round"/><path d="M50 64c-2-8-9-11-16-10 1 7 8 11 16 10z" fill="#3F6E4C"/><path d="M50 59c2-9 9-13 17-12-1 8-8 12-17 12z" fill="#4F8A5B"/><circle cx="50" cy="50" r="36" fill="none" stroke="#3F6E4C" stroke-width="2.5"/></svg></span>
+    <div class="where-now">
+      <div class="loc"><span class="pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22s-7.5-6.6-7.5-12.2a7.5 7.5 0 0 1 15 0C19.5 15.4 12 22 12 22zm0-9.3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></span><h1 id="placeName">Garden</h1></div>
+      <p id="nowLine">Loading forecast…</p>
+    </div>
+    <button class="now-wx" id="nowWx" aria-label="Current weather, tap to refresh"></button>
+    <button class="gear-btn" data-tab="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.6 2.3 2.8-.5.5 2.8 2.3 1.6-1.2 2.5 1.2 2.5-2.3 1.6-.5 2.8-2.8-.5L12 21.2l-1.6-2.3-2.8.5-.5-2.8-2.3-1.6L6 12.5 4.8 10l2.3-1.6.5-2.8 2.8.5z"/></svg></button>
+  </header>
+
+  <main>
+    <section id="view-today">
+      <div class="fc" id="forecast"></div>
+      <div class="fc-detail" id="fcDetail" hidden></div>
+      <div class="places" id="places"></div>
+      <div class="alerts" id="alerts"></div>
+    </section>
+
+    <section id="view-plants" hidden>
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Search plants" aria-label="Search plants">
+        <div class="viewtog" role="radiogroup" aria-label="Show plants as">
+          <button data-view="list" aria-label="List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg></button><button data-view="grid" aria-label="Grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div id="plantList"></div>
+    </section>
+
+    <section id="view-log" hidden>
+      <div class="page-head"><button class="round-back" data-tab="settings" aria-label="Back to settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Activity history</h2></div>
+      <div id="logList"></div>
+    </section>
+
+    <section id="view-settings" hidden>
+      <div class="card">
+        <h2>Your home</h2>
+        <div class="seg" role="radiogroup" aria-label="Home type">
+          <button data-home="house" role="radio" aria-pressed="true">House with garden</button>
+          <button data-home="apartment" role="radio" aria-pressed="false">Apartment</button>
+        </div>
+        <p class="status" id="homeLine" style="margin-top:0"></p>
+        <label class="check" id="balcRainRow" hidden><input type="checkbox" id="balcRain"><span>Rain reaches my balcony<br><span class="status">Tick it if the balcony is open to the sky. Then rain counts as watering for balcony plants.</span></span></label>
+      </div>
+      <div class="card">
+        <h2>Location</h2>
+        <p class="status" style="margin-top:0">The forecast and all the alerts use this location.</p>
+        <div class="seg" role="radiogroup" aria-label="Which location to use">
+          <button data-loc="current" role="radio" aria-pressed="false">My current location</button>
+          <button data-loc="saved" role="radio" aria-pressed="true">Saved place</button>
+        </div>
+        <div id="locCurrent" hidden>
+          <div class="loc-now" id="locNowLine"></div>
+          <button class="btn small" id="locRefresh">Update now</button>
+          <p class="status">Updates by itself whenever you open the app. Notifications use the last place the app saw you.</p>
+        </div>
+        <div id="locSaved">
+          <div class="loc-now" id="locSavedLine"></div>
+          <div class="field" style="margin-top:12px"><label for="locSearch">Change the saved place</label>
+            <input id="locSearch" type="search" placeholder="Search a town, e.g. Lekunberri" autocomplete="off"></div>
+          <div id="locResults" class="loc-results"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn small" id="locHere">Save where I am now</button>
+          </div>
+          <details class="loc-manual"><summary>Enter coordinates</summary>
+            <div class="field" style="margin-top:8px"><label for="sPlace">Name</label><input id="sPlace"></div>
+            <div class="row2">
+              <div class="field"><label for="sLat">Latitude</label><input id="sLat" inputmode="decimal"></div>
+              <div class="field"><label for="sLon">Longitude</label><input id="sLon" inputmode="decimal"></div>
+            </div>
+            <button class="btn small" id="locManualSave">Save this place</button>
+          </details>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Alert rules</h2>
+        <div class="row2">
+          <div class="field"><label for="sMargin">Frost margin °C</label><input id="sMargin" type="number" step="0.5"><span class="hint">Warn when the forecast gets this close to a plant's limit.</span></div>
+          <div class="field"><label for="sGh">Greenhouse warmer by °C</label><input id="sGh" type="number" step="0.5"><span class="hint">How much warmer your greenhouse stays than outside at night.</span></div>
+        </div>
+        <div class="row3">
+          <div class="field"><label for="sHeat">Heat °C</label><input id="sHeat" type="number"></div>
+          <div class="field"><label for="sWind">Gusts km/h</label><input id="sWind" type="number"></div>
+          <div class="field"><label for="sRain">Rain counts as watering, mm</label><input id="sRain" type="number" step="0.5"></div>
+        </div>
+        <button class="btn primary" id="saveSettings">Save settings</button>
+      </div>
+      <div class="card" id="accountCard">
+        <h2>Account</h2>
+        <p class="status" style="margin-top:0" id="acctLine"></p>
+        <p class="status" id="syncStatus"></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn" id="inviteBtn" hidden>Invite a friend</button>
+          <button class="btn" id="pwBtn">Change password</button>
+          <button class="btn" id="signOutBtn">Sign out</button>
+        </div>
+        <div class="invite-out" id="inviteOut" hidden></div>
+        <div id="pwBox" hidden style="margin-top:12px">
+          <div class="field"><label for="pwCur">Current password</label><input id="pwCur" type="password" autocomplete="current-password"></div>
+          <div class="field"><label for="pwNew">New password</label><input id="pwNew" type="password" autocomplete="new-password"><span class="hint">At least 8 characters.</span></div>
+          <button class="btn primary" id="pwSave">Save new password</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Notifications</h2>
+        <div class="row2">
+          <div class="field"><label for="sMorning">Morning summary at</label><select id="sMorning"></select></div>
+          <div class="field"><label for="sEvening">Evening frost check at</label><select id="sEvening"></select></div>
+        </div>
+        <label class="check"><input type="checkbox" id="sEveningOn"><span>Send the evening frost check<br><span class="status">Only arrives when a plant is at risk that night.</span></span></label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn primary" id="notifyBtn">Turn on notifications</button>
+          <button class="btn" id="testBtn">Send a test</button>
+        </div>
+        <p class="status" id="notifyStatus"></p>
+      </div>
+      <div class="card">
+        <h2>Activity history</h2>
+        <p class="status" style="margin-top:0">Every watering, move and photo, for all your plants. Each plant's own history is also in its edit screen.</p>
+        <button class="btn" data-tab="log" style="margin-top:10px">Open history</button>
+      </div>
+      <div class="card">
+        <h2>Backup</h2>
+        <p style="margin-top:0;color:var(--muted)">Your plants are saved in your account, but photos stay on this phone. Export a backup now and then to keep the photos safe. The file grows as you add them.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="exportBtn">Export backup</button>
+          <button class="btn" id="importBtn">Import backup</button>
+          <input type="file" id="importFile" accept="application/json" hidden>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Reset</h2>
+        <button class="btn danger" id="resetBtn">Delete all plants and history</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="auth onb" id="onb" hidden>
+  <div class="auth-card onb-card">
+    <div class="onb-top"><button class="round-back" id="onbBack" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button><div class="steps" id="onbSteps"></div></div>
+    <div id="onbBody"></div>
+  </div>
+</div>
+
+<div class="auth" id="auth" hidden>
+  <div class="auth-card">
+    <h1 class="auth-logo" aria-label="Alvor"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230.8 76"><g transform="translate(-12 -12)"><circle cx="50" cy="50" r="36" fill="#E4EFDD"/><path d="M36 56a14 14 0 0 1 28 0z" fill="#F2B45A"/><path d="M14.5 56A36 36 0 0 0 85.5 56Z" fill="#8DBB78"/><path d="M50 79V60" stroke="#3F6E4C" stroke-width="3" stroke-linecap="round"/><path d="M50 64c-2-8-9-11-16-10 1 7 8 11 16 10z" fill="#3F6E4C"/><path d="M50 59c2-9 9-13 17-12-1 8-8 12-17 12z" fill="#4F8A5B"/><circle cx="50" cy="50" r="36" fill="none" stroke="#3F6E4C" stroke-width="2.5"/></g><path transform="translate(91.96 60.32) scale(0.03050)" d="M633.333504229784 -121.79209147393703V-144.55200927704573L614.3009806275368 -149.3589412420988V-719.1297281831503Q614.3009806275368 -786.7316202744842 580.6067753061652 -823.4525240026414Q546.9125699847937 -860.1734277307987 486.34420654177666 -860.1734277307987Q429.3223445639014 -860.1734277307987 398.48828287795186 -834.9293892383575Q367.6542211920023 -809.6853507459164 367.6542211920023 -773.5045922845602V-703.1387068703771Q367.6542211920023 -645.3667317703366 330.10194132477045 -612.5742171220481Q292.5496614575386 -579.7817024737597 225.7783292606473 -579.7817024737597Q168.87993651628494 -579.7817024737597 139.16402668505907 -608.0711865238845Q109.4481168538332 -636.3606705740094 109.4481168538332 -686.3596289083362Q109.4481168538332 -747.492779135704 158.34089395403862 -804.9624357111752Q207.23367105424404 -862.4320922866464 303.0224145464599 -899.5751460790634Q398.8111580386758 -936.7181998714805 538.9690494835377 -936.7181998714805Q709.4806225597858 -936.7181998714805 793.4432454444468 -864.6051049828529Q877.4058683291078 -792.4920100942254 877.4058683291078 -666.8924902379513V-171.58988607674837Q877.4058683291078 -146.07604248821735 888.2193233259022 -131.99258098006248Q899.0327783226967 -117.90911947190762 919.559554040432 -117.90911947190762Q936.11972412467 -117.90911947190762 946.4397835321724 -125.41917969286442Q956.7598429396749 -132.92923991382122 962.8931437209249 -144.82932943105698Q967.3064379915595 -149.8826814815402 972.1930562369525 -153.37603231146932Q977.0796744823456 -156.86938314139843 983.8129508495331 -156.86938314139843Q996.6059619188309 -156.86938314139843 1003.4624788463116 -147.38296020776033Q1010.3189957737923 -137.89653727412224 1010.3189957737923 -122.67017252743244Q1010.3189957737923 -90.99083414673805 988.2561531625688 -57.41828328371048Q966.1933105513453 -23.845732420682907 923.3342858925462 -0.7696179188787937Q880.475261233747 22.30649658292532 817.623386234045 22.30649658292532Q733.3248348012567 22.30649658292532 683.3291695155203 -16.97633422911167Q633.333504229784 -56.25916504114866 633.333504229784 -121.79209147393703ZM66.96791584789753 -204.84628173708916Q66.96791584789753 -326.8054671213031 172.83377074822783 -400.6618802882731Q278.69962564855814 -474.5182934552431 470.971356600523 -474.5182934552431Q529.5650512650609 -474.5182934552431 577.7289029918611 -464.808145750314Q625.8927547186613 -455.0979980453849 661.3733382150531 -439.01119872927666L641.127414546907 -374.8859244734049Q608.1933284476399 -389.57276041060686 573.9057071916759 -397.8463020771742Q539.6180859357119 -406.1198437437415 498.7503450512886 -406.1198437437415Q422.14835123717785 -406.1198437437415 378.33061238750815 -364.9759741164744Q334.51287353783846 -323.83210448920727 334.51287353783846 -250.8446215838194Q334.51287353783846 -179.11060059070587 372.8969352245331 -141.50354858860373Q411.2809969112277 -103.8964965865016 471.90202881395817 -103.8964965865016Q523.2234228551388 -103.8964965865016 569.6180900074542 -127.62047160044312Q616.0127571597695 -151.34444661438465 647.2738956660032 -192.49922688305378L667.4204052686691 -133.40743244439363Q616.7867626920342 -58.96715494245291 529.5801440402865 -18.28365885093808Q442.37352538853884 22.399837240576744 342.87355794012547 22.399837240576744Q218.78738117963076 22.399837240576744 142.87764851376414 -40.25322591140866Q66.96791584789753 -102.90628906339407 66.96791584789753 -204.84628173708916Z M1449.6198014318943 -1431.9397688731551V-161.79662273079157Q1449.6198014318943 -130.45719971507788 1457.9465751126409 -116.39067139476538Q1466.2733487933874 -102.32414307445288 1483.3669051080942 -96.15091472119093L1519.9946044906974 -86.61758952587843Q1536.7277262359858 -79.11117025464773 1545.0109598785639 -68.54478434845805Q1553.294193521142 -57.97839844226837 1553.294193521142 -42.1387597694993Q1553.294193521142 -22.419339194893837 1540.514525551349 -11.209669597446918Q1527.7348575815558 0.0 1503.3954711854458 0.0H1130.2192537412047Q1106.579879552126 0.0 1093.6502176858485 -11.209669597446918Q1080.720555819571 -22.419339194893837 1080.720555819571 -42.1387597694993Q1080.720555819571 -57.77838623523712 1089.137135002762 -68.43811279907823Q1097.5537141859531 -79.09783936291933 1114.3668456971645 -86.69759929180145L1151.4478930607438 -96.15091472119093Q1168.8414371684194 -102.4308146238327 1177.0182169526815 -116.39067139476538Q1185.1949967369437 -130.35052816569805 1185.1949967369437 -161.5032698661089V-1257.5303727090359Q1185.1949967369437 -1283.2299210503697 1177.6650500409305 -1294.0831062719226Q1170.1351033449173 -1304.9362914934754 1154.3084537684917 -1308.8761214092374L1103.706610508263 -1312.1159676015377Q1087.7001586854458 -1317.5557364821434 1079.8969470150769 -1326.8455094322562Q1072.093735344708 -1336.135282382369 1072.093735344708 -1350.4215690046549Q1072.093735344708 -1366.7344523072243 1082.2068404071033 -1377.7541699185967Q1092.3199454694986 -1388.7738875299692 1116.246041662991 -1397.5536328107119L1311.656605616212 -1463.5657470673323Q1343.329150378704 -1475.405414223671 1362.5720373429358 -1480.5419551581144Q1381.8149243071675 -1485.678496092558 1398.4610880464315 -1485.678496092558Q1423.3671248331666 -1485.678496092558 1436.4934631325305 -1470.8588720671833Q1449.6198014318943 -1456.0392480418086 1449.6198014318943 -1431.9397688731551Z M2146.8890681937337 10.013542480766773H2052.859197586775Q2024.106606438756 10.013542480766773 2004.1271602287889 -6.166072592139244Q1984.1477140188217 -22.34568766504526 1970.2814176306129 -55.68482992053032L1692.9075097590685 -753.2140958532691Q1680.8341634050012 -783.3875398635864 1670.2907515391707 -799.0942114144564Q1659.7473396733403 -814.8008829653263 1644.253758944571 -820.3674723207951L1612.4930802360177 -829.8007608950138Q1595.3198518827558 -838.5405175685883 1587.649926751852 -848.1069339923561Q1579.9800016209483 -857.6733504161239 1579.9800016209483 -873.2329630479217Q1579.9800016209483 -893.5457242801785 1593.3496622666717 -904.5587296523154Q1606.719322912395 -915.5717350244522 1629.1053979471326 -915.5717350244522H2052.566612139344Q2099.3388232439756 -915.5717350244522 2099.3388232439756 -873.3396345973015Q2099.3388232439756 -857.1733788996935 2089.722339682281 -847.4136299565434Q2080.1058561205864 -837.6538810133934 2060.7927571609616 -829.8874340727925L2025.4388598650694 -820.7274430245161Q1985.2116935253143 -809.7541658431292 1977.7250284850597 -786.3443619683385Q1970.2383634448051 -762.9345580935478 1987.8115511089563 -716.1416161954403L2211.3001611307263 -126.74988524615765L2151.5822949185967 -93.50429932028055L2382.151077464223 -710.6887564957142Q2399.9775683507323 -758.4749129116535 2390.357549633831 -784.331244699657Q2380.7375309169292 -810.1875764876604 2342.5238541588187 -820.8674397692084L2304.5297810807824 -829.8874340727925Q2285.516698397696 -837.4538688063622 2276.560177400708 -847.1669474206865Q2267.6036564037204 -856.8800260350108 2267.6036564037204 -873.3396345973015Q2267.6036564037204 -893.559055171907 2280.8966532312334 -904.5653950981796Q2294.1896500587463 -915.5717350244522 2317.0957804322243 -915.5717350244522H2575.636440426111Q2598.72252766788 -915.5717350244522 2611.812180582434 -904.5587296523154Q2624.901833496988 -893.5457242801785 2624.901833496988 -873.2329630479217Q2624.901833496988 -858.7932877540588 2617.6185550950468 -848.8568851649761Q2610.3352766931057 -838.9204825758934 2591.2888118475676 -830.260739736259L2561.8214290365577 -821.7274145409465Q2542.4080655947328 -814.7008748278022 2526.84811116755 -792.5511474497616Q2511.2881567403674 -770.4014200717211 2489.981839194894 -715.6622981652617L2229.553460292518 -49.49166829884052Q2215.7071582078934 -15.345874838531017 2194.541138511151 -2.666166178882122Q2173.375118814409 10.013542480766773 2146.8890681937337 10.013542480766773Z M3159.5840852856636 -937.0781420916319Q3304.709737956524 -937.0781420916319 3414.752415366471 -875.7182609066367Q3524.7950927764177 -814.3583797216415 3586.6347782425582 -705.7886275239289Q3648.4744637086987 -597.2188753262162 3648.4744637086987 -454.9659138992429Q3648.4744637086987 -318.22603515535593 3584.9481884799898 -210.26290771365166Q3521.421913251281 -102.29978027194738 3409.0593147799373 -40.02662109211087Q3296.6967163085938 22.24653808772564 3149.291070148349 22.24653808772564Q3004.4654052704573 22.24653808772564 2894.4994059205055 -38.9666666649282Q2784.533406570554 -100.17987141758204 2722.800406895578 -208.7496236152947Q2661.067407220602 -317.31937581300735 2661.067407220602 -459.35899414122105Q2661.067407220602 -596.2655598968267 2724.4069868922234 -704.1120186373591Q2787.7465665638447 -811.9584773778915 2899.959156896919 -874.5183097347617Q3012.1717472299933 -937.0781420916319 3159.5840852856636 -937.0781420916319ZM3227.117263995111 -82.2439502030611Q3288.8656168580055 -92.6574275791645 3327.390226639807 -144.19796753674746Q3365.914836421609 -195.7385074943304 3376.9622981734574 -283.9990295469761Q3388.009759925306 -372.2595515996218 3366.1566927060485 -492.3796598315239Q3344.110248208046 -615.9599584937096 3302.349608153105 -695.3836690224707Q3260.5889680981636 -774.8073795512319 3204.6276607252657 -809.5109248794615Q3148.666353352368 -844.2144702076912 3084.097900390625 -833.0343302339315Q3021.942798666656 -822.7341878190637 2983.091525066644 -771.280278313905Q2944.240251466632 -719.8263688087463 2933.6294710300863 -631.8258296661079Q2923.0186905935407 -543.8252905234694 2944.4850927740335 -422.90528808534145Q2966.778205566108 -300.1583593785763 3008.8455436192453 -220.61798014864326Q3050.9128816723824 -141.07760091871023 3107.1342024728656 -106.40070109814405Q3163.355523273349 -71.72380127757788 3227.117263995111 -82.2439502030611Z M4089.1802115887403 -512.4922298118472Q4089.1802115887403 -653.7850740551949 4128.373562417924 -748.2882633469999Q4167.5669132471085 -842.7914526388049 4231.8068265765905 -890.1414750181139Q4296.046739906073 -937.4914973974228 4371.073092445731 -937.4914973974228Q4457.145795896649 -937.4914973974228 4504.848789874464 -885.2554223649204Q4552.551783852279 -833.019347332418 4552.551783852279 -735.274302572012Q4552.551783852279 -650.6300634741783 4517.309395343065 -609.4211242645979Q4482.067006833851 -568.2121850550175 4426.0485384091735 -568.2121850550175Q4369.803432613611 -568.2121850550175 4340.924138993025 -597.4415336064994Q4312.044845372438 -626.6708821579814 4311.484858393669 -679.5764713510871L4311.2048649042845 -714.3027180954814Q4310.904877111316 -745.1230338513851 4297.177991531789 -759.91980997473Q4283.451105952263 -774.7165860980749 4255.337282709777 -774.7165860980749Q4221.156377762556 -774.7165860980749 4190.582111813128 -746.3926293924451Q4160.0078458637 -718.0686726868153 4140.93053914234 -661.1008687317371Q4121.853232420981 -604.133064776659 4121.853232420981 -518.0115079730749ZM4109.9937906861305 -874.0059757456183 4121.853232420981 -633.5177888944745V-163.19659017771482Q4121.853232420981 -134.41706055402756 4132.599902749062 -118.77723063901067Q4143.346573077142 -103.13740072399378 4168.639734700322 -99.09747315198183L4250.193518064916 -87.1175569742918Q4272.10640950501 -83.87098226696253 4282.139565836638 -72.1746272854507Q4292.172722168267 -60.478272303938866 4292.172722168267 -42.298750817775726Q4292.172722168267 -22.699332684278488 4279.153067626059 -11.349666342139244Q4266.133413083851 0.0 4241.4140250608325 0.0H3804.6126106753945Q3780.5999023392797 0.0 3767.5768998153508 -11.326338298618793Q3754.553897291422 -22.652676597237587 3754.553897291422 -42.232100427150726Q3754.553897291422 -57.871726892888546 3763.087130934 -68.42811564728618Q3771.620364576578 -78.98450440168381 3788.200158685446 -86.74425537884235L3825.2812345325947 -96.15091472119093Q3842.6747786402702 -102.30414877086878 3850.8515584245324 -116.18734172359109Q3859.0283382087946 -130.0705346763134 3859.0283382087946 -160.66328939795494V-705.0764103084803Q3859.0283382087946 -730.9159553945065 3851.5683898851275 -741.9791357330978Q3844.1084415614605 -753.0423160716891 3828.281791985035 -756.9821459874511L3776.9799650013447 -760.2219921797514Q3761.3935034126043 -765.6617610603571 3753.5202933698893 -774.9515340104699Q3745.647083327174 -784.2413069605827 3745.647083327174 -798.3875968381763Q3745.647083327174 -814.5604833960533 3755.910182286054 -825.8701916486025Q3766.1732812449336 -837.1798999011517 3790.079383134842 -845.6596573889256L3985.769977197051 -909.2518383786082Q4017.2224747613072 -921.031486004591 4035.9220556542277 -926.3280179873109Q4054.6216365471482 -931.6245499700308 4067.034682609141 -931.6245499700308Q4085.9210058525205 -931.6245499700308 4096.347472324967 -918.5848400890827Q4106.773938797414 -905.5451302081347 4109.9937906861305 -874.0059757456183Z" fill="#2F5A3C"/></svg></h1>
+    <p class="status" id="authLead">Sign in to see your garden.</p>
+    <div class="seg" role="tablist">
+      <button data-auth="login" aria-pressed="true">Sign in</button>
+      <button data-auth="signup" aria-pressed="false">Create account</button>
+    </div>
+    <div class="field" id="inviteField" hidden>
+      <label for="aInvite">Invite code or link</label>
+      <input id="aInvite" autocapitalize="characters" autocomplete="off" spellcheck="false">
+      <span class="hint">An invite code, or the link a friend sent you. Setting Alvor up for the first time? Use your APP_KEY.</span>
+    </div>
+    <div class="field"><label for="aEmail">Email</label><input id="aEmail" type="email" autocapitalize="none" autocomplete="email" spellcheck="false"></div>
+    <div class="field" id="userField" hidden><label for="aUser">@username</label><input id="aUser" autocapitalize="none" autocomplete="username" spellcheck="false"><span class="hint">What friends will find you by: 3 to 24 letters, numbers, dots or dashes.</span></div>
+    <div class="field"><label for="aPass">Password</label><input id="aPass" type="password" autocomplete="current-password"><span class="hint" id="passHint" hidden>At least 8 characters.</span></div>
+    <button class="btn primary" id="authGo" style="width:100%">Sign in</button>
+    <p class="status" id="authMsg" role="alert"></p>
+  </div>
+</div>
+
+<nav class="dial" id="dial" aria-label="Menu">
+  <div class="dial-fade" aria-hidden="true"></div>
+  <div class="dial-panel" aria-hidden="true"></div>
+  <div class="dial-inner">
+    <button class="dial-btn" data-tab="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/><circle cx="12" cy="15" r="1.2" fill="currentColor"/></svg><span>Today</span></button>
+    <button class="dial-add" id="addBtn" aria-label="Add plant"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M13 28V17"/><path d="M13 17C13 11 9 8.5 4 9c0 5 3.5 8 9 8zM13 14.5c0-5 3.8-8 9.5-8 0 5-3.8 8-9.5 8z" fill="currentColor" fill-opacity=".9"/><path d="M24 20v8M20 24h8"/></svg></button>
+    <button class="dial-btn" data-tab="plants"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/></svg><span>Plants</span></button>
+  </div>
+</nav>
+
+<dialog id="dlg">
+  <div class="dlg-h"><h2 id="dlgTitle">Add plant</h2><button class="btn small" id="dlgClose">Close</button></div>
+  <div class="dlg-b">
+    <div class="photos">
+      <div class="gallery" id="gallery"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn small primary" id="takePhoto">Take a photo</button>
+        <button class="btn small" id="addPhoto">From gallery</button>
+      </div>
+      <input type="file" id="photoFile" accept="image/*" multiple hidden>
+      <input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
+    </div>
+    <div class="field"><label for="fName">Name</label><input id="fName" placeholder="e.g. Big banana by the pond"></div>
+    <div class="field"><label for="fSpecies">Species</label><input id="fSpecies" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Start typing, e.g. Musa basjoo"><span class="hint">Pick one from the list to fill in the genus, cold limit and watering.</span></div>
+    <datalist id="presetList"></datalist>
+    <div class="field"><label for="fGenus">Genus</label><input id="fGenus" autocapitalize="words" placeholder="e.g. Musa"></div>
+    <div class="preset-note" id="presetNote" hidden></div>
+    <div class="field"><label for="fPattern">Where it lives through the year</label>
+      <select id="fPattern">
+        <option value="indoor">Inside all year</option>
+        <option value="outdoor">Outside all year</option>
+        <option value="mover">Outside in summer, inside in winter</option>
+        <option value="greenhouse">Outside in summer, greenhouse in winter</option>
+      </select></div>
+    <div class="field"><label>Where it is now</label><div id="fZonePick" class="picker"></div></div>
+    <div class="row3">
+      <div class="field"><label for="fMin">Lowest °C it takes</label><input id="fMin" type="number" step="0.5"></div>
+      <div class="field"><label for="fWs">Water every (summer)</label><input id="fWs" type="number" min="1"><span class="hint">days</span></div>
+      <div class="field"><label for="fWw">Water every (winter)</label><input id="fWw" type="number" min="1"><span class="hint">days</span></div>
+    </div>
+    <div class="field"><label for="fLast">Last watered</label><input id="fLast" type="date"></div>
+    <div class="field"><label for="fNotes">Notes</label><textarea id="fNotes" rows="3"></textarea></div>
+    <div class="field" id="plantHistBox"><label>History</label><div class="p-hist" id="plantHist"></div></div>
+  </div>
+  <div class="dlg-f">
+    <button class="btn danger" id="dlgDelete">Delete</button>
+    <button class="btn primary" id="dlgSave">Save plant</button>
+  </div>
+</dialog>
+
+<dialog id="wiz">
+  <div class="dlg-h"><div><div class="steps" id="wizSteps"></div><h2 id="wizTitle">Add a plant</h2></div><button class="btn small" id="wizClose">Close</button></div>
+  <div class="dlg-b" id="wizBody"></div>
+  <div class="dlg-f"><button class="btn" id="wizBack">Back</button><button class="btn primary" id="wizNext">Next</button></div>
+  <input type="file" id="wizFile" accept="image/*" multiple hidden>
+  <input type="file" id="wizCam" accept="image/*" capture="environment" hidden>
+</dialog>
+
+<dialog id="moveDlg">
+  <div class="dlg-h"><h2 id="moveTitle">Move</h2><button class="btn small" id="moveClose">Close</button></div>
+  <div class="dlg-b"><div class="zone-pick" id="zonePick"></div></div>
+</dialog>
+
+<dialog id="viewer">
+  <img id="viewerImg" alt="">
+  <div class="dlg-f"><button class="btn danger" id="viewerDelete">Delete photo</button><span id="viewerDate" style="align-self:center;color:var(--muted)"></span><button class="btn" id="viewerClose">Close</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="alerts.js"></script>
+<script src="species.js"></script>
+<script src="supabase.js"></script>
+<script>
+"use strict";
+const KEY = "garden-tracker-v1";
+const GA = window.GardenAlerts;
+const {PRESETS} = GA;
+const SV = (inner, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" ${extra}>${inner}</svg>`;
+const ICON = {
+  house:SV('<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/>'),
+  porch:SV('<path d="M2.5 9.5 12 5l9.5 4.5"/><path d="M4.5 9v11M19.5 9v11"/><path d="M3 20h18"/><path d="M9 20v-3.5h6V20"/>'),
+  outside:SV('<path d="M12 21v-6"/><path d="M12 15c-4.5 0-6.5-3-5.5-6.2C7.3 6 9.5 4 12 4s4.7 2 5.5 4.8c1 3.2-1 6.2-5.5 6.2z"/><path d="M4 21h16"/>'),
+  greenhouse:SV('<path d="M3 21V10l9-6 9 6v11z"/><path d="M12 4v17M3 14.5h18M7.5 7v14M16.5 7v14"/>'),
+  balcony:SV('<path d="M3 13h18M3 13v8M21 13v8M3 21h18M7.5 13v8M12 13v8M16.5 13v8"/><path d="M12 13V9"/><path d="M12 10c-1.3-2.6-3.8-3-5-2.2.7 2 3 3 5 2.2zM12 10c1.3-2.6 3.8-3 5-2.2-.7 2-3 3-5 2.2z"/>'),
+  window:SV('<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M12 3v18M5 12h14"/>'),
+  low:SV('<path d="M19.5 14.5A7.5 7.5 0 1 1 9.5 4.5a6 6 0 0 0 10 10z"/>'),
+  cabinet:SV('<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M5 9h14M5 15h14"/><path d="M8 6h8"/>'),
+  sun:SV('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/>'),
+  partial:SV('<circle cx="9" cy="9" r="3.2"/><path d="M9 2.5v1.3M2.5 9h1.3M4.4 4.4l.9.9M13.6 4.4l-.9.9"/><path d="M8.5 19h9a3.3 3.3 0 0 0 .4-6.6 4.5 4.5 0 0 0-8.4 1.3A2.7 2.7 0 0 0 8.5 19z"/>'),
+  shade:SV('<path d="M12 21v-5"/><path d="M12 16c-5 0-7-3.2-6-6.5C6.8 6.3 9.2 4 12 4s5.2 2.3 6 5.5c1 3.3-1 6.5-6 6.5z"/><path d="M8 21h8" stroke-dasharray="1.5 2"/>'),
+  pot:SV('<path d="M6 12h12l-1.6 9H7.6z"/><path d="M12 12V7"/><path d="M12 8.5C10.5 5.5 7.5 5 6 6c.8 2.4 3.8 3.5 6 2.5zM12 8.5c1.5-3 4.5-3.5 6-2.5-.8 2.4-3.8 3.5-6 2.5z"/>'),
+  ground:SV('<path d="M2.5 20h19"/><path d="M12 20v-7"/><path d="M12 14.5C10 10.5 6 10 4.5 11.5c1 3 5 4.5 7.5 3zM12 13c2-4 6-4.5 7.5-3-1 3-5 4.5-7.5 3z"/>'),
+  leaf:SV('<path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/>'),
+  sprout:SV('<path d="M12 21v-8"/><path d="M12 13C12 8 8.5 6 4.5 6.5 4.5 10.5 7.5 13 12 13zM12 11c0-4 3-6.5 7.5-6.5 0 4-3 6.5-7.5 6.5z"/>'),
+  calendar:SV('<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/><circle cx="12" cy="15" r="1.2" fill="currentColor"/>'),
+  clock:SV('<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4.2h4.2"/><path d="M12 7.5V12l3 2"/>'),
+  gear:SV('<circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.6 2.3 2.8-.5.5 2.8 2.3 1.6-1.2 2.5 1.2 2.5-2.3 1.6-.5 2.8-2.8-.5L12 21.2l-1.6-2.3-2.8.5-.5-2.8-2.3-1.6L6 12.5 4.8 10l2.3-1.6.5-2.8 2.8.5z"/>'),
+  plus:SV('<path d="M12 5v14M5 12h14"/>'),
+  drop:SV('<path d="M12 3.5s6 6.4 6 10.6a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5z"/>'),
+  snow:SV('<path d="M12 2.5v19M3.8 7.2l16.4 9.6M3.8 16.8l16.4-9.6"/><path d="M9.5 3.8 12 6l2.5-2.2M9.5 20.2 12 18l2.5 2.2"/>'),
+  heat:SV('<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a3.5 3.5 0 1 0 4 0z"/><path d="M12 8v8"/><path d="M18 5.5h2.5M18 9h2.5"/>'),
+  wind:SV('<path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 17h7"/>'),
+  move:SV('<path d="M7 7h11l-3-3M17 17H6l3 3"/>'),
+  list:SV('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/>'),
+  grid:SV('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
+  back:SV('<path d="M15 5l-7 7 7 7"/>'),
+  pin:SV('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>')
+};
+const AREAS = {
+  house:{label:"House", hint:"Inside the house", zones:["house-window","house-low","house-cabinet"]},
+  porch:{label:"Porch", hint:"Covered, rain doesn't reach", zones:["porch-partial","porch-shade"]},
+  outside:{label:"Outside", hint:"In the open garden", zones:["out-sun","out-partial","out-shade"]},
+  greenhouse:{label:"Greenhouse", hint:"Sheltered, a few degrees warmer", zones:["greenhouse"]},
+  balcony:{label:"Balcony", hint:"Outside on the balcony", zones:["balc-sun","balc-partial","balc-shade"]}
+};
+const ALL_AREAS = ["house","balcony","porch","outside","greenhouse"];
+const isApt = () => state.settings.home === "apartment";
+const areaOrder = () => isApt() ? ["house","balcony"] : ["house","porch","outside","greenhouse"];
+const areaLabel = a => a === "house" && isApt() ? "Inside" : AREAS[a].label;
+const areaHint = a => a === "house" && isApt() ? "Inside the apartment" : AREAS[a].hint;
+function defaultZone(pattern){ return isApt() ? (pattern === "indoor" ? "house-window" : "balc-sun") : DEFAULT_ZONE[pattern]; }
+function defaultPlanting(pattern){ return isApt() ? "pot" : DEFAULT_PLANTING[pattern]; }
+function patternOptions(){
+  return isApt()
+    ? `<option value="indoor">Inside all year</option><option value="outdoor">On the balcony all year</option><option value="mover">Balcony in summer, inside in winter</option>`
+    : `<option value="indoor">Inside all year</option><option value="outdoor">Outside all year</option><option value="mover">Outside in summer, inside in winter</option><option value="greenhouse">Outside in summer, greenhouse in winter</option>`;
+}
+const ZONES = {
+  "house-window": {area:"house", light:"window", icon:"window", label:"By a window", short:"Window", hint:"Inside, in good light"},
+  "house-low":    {area:"house", light:"low", icon:"low", label:"Low light", short:"Low light", hint:"Inside, away from the windows"},
+  "house-cabinet":{area:"house", light:"cabinet", icon:"cabinet", label:"Grow cabinet", short:"Grow cabinet", hint:"Under grow lights"},
+  "porch-partial":{area:"porch", light:"partial", icon:"partial", label:"Porch, partial sun", short:"Partial sun", hint:"Some direct sun during the day"},
+  "porch-shade":  {area:"porch", light:"shade", icon:"shade", label:"Porch, shade", short:"Shade", hint:"Little or no direct sun"},
+  "out-sun":      {area:"outside", light:"sun", icon:"sun", label:"Outside, sun", short:"Sun", hint:"Sun most of the day"},
+  "out-partial":  {area:"outside", light:"partial", icon:"partial", label:"Outside, partial sun", short:"Partial sun", hint:"Sun for part of the day"},
+  "out-shade":    {area:"outside", light:"shade", icon:"shade", label:"Outside, shade", short:"Shade", hint:"Mostly in shade"},
+  "greenhouse":   {area:"greenhouse", light:null, icon:"greenhouse", label:"Greenhouse", short:"Greenhouse", hint:"Sheltered, a few degrees warmer"},
+  "balc-sun":     {area:"balcony", light:"sun", icon:"sun", label:"Balcony, sun", short:"Sun", hint:"Sun most of the day"},
+  "balc-partial": {area:"balcony", light:"partial", icon:"partial", label:"Balcony, partial sun", short:"Partial sun", hint:"Sun for part of the day"},
+  "balc-shade":   {area:"balcony", light:"shade", icon:"shade", label:"Balcony, shade", short:"Shade", hint:"Mostly in shade"}
+};
+const ZONE_ORDER = Object.keys(ZONES);
+const DEFAULT_ZONE = {indoor:"house-window", outdoor:"out-sun", mover:"out-sun", greenhouse:"out-sun"};
+const DEFAULT_PLANTING = {indoor:"pot", outdoor:"ground", mover:"pot", greenhouse:"pot"};
+const areaOf = z => (ZONES[z] || {}).area || z;
+const zi = z => `<span class="zi a-${areaOf(z)}">${ICON[(ZONES[z] || {}).icon || z] || ""}</span>`;
+const canGround = z => ZONES[z] && (ZONES[z].area === "outside" || ZONES[z].area === "greenhouse");
+const zoneLabel = p => ZONES[p.zone].label + (canGround(p.zone) ? (p.planting === "ground" ? ", in the ground" : ", in a pot") : "");
+const OLD_ZONES = {window:"house-window", shade:"house-low", covered:"porch-partial", pots:"out-sun", potsShade:"out-shade", ground:"out-sun"};
+function zoneFromOld(p){
+  if(OLD_ZONES[p.zone]) return OLD_ZONES[p.zone];
+  if(p.current === "inside") return "house-window";
+  if(p.current === "greenhouse") return "greenhouse";
+  return p.rainCounts === false ? "porch-partial" : "out-sun";
+}
+/* The alert engine reads current / planting / rainCounts / sun, so keep them in step with the spot. */
+function applyZone(p, z, planting){
+  const Z = ZONES[z];
+  p.zone = z; p.area = Z.area; p.light = Z.light;
+  p.current = Z.area === "house" ? "inside" : Z.area === "greenhouse" ? "greenhouse" : "outside";
+  p.planting = canGround(z) ? (planting || p.planting || "pot") : "pot";
+  p.rainCounts = Z.area === "outside" || (Z.area === "balcony" && !!state.settings.balconyRain);
+  p.sun = Z.light === "sun" ? "full" : Z.light === "partial" ? "partial" : "none";
+}
+function normalizePlants(){
+  state.plants.forEach(p => {
+    if(ZONES[p.zone]) applyZone(p, p.zone, p.planting);
+    else applyZone(p, zoneFromOld(p), p.zone === "ground" ? "ground" : p.planting);
+  });
+}
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const uid = () => (crypto.randomUUID ? crypto.randomUUID()
+  : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)));
+/* Plants made before the move to Supabase had short ids; the database needs UUIDs. Returns the old -> new map. */
+function upgradeIds(){
+  const map = {};
+  state.plants.forEach(p => { if(!UUID_RE.test(String(p.id))){ const n = uid(); map[p.id] = n; p.id = n; } });
+  if(!Object.keys(map).length) return null;
+  state.log.forEach(l => { if(map[l.plantId]) l.plantId = map[l.plantId]; });
+  saveLocal();
+  return map;
+}
+async function upgradePhotoIds(map){
+  if(!map) return;
+  try{ for(const ph of await idb.all()) if(map[ph.plantId]){ ph.plantId = map[ph.plantId]; await idb.put(ph); } }catch(e){}
+}
+const pad = n => String(n).padStart(2,"0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const parseDay = s => new Date(s + "T12:00:00");
+const daysBetween = (a,b) => Math.round((parseDay(b) - parseDay(a)) / 86400000);
+const dayName = s => s === today() ? "Today" : parseDay(s).toLocaleDateString("en-GB",{weekday:"short"});
+const longDay = s => s === today() ? "today" : parseDay(s).toLocaleDateString("en-GB",{weekday:"long"});
+const deg = n => `${Math.round(n)}°`;
+const presetFor = s => PRESETS.find(p => p.s.toLowerCase() === String(s||"").trim().toLowerCase());
+
+let state = load();
+normalizePlants();
+let currentTab = "today";
+let plantFilter = "all";
+let editingId = null;
+
+function defaults(){
+  return {
+    settings:{home:"house", balconyRain:false, place:"Lekunberri", lat:43.0014, lon:-1.8908, margin:2, gh:3, heat:32, wind:55, rain:5, morningHour:8, eveningHour:19, eveningCheck:true, tz:"Europe/Madrid"},
+    plants:[], log:[], weather:null, updatedAt:0
+  };
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return defaults();
+    const d = JSON.parse(raw), base = defaults();
+    return {...base, ...d, settings:{...base.settings, ...(d.settings||{})}};
+  }catch(e){ return defaults(); }
+}
+function saveLocal(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ toast("Couldn't save. Export a backup to be safe."); }
+}
+function save(){ state.updatedAt = Date.now(); saveLocal(); queueSync(); }
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2200);
+}
+function addLog(plantId, type, detail){
+  state.log.unshift({t:new Date().toISOString(), plantId, type, detail});
+  if(state.log.length > 2000) state.log.length = 2000;
+}
+
+/* ---------- Weather ---------- */
+async function fetchWeather(force){
+  const s = state.settings;
+  const fresh = state.weather && state.weather.current && (Date.now() - state.weather.at < 30*60*1000) && state.weather.lat === s.lat && state.weather.lon === s.lon;
+  if(fresh && !force){ render(); return; }
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}` +
+    `&current=temperature_2m,weather_code,is_day,cloud_cover` +
+    `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,weather_code,sunrise,sunset` +
+    `&past_days=7&forecast_days=8&timezone=auto`;
+  try{
+    const r = await fetch(url);
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    state.weather = {at:Date.now(), lat:s.lat, lon:s.lon, daily:j.daily, current:j.current};
+    saveLocal();
+  }catch(e){ toast("Couldn't load the forecast"); }
+  render();
+}
+const ctx = () => ({settings:state.settings, daily:state.weather && state.weather.daily, today:today(), month:new Date().getMonth()+1, mode:"full"});
+function wx(){ return state.weather ? GA.splitWeather(state.weather.daily, today()) : null; }
+const waterStatus = (p, W) => GA.waterStatus(p, W, ctx());
+const effMin = (p, d) => GA.effMin(p, d, state.settings);
+const coldLimit = p => GA.coldLimit(p, state.settings);
+const buildAlerts = () => GA.compute(state.plants, ctx());
+
+/* Weather codes (WMO) to a sky type */
+function sky(code){
+  if(code == null) return "cloudy";
+  if(code <= 1) return "clear";
+  if(code === 2) return "partly";
+  if(code === 3) return "cloudy";
+  if(code === 45 || code === 48) return "fog";
+  if((code >= 71 && code <= 77) || code === 85 || code === 86) return "snow";
+  if(code >= 95) return "storm";
+  return "rain";
+}
+const WSUN = '<g><circle cx="12" cy="12" r="4.6" fill="#F4C048"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.5 1.5M16.9 16.9l1.5 1.5M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5" stroke="#F4C048" stroke-width="1.8" stroke-linecap="round"/></g>';
+const WMOON = '<path d="M16.5 14.8A6.5 6.5 0 0 1 9.2 5.5a6.5 6.5 0 1 0 7.3 9.3z" fill="#E6D48F"/>';
+const WCLOUD = (x = 0, y = 0) => `<path transform="translate(${x} ${y})" d="M7.2 19h9.6a3.9 3.9 0 0 0 .5-7.8 5.4 5.4 0 0 0-10.4 1.2A3.3 3.3 0 0 0 7.2 19z" fill="#DCE4E8" stroke="#9FB0BA" stroke-width="1.3" stroke-linejoin="round"/>`;
+function wIcon(code, day = true){
+  const t = sky(code);
+  const body =
+    t === "clear" ? (day ? WSUN : WMOON) :
+    t === "partly" ? `<g transform="translate(-3 -3) scale(.8)">${day ? WSUN : WMOON}</g>${WCLOUD(1.5, 1)}` :
+    t === "cloudy" ? WCLOUD(0, -1) :
+    t === "fog" ? `${WCLOUD(0, -3)}<path d="M4 19.5h16M6 22h12" stroke="#9FB0BA" stroke-width="1.5" stroke-linecap="round"/>` :
+    t === "snow" ? `${WCLOUD(0, -4)}<g fill="#7FB0D8"><circle cx="8" cy="19.5" r="1.1"/><circle cx="12" cy="21.5" r="1.1"/><circle cx="16" cy="19.5" r="1.1"/></g>` :
+    t === "storm" ? `${WCLOUD(0, -4)}<path d="M12.5 15.5 10 19.5h3l-1.8 3.5" stroke="#E0A93A" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` :
+    `${WCLOUD(0, -4)}<path d="M8.5 18.5l-1 2.5M12.5 18.5l-1 2.5M16.5 18.5l-1 2.5" stroke="#6FA6D6" stroke-width="1.6" stroke-linecap="round"/>`;
+  return `<svg viewBox="0 0 24 24" class="wi" aria-hidden="true">${body}</svg>`;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  $("#placeName").textContent = state.settings.place || "Garden";
+  const w = state.weather, W = wx();
+  const cur = w && w.current;
+  if(cur && W && W.next.length){
+    const t = W.next[0];
+    $("#nowWx").innerHTML = `${wIcon(cur.weather_code, cur.is_day !== 0)}<div><b>${deg(cur.temperature_2m)}</b><small><span class="hi">H ${deg(t.max)}</span>  <span class="lo">L ${deg(t.min)}</span></small></div>`;
+    const at = new Date(w.at);
+    $("#nowLine").textContent = `Updated ${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  }else{
+    $("#nowWx").innerHTML = "";
+    $("#nowLine").textContent = w ? "Tap the weather to refresh" : "Loading forecast…";
+  }
+  const groups = state.plants.length ? buildAlerts() : [];
+  plantFlags = flagsFrom(groups);
+  renderForecast(W);
+  renderPlaces(W);
+  renderAlerts(groups);
+  renderPlants();
+  renderLog();
+}
+
+/* ---------- Forecast with warnings on the days ---------- */
+let fcOpen = null;
+function dayRisks(d){
+  const s = state.settings;
+  const frost = state.plants.filter(p => p.current !== "inside" && effMin(p, d) < coldLimit(p));
+  const heat = state.plants.filter(p => (p.current === "outside" && p.planting === "pot" &&
+      (p.sun === "full" ? d.max >= +s.heat : p.sun === "partial" ? d.max >= +s.heat + 3 : false)) ||
+    (p.current === "greenhouse" && d.max + 8 >= 35));
+  return {frost, heat};
+}
+function renderForecast(W){
+  const el = $("#forecast");
+  if(!W || !W.next.length){ el.innerHTML = `<p class="fc-empty">No forecast yet. Tap the weather at the top to try again.</p>`; $("#fcDetail").hidden = true; return; }
+  const codes = state.weather.daily.weather_code || [];
+  const idx0 = state.weather.daily.time.indexOf(W.next[0].date);
+  el.innerHTML = W.next.map((d, i) => {
+    const r = dayRisks(d);
+    const cls = r.frost.length ? "frost" : r.heat.length ? "heat" : "";
+    const badge = r.frost.length ? `<span class="fc-badge frost">${ICON.snow}</span>` : r.heat.length ? `<span class="fc-badge heat">${ICON.heat}</span>` : "";
+    return `<button class="fc-day ${cls} ${fcOpen === d.date ? "open" : ""}" data-fc="${d.date}" aria-label="${longDay(d.date)}, ${deg(d.max)} to ${deg(d.min)}${cls ? ", warning" : ""}">
+      ${badge}<span class="fc-dn">${i === 0 ? "Today" : parseDay(d.date).toLocaleDateString("en-GB", {weekday:"short"})}</span>
+      ${wIcon(codes[idx0 + i], true)}<b class="hi">${deg(d.max)}</b><small class="lo">${deg(d.min)}</small><small class="rn ${d.rain >= 0.1 ? "" : "dry"}">${d.rain >= 0.1 ? (d.rain < 10 ? (Math.round(d.rain * 10) / 10) : Math.round(d.rain)) : "–"}</small></button>`;
+  }).join("");
+  el.insertAdjacentHTML("afterbegin", `<div class="fc-lab" aria-hidden="true"><span class="fc-dn">&nbsp;</span><span class="fc-sp"></span><b class="hi">High</b><small class="lo">Low</small><small class="rn">Rain mm</small></div>`);
+  const det = $("#fcDetail");
+  const d = fcOpen && W.next.find(x => x.date === fcOpen);
+  if(!d){ det.hidden = true; return; }
+  const r = dayRisks(d), names = a => a.map(p => esc(p.name)).join(", ");
+  det.innerHTML = `<b>${longDay(d.date).replace(/^./, c => c.toUpperCase())}</b>` +
+    (r.frost.length ? `<p><span class="dot frost">${ICON.snow}</span>Down to ${deg(d.min)}, too cold for ${names(r.frost)}.</p>` : "") +
+    (r.heat.length ? `<p><span class="dot heat">${ICON.heat}</span>Up to ${deg(d.max)}, too hot for ${names(r.heat)}.</p>` : "");
+  det.hidden = false;
+}
+$("#forecast").addEventListener("click", e => {
+  const b = e.target.closest("[data-fc]"); if(!b) return;
+  const W = wx(), d = W && W.next.find(x => x.date === b.dataset.fc);
+  const r = d && dayRisks(d);
+  fcOpen = r && (r.frost.length || r.heat.length) && fcOpen !== b.dataset.fc ? b.dataset.fc : null;
+  renderForecast(W);
+});
+$("#nowWx").addEventListener("click", () => fetchWeather(true));
+
+/* ---------- Alert cards ---------- */
+const COLD = ["bringIn","toGh","ghProtect","potProtect","groundProtect"];
+function alertLook(g){
+  const n = g.items.length, plural = n === 1 ? "plant" : "plants";
+  if(COLD.includes(g.key)){
+    const worst = g.items.reduce((a, i) => i.t < a.t ? i : a, g.items[0]);
+    const when = (worst.why || "").split(",")[0];
+    const lead = {bringIn:`Bring ${n} ${plural} inside:`, toGh:`Move ${n} ${plural} to the greenhouse:`, ghProtect:g.text,
+      potProtect:`Shelter ${n === 1 ? "this pot" : `these ${n} pots`}:`, groundProtect:`Protect ${n} ${plural} in the ground:`}[g.key];
+    return {type:"frost", icon:"snow", label:g.level === "danger" ? "Frost alert" : "Frost watch",
+      title:g.level === "danger" ? "Frost is coming" : "A cold night ahead", chip:when, lead, tip:g.key === "potProtect" || g.key === "groundProtect" ? g.text : ""};
+  }
+  if(g.key === "heat" || g.key === "vent") return {type:"heat", icon:"heat", label:"Heat alert", title:g.key === "vent" ? "Open the greenhouse" : "A hot spell", lead:g.text};
+  if(g.key === "wind") return {type:"wind", icon:"wind", label:"Wind alert", title:"Strong gusts", lead:g.text};
+  if(g.key === "water") return {type:"water", icon:"drop", label:"Watering", title:`${n} ${plural} need${n === 1 ? "s" : ""} water`, lead:""};
+  if(g.key === "rainWill") return {type:"water", icon:"drop", label:"Watering", title:"Skip these, rain is coming", lead:g.text};
+  if(g.key === "goOut") return {type:"info", icon:"move", label:"Good news", title:"Safe to move outside", lead:g.text};
+  return {type:"info", icon:"move", label:"Heads-up", title:g.title, lead:g.text};
+}
+function renderAlerts(groups){
+  const el = $("#alerts");
+  if(!state.plants.length){
+    el.innerHTML = `<div class="acard t-info"><div class="a-ic">${ICON.sprout}</div><div class="a-main"><h3>Start with your plants</h3><p class="a-lead">Add each plant once. Alerts and watering reminders then appear here every day.</p></div><div class="a-act"><button class="btn primary" data-act="add">Add plant</button></div></div>`;
+    return;
+  }
+  if(!groups.length){
+    el.innerHTML = `<div class="acard t-calm"><div class="a-ic">${ICON.leaf}</div><div class="a-main"><span class="a-lab">All good</span><h3>Nothing to do today</h3><p class="a-lead">No plant needs water, and the next three days stay within what your plants can take.</p></div></div>`;
+    return;
+  }
+  el.innerHTML = groups.map(g => {
+    const L = alertLook(g), ids = g.items.map(i => i.p.id).join(",");
+    const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}">Mark as moved</button>`
+      : g.waterAll ? `<button class="btn primary" data-act="waterAll" data-ids="${ids}">Mark all watered</button>`
+      : `<button class="btn primary" data-act="seePlants" data-ids="${ids}">See plants</button>`;
+    return `<div class="acard t-${L.type}">
+      <div class="a-ic">${ICON[L.icon]}</div>
+      <div class="a-main">
+        <div class="a-top"><span class="a-lab">${esc(L.label)}</span>${L.chip ? `<span class="a-chip">${esc(L.chip)}</span>` : ""}</div>
+        <h3>${esc(L.title)}</h3>
+        ${L.lead ? `<p class="a-lead">${esc(L.lead)}</p>` : ""}
+        <ul>${g.items.map(i => `<li>${ICON.leaf}<span><span class="pn">${esc(i.p.name)}</span>${i.p.species && i.p.species !== i.p.name ? ` <i>(${esc(i.p.species)})</i>` : ""}<small>${esc(i.why)}</small></span></li>`).join("")}</ul>
+        ${L.tip ? `<p class="a-tip">${esc(L.tip)}</p>` : ""}
+      </div>
+      <div class="a-act">${btn}</div>
+    </div>`;
+  }).join("");
+}
+
+/* Per-plant status icons, from the same rules as the alerts */
+let plantFlags = {};
+function flagsFrom(groups){
+  const f = {};
+  const put = (id, k) => { (f[id] ||= new Set()).add(k); };
+  groups.forEach(g => g.items.forEach(i => {
+    const k = COLD.includes(g.key) ? "frost" : g.key === "heat" || g.key === "vent" ? "heat" : g.key === "wind" ? "wind"
+      : g.key === "water" ? "water" : g.key === "plan" || g.key === "goOut" ? "move" : null;
+    if(k) put(i.p.id, k);
+    if(g.move) put(i.p.id, "move");
+  }));
+  return f;
+}
+const FLAG_INFO = {frost:["snow","Frost risk"], heat:["heat","Too hot"], wind:["wind","Strong wind"], water:["drop","Needs water"], move:["move","Time to move"]};
+const flagIcons = id => [...(plantFlags[id] || [])].sort().map(k => `<span class="flag f-${k}" title="${FLAG_INFO[k][1]}" aria-label="${FLAG_INFO[k][1]}">${ICON[FLAG_INFO[k][0]]}</span>`).join("");
+
+/* ---------- The illustrated scene ---------- */
+/* Positions are % of the square picture. */
+/* Positions are % of the square picture. */
+const SCENES = {
+  house:{
+    img:["scene-day.webp","scene-night.webp"], alt:"Your house and garden",
+    hot:`<button class="hot" data-go="house" style="left:22%;top:6%;width:44%;height:46%" aria-label="House"></button>
+      <button class="hot" data-go="porch" style="left:1%;top:38%;width:36%;height:38%" aria-label="Porch"></button>
+      <button class="hot" data-go="greenhouse" style="left:72%;top:43%;width:27%;height:32%" aria-label="Greenhouse"></button>
+      <button class="hot base" data-go="outside" style="left:20%;top:50%;width:60%;height:48%" aria-label="Outside"></button>`,
+    views:{
+      overview:{s:1, cx:50, cy:50, pills:[{k:"house", at:[41,17]}, {k:"porch", at:[15,63]}, {k:"outside", at:[58,88]}, {k:"greenhouse", at:[86,42]}]},
+      outside:{s:1.6, cx:58, cy:68, pills:[{z:"out-sun", at:[55,84]}, {z:"out-partial", at:[42,64]}, {z:"out-shade", at:[64,51]}]},
+      porch:{s:2.1, cx:25, cy:55, pills:[{z:"porch-partial", at:[25,70]}, {z:"porch-shade", at:[13,50]}]},
+      house:{s:1, cx:50, cy:50, interior:true, pills:[{z:"house-window", at:[74,63]}, {z:"house-low", at:[23,62]}, {z:"house-cabinet", at:[45,27]}]}
+    },
+    title:{overview:"", outside:"Outside", porch:"The porch", house:"Inside the house"}
+  },
+  apartment:{
+    img:["apt-day.webp","apt-night.webp"], alt:"Your apartment and balcony",
+    hot:`<button class="hot" data-go="house" style="left:20%;top:4%;width:62%;height:44%" aria-label="Inside"></button>
+      <button class="hot base" data-go="balcony" style="left:3%;top:44%;width:94%;height:54%" aria-label="Balcony"></button>`,
+    views:{
+      overview:{s:1, cx:50, cy:50, pills:[{k:"house", at:[51,27]}, {k:"balcony", at:[51,80]}]},
+      balcony:{s:1.2, cx:50, cy:58, pills:[{z:"balc-sun", at:[25,64]}, {z:"balc-partial", at:[66,58]}, {z:"balc-shade", at:[77,43]}]},
+      house:{s:1, cx:50, cy:50, interior:true, pills:[{z:"house-window", at:[74,63]}, {z:"house-low", at:[23,62]}, {z:"house-cabinet", at:[45,27]}]}
+    },
+    title:{overview:"", balcony:"The balcony", house:"Inside"}
+  }
+};
+const sceneSet = () => SCENES[isApt() ? "apartment" : "house"];
+const SCENE_HINT = {overview:"Tap an area to look closer."};
+let sceneMode = "overview";
+function ensureScene(){
+  const el = $("#places");
+  const home = isApt() ? "apartment" : "house";
+  if(el.querySelector(".orb") && el.dataset.home === home) return;
+  el.dataset.home = home; sceneMode = "overview";
+  const SS = SCENES[home];
+  el.innerHTML = `<div class="scene-top"><button class="round-back" data-act="sceneBack" aria-label="Back to the whole garden">${ICON.back}</button><h2 id="sceneTitle"></h2></div>
+    <div class="orb" id="orb">
+      <div class="stage" id="stage">
+        <img class="img-day" src="${SS.img[0]}" alt="${SS.alt}" draggable="false">
+        <img class="img-night" src="${SS.img[1]}" alt="" draggable="false">
+        <img class="img-in" src="interior.webp" alt="Inside the house" draggable="false">
+        <div class="glow-cab"></div>
+        ${SS.hot}
+      </div>
+      <div class="fx-tint"></div><div class="fx-glow"></div><div class="fx-haze"></div><div class="fx-frost"></div><div class="fx-flash"></div>
+      <canvas class="fx" id="fx" aria-hidden="true"></canvas>
+      <div class="pills" id="pills"></div>
+    </div>
+    <p class="scene-hint" id="sceneHint"></p>`;
+  el.querySelector(".orb").addEventListener("click", e => {
+    const t = e.target.closest("[data-go],[data-pz]"); if(!t) return;
+    if(t.dataset.pz){ plantFilter = t.dataset.pz; showTab("plants"); renderPlants(); return; }
+    const go = t.dataset.go;
+    if(go === "greenhouse"){ plantFilter = "greenhouse"; showTab("plants"); renderPlants(); return; }
+    if(sceneMode === "overview") goScene(go);
+  });
+}
+function renderPlaces(W){
+  const el = $("#places");
+  if(!state.plants.length){ el.innerHTML = ""; return; }
+  ensureScene();
+  const SS = sceneSet(), S = SS.views[sceneMode] || SS.views.overview, orb = $("#orb"), stage = $("#stage");
+  const next3 = W ? W.next.slice(0,3) : [];
+  const risk = p => p.current !== "inside" && next3.some(d => effMin(p, d) < coldLimit(p));
+  const tx = 50 - Math.min(100 - 50 / S.s, Math.max(50 / S.s, S.cx)), ty = 50 - Math.min(100 - 50 / S.s, Math.max(50 / S.s, S.cy));
+  stage.style.transform = `scale(${S.s}) translate(${tx}%, ${ty}%)`;
+  stage.style.setProperty("--inv", 1 / S.s);
+  orb.classList.toggle("inside", !!S.interior);
+  orb.classList.toggle("zoomed", sceneMode !== "overview");
+  $("#places .scene-top").classList.toggle("show", sceneMode !== "overview");
+  $("#sceneTitle").textContent = SS.title[sceneMode] || "";
+  $("#sceneHint").textContent = SCENE_HINT[sceneMode] || "Tap a spot to see its plants.";
+  $("#pills").innerHTML = S.pills.map(pl => {
+    const list = state.plants.filter(p => pl.k ? p.area === pl.k : p.zone === pl.z);
+    const atRisk = list.some(risk);
+    const icon = pl.k ? pl.k : ZONES[pl.z].icon;
+    const label = pl.k ? areaLabel(pl.k) : ZONES[pl.z].short;
+    const attrs = pl.k ? `data-go="${pl.k}"` : `data-pz="${pl.z}"`;
+    const sx = 50 + S.s * (pl.at[0] - 50 + tx), sy = 50 + S.s * (pl.at[1] - 50 + ty);
+    return `<button class="pill ${pl.k ? "area" : "spot"} ${atRisk ? "risk" : ""} ${list.length ? "" : "empty"}" ${attrs} style="left:${sx.toFixed(2)}%;top:${sy.toFixed(2)}%" aria-label="${esc(label)}: ${list.length} plants">
+      ${ICON[icon]}${pl.k ? "" : `<span>${esc(label)}</span>`}<b>${list.length}</b></button>`;
+  }).join("");
+  applySky();
+}
+function goScene(mode){
+  if(mode === sceneMode) return;
+  sceneMode = mode;
+  renderPlaces(wx());
+}
+
+/* Weather on the picture: day/night, sun, cloud, rain, snow, fog, frost */
+let fxState = {type:"none", parts:[], raf:0, flashAt:0};
+const reduceMotion = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+function skyPhase(){
+  const w = state.weather, cur = w && w.current;
+  if(!cur) return "day";
+  const d = w.daily, i = d.time.indexOf(today());
+  const now = Date.now(), near = t => t && Math.abs(now - new Date(t).getTime()) < 30 * 60000;
+  if(i >= 0 && d.sunrise && (near(d.sunrise[i]) || near(d.sunset[i]))) return "dusk";
+  return cur.is_day === 0 ? "night" : "day";
+}
+function applySky(){
+  const orb = $("#orb"); if(!orb) return;
+  const cur = state.weather && state.weather.current;
+  const type = cur ? sky(cur.weather_code) : "partly";
+  const phase = skyPhase();
+  orb.className = orb.className.replace(/\b(sky-\S+|ph-\S+|frosty)\b/g, "").trim();
+  orb.classList.add("sky-" + type, "ph-" + phase);
+  if(cur && cur.temperature_2m <= 0 && type !== "snow") orb.classList.add("frosty");
+  const want = orb.classList.contains("inside") ? "none" : type === "rain" || type === "storm" ? "rain" : type === "snow" ? "snow" : "none";
+  startFx(want, type === "storm");
+}
+function startFx(type, storm){
+  const cv = $("#fx"); if(!cv) return;
+  const sameType = fxState.type === type;
+  fxState.type = type; fxState.storm = storm;
+  const box = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  if(!box.width) return;
+  cv.width = box.width * dpr; cv.height = box.height * dpr;
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const W = box.width, H = box.height;
+  if(!sameType || !fxState.parts.length){
+    const n = type === "rain" ? 70 : type === "snow" ? 45 : 0;
+    fxState.parts = Array.from({length:n}, () => ({x:Math.random() * W, y:Math.random() * H, v:type === "rain" ? 6 + Math.random() * 4 : .5 + Math.random() * .8, r:type === "snow" ? 1.4 + Math.random() * 2 : 0, ph:Math.random() * 6}));
+  }
+  cancelAnimationFrame(fxState.raf);
+  const draw = () => {
+    g.clearRect(0, 0, W, H);
+    if(fxState.type === "rain"){
+      g.strokeStyle = skyPhase() === "night" ? "rgba(205,225,245,.7)" : "rgba(105,135,170,.5)"; g.lineWidth = 1.3; g.beginPath();
+      fxState.parts.forEach(p => { g.moveTo(p.x, p.y); g.lineTo(p.x - 2, p.y + 11); });
+      g.stroke();
+    }else if(fxState.type === "snow"){
+      g.fillStyle = "rgba(255,255,255,.92)";
+      fxState.parts.forEach(p => { g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); });
+    }
+  };
+  const step = t => {
+    fxState.parts.forEach(p => {
+      if(fxState.type === "rain"){ p.y += p.v; p.x -= p.v * .18; }
+      else { p.y += p.v; p.x += Math.sin(t / 900 + p.ph) * .35; }
+      if(p.y > H + 12){ p.y = -12; p.x = Math.random() * (W + 20); }
+    });
+    if(fxState.storm && t > fxState.flashAt){ fxState.flashAt = t + 7000 + Math.random() * 9000; const f = document.querySelector(".fx-flash"); if(f){ f.classList.remove("on"); void f.offsetWidth; f.classList.add("on"); } }
+    draw();
+    fxState.raf = requestAnimationFrame(step);
+  };
+  const visible = currentTab === "today" && !document.hidden;
+  if(type === "none"){ g.clearRect(0, 0, W, H); return; }
+  if(reduceMotion() || !visible) draw(); else fxState.raf = requestAnimationFrame(step);
+}
+document.addEventListener("visibilitychange", () => { if(document.hidden) cancelAnimationFrame(fxState.raf); else applySky(); });
+window.addEventListener("resize", () => { fxState.parts = []; applySky(); });
+setInterval(() => { if(!document.hidden && currentTab === "today") applySky(); }, 5 * 60000);
+
+/* ---------- Plants: list or grid ---------- */
+let plantView = (() => { try{ return localStorage.getItem("garden-view") || "list"; }catch(e){ return "list"; } })();
+let idsFilter = null;
+function renderPlants(){
+  const counts = {all:state.plants.length};
+  ALL_AREAS.forEach(a => counts[a] = state.plants.filter(p => p.area === a).length);
+  const chips = ["all", ...ALL_AREAS.filter(a => counts[a])];
+  if(ZONES[plantFilter] && plantFilter !== "greenhouse") chips.push(plantFilter);
+  $("#chips").innerHTML = (idsFilter ? `<button class="chip" data-act="clearIds" aria-pressed="true">From the alert: ${idsFilter.length} ✕</button>` : "") +
+    chips.map(k => {
+      const label = k === "all" ? "All" : AREAS[k] ? areaLabel(k) : ZONES[k].label;
+      const n = k === "all" ? counts.all : AREAS[k] ? counts[k] : state.plants.filter(p => p.zone === k).length;
+      return `<button class="chip" data-act="filter" data-f="${k}" aria-pressed="${!idsFilter && plantFilter === k}">${label} ${n}</button>`;
+    }).join("");
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === plantView));
+  const q = $("#search").value.trim().toLowerCase();
+  const W = wx();
+  const match = p => idsFilter ? idsFilter.includes(p.id) : plantFilter === "all" || p.area === plantFilter || p.zone === plantFilter;
+  const list = state.plants.filter(p => match(p) && (!q || [p.name, p.species, p.genus, p.notes].join(" ").toLowerCase().includes(q)));
+  const el = $("#plantList");
+  el.className = "plist v-" + plantView;
+  if(!state.plants.length){
+    el.innerHTML = `<div class="empty"><h3>No plants yet</h3><p>Tap Add plant and take a photo; the app suggests the species for you.</p><button class="btn primary" data-act="add">Add plant</button></div>`;
+    return;
+  }
+  if(!list.length){ el.innerHTML = `<p style="color:var(--muted)">No plants match. Clear the search or pick another filter.</p>`; return; }
+  const by = Object.fromEntries(ALL_AREAS.map(a => [a, []]));
+  list.sort((a, b) => a.name.localeCompare(b.name)).forEach(p => by[p.area].push(p));
+  el.innerHTML = ALL_AREAS.filter(a => by[a].length).map(a => `
+    <h2 class="group-h">${zi(a)} ${areaLabel(a)} <small>${by[a].length}</small></h2>
+    <div class="pgroup">${by[a].map(p => plantView === "grid" ? plantCard(p, W) : plantRow(p, W)).join("")}</div>`).join("");
+}
+function thumbHtml(p){
+  const ph = latestPhoto(p.id);
+  return ph ? `<img src="${ph.data}" alt="">` : `<span class="initial a-${p.area}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`;
+}
+function wateredText(p, W){
+  const st = waterStatus(p, W);
+  return st.days === null ? "never watered" : st.byRain ? `rain ${st.days}d ago` : `watered ${st.days}d ago`;
+}
+function plantRow(p, W){
+  return `<div class="plant">
+    <button class="thumb" data-act="edit" data-id="${p.id}" aria-label="Open ${esc(p.name)}">${thumbHtml(p)}</button>
+    <div class="pmain"><button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}</button>
+      ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
+      <div class="where">${zi(p.zone)}<span>${esc(zoneLabel(p))}</span></div></div>
+    <div class="flags">${flagIcons(p.id)}</div>
+    <div class="facts"><span class="tag">takes ${deg(p.minTemp)}</span><span class="tag">${wateredText(p, W)}</span>
+      <span class="acts"><button class="btn small" data-act="move" data-id="${p.id}">Move</button><button class="btn small primary" data-act="water" data-id="${p.id}">Watered</button></span></div>
+  </div>`;
+}
+function plantCard(p, W){
+  return `<div class="pcard">
+    <button class="pc-photo" data-act="edit" data-id="${p.id}" aria-label="Open ${esc(p.name)}">${thumbHtml(p)}<span class="pc-flags">${flagIcons(p.id)}</span></button>
+    <div class="pc-body">
+      <button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}</button>
+      ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
+      <div class="where">${zi(p.zone)}<span>${esc(ZONES[p.zone].short)}</span></div>
+      <div class="pc-acts"><button class="icon-btn" data-act="move" data-id="${p.id}" aria-label="Move ${esc(p.name)}">${ICON.move}</button><button class="icon-btn water" data-act="water" data-id="${p.id}" aria-label="Mark ${esc(p.name)} watered">${ICON.drop}</button></div>
+    </div>
+  </div>`;
+}
+document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
+  plantView = b.dataset.view; try{ localStorage.setItem("garden-view", plantView); }catch(e){}
+  renderPlants();
+}));
+
+function renderLog(){
+  const el = $("#logList");
+  if(!state.log.length){ el.innerHTML = `<div class="empty"><h3>No history yet</h3><p>Every watering and every move you log shows up here.</p></div>`; return; }
+  const names = Object.fromEntries(state.plants.map(p => [p.id, p.name]));
+  let html = "", lastDay = "";
+  for(const e of state.log.slice(0,300)){
+    const d = new Date(e.t), key = ymd(d);
+    if(key !== lastDay){ html += `<div class="log-day">${d.toLocaleDateString("en-GB",{weekday:"long", day:"numeric", month:"long"})}</div>`; lastDay = key; }
+    html += `<div class="log-row"><span>${esc(names[e.plantId] || "Deleted plant")}</span><span>${esc(e.detail)}</span></div>`;
+  }
+  el.innerHTML = html;
+}
+
+/* ---------- Actions ---------- */
+function water(ids){
+  const t = today();
+  ids.forEach(id => { const p = state.plants.find(x => x.id === id); if(p){ p.lastWatered = t; addLog(id,"water","Watered"); }});
+  save(); render(); toast(ids.length > 1 ? `${ids.length} plants watered` : "Watered");
+}
+function setZone(p, z, planting){
+  planting = canGround(z) ? (planting || p.planting || "pot") : "pot";
+  if(!ZONES[z] || (p.zone === z && p.planting === planting)) return false;
+  const old = p.zone, oldPlant = p.planting;
+  if(ZONES[old] && ZONES[old].area === "house") p.lastInside = old;
+  if(ZONES[old] && (ZONES[old].area === "outside" || ZONES[old].area === "balcony")) p.lastOutside = old;
+  applyZone(p, z, planting);
+  let text = `Moved to: ${ZONES[z].label}`;
+  if(planting === "ground" && oldPlant !== "ground") text = `Planted in the ground (${ZONES[z].short.toLowerCase()})`;
+  else if(oldPlant === "ground" && planting !== "ground") text = `Dug up, now: ${ZONES[z].label}`;
+  addLog(p.id, "move", text);
+  return true;
+}
+/* From alert buttons: "inside", "greenhouse" or "outside"; goes back to the plant's usual spot. */
+function moveGroup(ids, to){
+  ids.forEach(id => {
+    const p = state.plants.find(x => x.id === id); if(!p) return;
+    const z = to === "inside" ? (p.lastInside || "house-window") : to === "greenhouse" ? "greenhouse" : (p.lastOutside || (isApt() ? "balc-sun" : "out-sun"));
+    setZone(p, z, "pot");
+  });
+  save(); render(); toast("Moved");
+}
+
+/* A two-step spot picker: area, then light (and pot or ground outside). Used by Move, Add and Edit. */
+/* The spot picker follows the way people think: where roughly, then the details, then pot or ground only where both are possible. */
+const TOPS = {
+  inside:{label:"Inside", icon:"house", cls:"house", lead:"Where inside?"},
+  outside:{label:"Outside", icon:"outside", cls:"outside", lead:"Where outside?"},
+  greenhouse:{label:"Greenhouse", icon:"greenhouse", cls:"greenhouse", lead:""},
+  balcony:{label:"Balcony", icon:"balcony", cls:"balcony", lead:"Which part of the balcony?"}
+};
+const topOf = area => area === "house" ? "inside" : area === "porch" ? "outside" : area || null;
+const topList = () => isApt() ? ["inside","balcony"] : ["inside","outside","greenhouse"];
+function pickerHtml(sel){
+  const top = sel.top || topOf(sel.area);
+  const tops = topList();
+  const topBtn = t => `<button class="area-opt ${top === t ? "on" : ""}" data-ptop="${t}" aria-pressed="${top === t}"><span class="zi a-${TOPS[t].cls}">${ICON[TOPS[t].icon]}</span><b>${TOPS[t].label}</b></button>`;
+  const opt = z => `<button class="zone-opt" data-pzone="${z}" aria-pressed="${sel.zone === z}">${zi(z)}<span><b>${ZONES[z].short}</b><small>${ZONES[z].hint}</small></span></button>`;
+  let html = `<div class="area-row" style="grid-template-columns:repeat(${tops.length},minmax(0,1fr))">${tops.map(topBtn).join("")}</div>`;
+  if(top === "inside") html += `<p class="pick-lead">${TOPS.inside.lead}</p><div class="zone-pick">${AREAS.house.zones.map(opt).join("")}</div>`;
+  else if(top === "outside") html += `<p class="pick-lead">${TOPS.outside.lead}</p><div class="zone-pick"><h3 class="pick-h">In the garden</h3>${AREAS.outside.zones.map(opt).join("")}<h3 class="pick-h">On the porch <span>covered, rain doesn't reach</span></h3>${AREAS.porch.zones.map(opt).join("")}</div>`;
+  else if(top === "balcony") html += `<p class="pick-lead">${TOPS.balcony.lead}</p><div class="zone-pick">${AREAS.balcony.zones.map(opt).join("")}</div>`;
+  if(sel.zone && canGround(sel.zone) && top === topOf(ZONES[sel.zone].area))
+    html += `<p class="pick-lead">How is it planted?</p><div class="seg small plant-seg" role="radiogroup" aria-label="Planted"><button data-pplant="pot" aria-pressed="${sel.planting !== "ground"}">${ICON.pot} In a pot</button><button data-pplant="ground" aria-pressed="${sel.planting === "ground"}">${ICON.ground} In the ground</button></div>`;
+  return html;
+}
+function pickerClick(e, sel){
+  const b = e.target.closest("[data-ptop],[data-pzone],[data-pplant]"); if(!b) return null;
+  if(b.dataset.ptop){
+    sel.top = b.dataset.ptop;
+    if(sel.top === "greenhouse"){ sel.zone = "greenhouse"; sel.area = "greenhouse"; }
+    else if(!sel.zone || topOf(ZONES[sel.zone].area) !== sel.top){ sel.zone = null; sel.area = null; }
+    return "top";
+  }
+  if(b.dataset.pzone){ sel.zone = b.dataset.pzone; sel.area = ZONES[sel.zone].area; sel.top = topOf(sel.area); return "zone"; }
+  sel.planting = b.dataset.pplant; return "plant";
+}
+const moveDlg = $("#moveDlg");
+let movingId = null, moveSel = null;
+function openMove(id){
+  const p = state.plants.find(x => x.id === id); if(!p) return;
+  movingId = id; moveSel = {area:p.area, zone:p.zone, planting:p.planting, top:topOf(p.area)};
+  $("#moveTitle").textContent = `Move ${p.name}`;
+  $("#zonePick").innerHTML = pickerHtml(moveSel);
+  moveDlg.showModal();
+}
+$("#zonePick").addEventListener("click", e => {
+  const what = pickerClick(e, moveSel); if(!what) return;
+  const p = state.plants.find(x => x.id === movingId);
+  const done = (what === "zone" && !canGround(moveSel.zone)) || (what === "plant" && moveSel.zone);
+  if(done && p){
+    if(setZone(p, moveSel.zone, moveSel.planting)){ save(); render(); toast(zoneLabel(p)); }
+    moveDlg.close(); return;
+  }
+  $("#zonePick").innerHTML = pickerHtml(moveSel);
+});
+$("#moveClose").addEventListener("click", () => moveDlg.close());
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const act = b.dataset.act, ids = (b.dataset.ids || "").split(",").filter(Boolean);
+  if(act === "add") openWizard();
+  else if(act === "edit") openDialog(b.dataset.id);
+  else if(act === "water") water([b.dataset.id]);
+  else if(act === "waterAll") water(ids);
+  else if(act === "move") openMove(b.dataset.id);
+  else if(act === "moveAll") moveGroup(ids, b.dataset.to);
+  else if(act === "seePlants"){ idsFilter = ids; showTab("plants"); renderPlants(); }
+  else if(act === "clearIds"){ idsFilter = null; renderPlants(); }
+  else if(act === "sceneBack") goScene("overview");
+  else if(act === "viewPhoto") viewPhoto(b.dataset.ph);
+  else if(act === "filter"){ idsFilter = null; plantFilter = b.dataset.f; renderPlants(); }
+});
+
+/* ---------- The round menu ---------- */
+const dial = $("#dial");
+document.addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if(b) showTab(b.dataset.tab); });
+function showTab(tab){
+  currentTab = tab;
+  if(tab !== "plants") idsFilter = null;
+  const main = tab === "log" ? "settings" : tab;
+  document.querySelectorAll("#dial [data-tab], .gear-btn").forEach(b => { if(b.dataset.tab === main) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  ["today","plants","log","settings"].forEach(t => $("#view-" + t).hidden = t !== tab);
+  if(tab === "settings") fillSettings();
+  if(tab === "today") applySky(); else cancelAnimationFrame(fxState.raf);
+  dial.classList.remove("folded");
+  window.scrollTo(0,0);
+}
+$("#search").addEventListener("input", renderPlants);
+$("#addBtn").addEventListener("click", () => openWizard());
+
+/* ---------- Photos ---------- */
+const idb = (() => {
+  let dbp;
+  const db = () => dbp ||= new Promise((res, rej) => {
+    const r = indexedDB.open("garden-photos", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("photos", {keyPath:"id"});
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+  const run = async (mode, fn) => {
+    const d = await db();
+    return new Promise((res, rej) => {
+      const t = d.transaction("photos", mode), req = fn(t.objectStore("photos"));
+      t.oncomplete = () => res(req ? req.result : undefined); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+    });
+  };
+  return {put:ph => run("readwrite", s => s.put(ph)), del:id => run("readwrite", s => s.delete(id)),
+    all:() => run("readonly", s => s.getAll()), clear:() => run("readwrite", s => s.clear())};
+})();
+let photos = {};   // plantId -> newest first
+let pending = [];  // photos for a plant not saved yet
+const latestPhoto = id => (photos[id] || [])[0];
+const sortPh = a => a.sort((x,y) => y.ts - x.ts);
+async function loadPhotos(){
+  try{
+    const all = await idb.all(); photos = {};
+    all.forEach(ph => (photos[ph.plantId] ||= []).push(ph));
+    Object.values(photos).forEach(sortPh);
+  }catch(e){}
+  renderPlants();
+}
+async function resizeImage(file){
+  const url = URL.createObjectURL(file);
+  try{
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+    const k = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.82);
+  }finally{ URL.revokeObjectURL(url); }
+}
+const galleryList = () => editingId ? (photos[editingId] || []) : pending;
+function renderGallery(){
+  const list = galleryList();
+  $("#gallery").innerHTML = list.length ? list.map(ph =>
+    `<button class="ph" data-act="viewPhoto" data-ph="${ph.id}"><img src="${ph.data}" alt="Photo from ${ph.date}">${parseDay(ph.date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"2-digit"})}</button>`).join("")
+    : `<p class="none">No photos yet. The newest photo becomes the plant's picture.</p>`;
+}
+$("#addPhoto").addEventListener("click", () => $("#photoFile").click());
+$("#takePhoto").addEventListener("click", () => $("#photoCam").click());
+$("#photoCam").addEventListener("change", e => $("#photoFile").dispatchEvent(new CustomEvent("change", {detail:e.target})));
+$("#photoFile").addEventListener("change", async e => {
+  const input = e.detail || e.target;
+  const files = [...input.files]; input.value = "";
+  for(const f of files){
+    try{
+      const ph = {id:uid(), plantId:editingId, date:today(), ts:Date.now(), data:await resizeImage(f)};
+      if(editingId){
+        await idb.put(ph);
+        (photos[editingId] ||= []).unshift(ph);
+        addLog(editingId, "photo", "Photo added"); save();
+      }else pending.unshift(ph);
+    }catch(err){ toast("Couldn't add that photo"); }
+  }
+  renderGallery(); renderPlants(); renderLog();
+});
+let viewing = null;
+const viewer = $("#viewer");
+function viewPhoto(id){
+  viewing = galleryList().find(p => p.id === id); if(!viewing) return;
+  $("#viewerImg").src = viewing.data;
+  $("#viewerDate").textContent = parseDay(viewing.date).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+  viewer.showModal();
+}
+$("#viewerClose").addEventListener("click", () => viewer.close());
+$("#viewerDelete").addEventListener("click", async () => {
+  if(!viewing || !confirm("Delete this photo?")) return;
+  if(viewing.plantId){
+    try{ await idb.del(viewing.id); }catch(e){}
+    photos[viewing.plantId] = (photos[viewing.plantId] || []).filter(p => p.id !== viewing.id);
+  }else pending = pending.filter(p => p.id !== viewing.id);
+  viewer.close(); renderGallery(); renderPlants(); toast("Photo deleted");
+});
+
+/* ---------- Dialog ---------- */
+const dlg = $("#dlg");
+$("#presetList").innerHTML = PRESETS.map(p => `<option value="${esc(p.s)}"></option>`).join("");
+let editSel = {area:"outside", zone:"out-sun", planting:"pot"};
+const drawEditPick = () => { $("#fZonePick").innerHTML = pickerHtml(editSel); };
+$("#fZonePick").addEventListener("click", e => { if(pickerClick(e, editSel)) drawEditPick(); });
+attachSuggest($("#fSpecies"), it => { $("#fGenus").value = it.genus; showPresetNote(); $("#fSpecies").dispatchEvent(new Event("change")); });
+function showPresetNote(){
+  const p = presetFor($("#fSpecies").value), n = $("#presetNote");
+  if(p && p.note){ n.textContent = p.note; n.hidden = false; } else n.hidden = true;
+}
+function openDialog(id){
+  editingId = id;
+  const p = id ? state.plants.find(x => x.id === id) : null;
+  $("#dlgTitle").textContent = p ? "Edit plant" : "Add plant";
+  $("#dlgDelete").hidden = !p;
+  $("#fName").value = p ? p.name : "";
+  $("#fSpecies").value = p ? p.species : "";
+  $("#fGenus").value = p ? (p.genus || "") : "";
+  $("#fPattern").innerHTML = patternOptions();
+  $("#fPattern").value = p ? (isApt() && p.pattern === "greenhouse" ? "mover" : p.pattern) : "outdoor";
+  editSel = p ? {area:p.area, zone:p.zone, planting:p.planting} : {area:"outside", zone:"out-sun", planting:"ground"};
+  drawEditPick();
+  $("#fMin").value = p ? p.minTemp : "";
+  $("#fWs").value = p ? p.ws : 7;
+  $("#fWw").value = p ? p.ww : 14;
+  $("#fLast").value = p && p.lastWatered ? p.lastWatered : "";
+  $("#fNotes").value = p ? p.notes : "";
+  showPresetNote();
+  pending = [];
+  renderGallery();
+  const hist = p ? state.log.filter(e => e.plantId === p.id).slice(0, 25) : [];
+  $("#plantHistBox").hidden = !p;
+  $("#plantHist").innerHTML = hist.length ? hist.map(e => `<div class="ph-row"><span class="ph-dot t-${e.type}"></span><span>${esc(e.detail)}</span><small>${new Date(e.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</small></div>`).join("")
+    : `<p class="status" style="margin:0">Nothing logged yet.</p>`;
+  dlg.showModal();
+  if(!p) $("#fName").focus();
+}
+
+$("#fSpecies").addEventListener("change", () => {
+  const pr = presetFor($("#fSpecies").value);
+  showPresetNote();
+  if(!pr) return;
+  const isNew = !editingId;
+  if(isNew || $("#fMin").value === "") $("#fMin").value = pr.min;
+  if(isNew){
+    $("#fPattern").value = pr.pat;
+    $("#fWs").value = pr.ws; $("#fWw").value = pr.ww;
+    if(!$("#fName").value.trim()) $("#fName").value = pr.s;
+  }
+});
+$("#dlgClose").addEventListener("click", () => dlg.close());
+$("#dlgSave").addEventListener("click", async () => {
+  const name = $("#fName").value.trim();
+  const min = parseFloat($("#fMin").value);
+  if(!name){ toast("Give the plant a name"); $("#fName").focus(); return; }
+  if(isNaN(min)){ toast("Add the lowest temperature it takes"); $("#fMin").focus(); return; }
+  const data = {
+    name, species:$("#fSpecies").value.trim(), genus:$("#fGenus").value.trim() || ($("#fSpecies").value.trim().split(" ")[0] || ""), pattern:$("#fPattern").value, minTemp:min,
+    ws:Math.max(1, parseInt($("#fWs").value) || 7), ww:Math.max(1, parseInt($("#fWw").value) || 14),
+    lastWatered:$("#fLast").value || null, notes:$("#fNotes").value.trim()
+  };
+  if(editingId){
+    const p = state.plants.find(x => x.id === editingId);
+    Object.assign(p, data);
+    if(editSel.zone) setZone(p, editSel.zone, editSel.planting);
+  }else{
+    const p = {id:uid(), created:new Date().toISOString(), visibility:(me && me.defaultVisibility) || "vault", ...data};
+    applyZone(p, editSel.zone || "out-sun", editSel.planting);
+    state.plants.push(p); addLog(p.id, "add", "Added");
+    if(pending.length){
+      for(const ph of pending){ ph.plantId = p.id; try{ await idb.put(ph); }catch(e){ toast("Couldn't save the photo"); } }
+      photos[p.id] = sortPh(pending); pending = [];
+    }
+  }
+  save(); dlg.close(); render(); toast("Plant saved");
+});
+$("#dlgDelete").addEventListener("click", async () => {
+  const p = state.plants.find(x => x.id === editingId); if(!p) return;
+  if(!confirm(`Delete ${p.name}? Its history stays in the log.`)) return;
+  for(const ph of photos[editingId] || []){ try{ await idb.del(ph.id); }catch(e){} }
+  delete photos[editingId];
+  state.plants = state.plants.filter(x => x.id !== editingId);
+  save(); dlg.close(); render(); toast("Plant deleted");
+});
+
+/* ---------- Species suggestions while typing ---------- */
+const SPX = (() => {
+  const genera = [], species = [];
+  (window.GARDEN_SPECIES || []).forEach(([g, common, family, list]) => {
+    genera.push({kind:"genus", name:g, genus:g, family, common, key:g.toLowerCase(), words:common.toLowerCase().split(/[\s-]+/)});
+    list.forEach(([ep, c]) => species.push({kind:"species", name:`${g} ${ep}`, genus:g, family, common:c, key:`${g} ${ep}`.toLowerCase(), words:c.toLowerCase().split(/[\s-]+/)}));
+  });
+  return {genera, species};
+})();
+function searchSpecies(q){
+  q = q.replace(/^\s+/, "").toLowerCase().replace(/\s+/g, " ");
+  if(!q.trim()) return [];
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  if(q.includes(" ")) return SPX.species.filter(x => x.key.startsWith(q)).sort(byName).slice(0, 30);
+  q = q.trim();
+  const sci = SPX.genera.filter(x => x.key.startsWith(q)).sort(byName);
+  if(q.length < 3) return sci;
+  const seen = new Set(sci.map(x => x.name));
+  const common = [...SPX.genera, ...SPX.species].filter(x => !seen.has(x.name) && (x.words.some(w => w.startsWith(q)) || x.common.toLowerCase().startsWith(q))).sort(byName);
+  return [...sci, ...common].slice(0, 30);
+}
+const gbifCache = {};
+async function gbifSpecies(q){
+  const k = q.trim().toLowerCase();
+  if(gbifCache[k]) return gbifCache[k];
+  try{
+    const r = await fetch(`https://api.gbif.org/v1/species/suggest?q=${encodeURIComponent(q.trim())}&limit=10&highertaxonKey=6`);
+    const j = await r.json();
+    const out = [], seen = new Set();
+    (j || []).forEach(x => {
+      const name = x.canonicalName; if(!name || seen.has(name) || !/^(SPECIES|GENUS)$/.test(x.rank)) return;
+      seen.add(name);
+      out.push({kind:x.rank === "GENUS" ? "genus" : "species", name, genus:x.genus || name.split(" ")[0], family:x.family || "", common:"", gbif:true});
+    });
+    return gbifCache[k] = out.sort((a, b) => a.name.localeCompare(b.name));
+  }catch(e){ return []; }
+}
+/* Adds a suggestion list under a species field. onPick gets {name, genus, family, common}. */
+function attachSuggest(input, onPick){
+  const wrap = document.createElement("div"); wrap.className = "sg-wrap";
+  input.parentNode.insertBefore(wrap, input); wrap.appendChild(input);
+  const box = document.createElement("div"); box.className = "sg-list"; box.hidden = true; box.setAttribute("role", "listbox");
+  wrap.appendChild(box);
+  let items = [], timer = null, seq = 0;
+  const row = (x, i) => `<button type="button" class="sg-item" data-i="${i}" role="option"><i>${esc(x.name)}</i>${x.kind === "genus" ? `<span class="sg-tag">genus</span>` : ""}${x.common && x.common !== x.name ? `<small>${esc(x.common)}</small>` : ""}</button>`;
+  function draw(local, remote){
+    items = [...local, ...remote];
+    if(!items.length){ box.hidden = true; return; }
+    box.innerHTML = local.map(row).join("") + (remote.length ? `<div class="sg-h">More species from GBIF</div>` + remote.map((x, j) => row(x, local.length + j)).join("") : "");
+    box.hidden = false;
+  }
+  function update(){
+    const q = input.value, my = ++seq;
+    const local = searchSpecies(q);
+    draw(local, []);
+    clearTimeout(timer);
+    if(q.trim().length >= 3 && local.length < 5 && online){
+      timer = setTimeout(async () => {
+        const have = new Set(local.map(x => x.name));
+        const remote = (await gbifSpecies(q)).filter(x => !have.has(x.name));
+        if(my === seq && document.activeElement === input) draw(local, remote);
+      }, 350);
+    }
+  }
+  input.addEventListener("input", update);
+  input.addEventListener("focus", () => { if(input.value.trim()) update(); });
+  input.addEventListener("blur", () => setTimeout(() => { box.hidden = true; }, 180));
+  input.addEventListener("keydown", e => { if(e.key === "Escape") box.hidden = true; });
+  box.addEventListener("mousedown", e => e.preventDefault());
+  box.addEventListener("click", e => {
+    const b = e.target.closest(".sg-item"); if(!b) return;
+    const it = items[+b.dataset.i];
+    if(it.kind === "genus" && !it.gbif){
+      input.value = it.name + " ";
+      onPick({name:it.name, genus:it.genus, family:it.family, common:""});
+      input.focus(); update();
+      return;
+    }
+    input.value = it.name; box.hidden = true;
+    onPick({name:it.name, genus:it.genus, family:it.family, common:it.common});
+  });
+}
+
+/* ---------- Add a plant, step by step ---------- */
+/* Care values: exact species, then same genus from the preset list. */
+function findPreset(species, genus){
+  const sp = String(species || "").trim().toLowerCase(), g = String(genus || sp.split(" ")[0] || "").trim().toLowerCase();
+  return PRESETS.find(p => p.s.toLowerCase() === sp)
+    || (sp && PRESETS.find(p => p.s.toLowerCase().startsWith(sp + " ")))
+    || (g && PRESETS.find(p => p.s.toLowerCase().split(/[ (]/)[0] === g)) || null;
+}
+const wiz = $("#wiz");
+const STEP_TITLES = ["Take a photo", "What plant is it?", "Give it a name", "Where does it live?", "Care"];
+const CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.6"/></svg>';
+let W = null;
+function openWizard(){
+  W = {step:0, photos:[], results:null, loading:false, error:"", pick:null, species:"", genus:"", family:"", common:"",
+       name:"", nameTouched:false, pattern:"outdoor", area:ZONES[defaultZone("outdoor")].area, zone:defaultZone("outdoor"), planting:defaultPlanting("outdoor"), zoneTouched:false,
+       minTemp:"", ws:7, ww:14, last:"", notes:"", careTouched:false, identifiedFor:""};
+  renderWizard(); wiz.showModal();
+}
+function applySpecies(){
+  const pr = findPreset(W.species, W.genus);
+  if(!W.careTouched){
+    if(pr){ W.minTemp = pr.min; W.ws = pr.ws; W.ww = pr.ww; if(!W.zoneTouched){ W.pattern = isApt() && pr.pat === "greenhouse" ? "mover" : pr.pat; W.zone = defaultZone(W.pattern); W.area = ZONES[W.zone].area; W.planting = defaultPlanting(W.pattern); } }
+    else { W.minTemp = ""; }
+  }
+  if(!W.nameTouched) W.name = W.common || W.species || W.genus || "";
+}
+function wizPick(i){
+  W.pick = i;
+  if(i === "other"){ W.species = ""; W.genus = ""; W.family = ""; W.common = ""; }
+  else { const r = W.results[i]; W.species = r.species; W.genus = r.genus; W.family = r.family; W.common = r.common; }
+  applySpecies(); renderWizard();
+}
+async function identify(){
+  const sig = W.photos.map(p => p.length).join(",");
+  if(W.identifiedFor === sig && W.results) return;
+  W.loading = true; W.error = ""; W.results = null; W.pick = null; renderWizard();
+  try{
+    const r = await api("/api/identify", {method:"POST", body:JSON.stringify({images:W.photos})});
+    const j = await r.json().catch(() => ({}));
+    if(r.status === 401){ W.loading = false; wiz.close(); sessionExpired(); return; }
+    if(!r.ok) throw new Error(j.error || "Identification didn't work.");
+    W.results = j.results || []; W.identifiedFor = sig;
+    if(W.results.length) wizPick(0);
+  }catch(e){ W.error = e.message || "Identification didn't work."; }
+  W.loading = false; renderWizard();
+}
+function renderWizard(){
+  if(!W) return;
+  $("#wizSteps").innerHTML = STEP_TITLES.map((_, i) => `<span class="${i <= W.step ? "on" : ""}"></span>`).join("");
+  $("#wizTitle").textContent = STEP_TITLES[W.step];
+  const body = $("#wizBody"), next = $("#wizNext"), back = $("#wizBack");
+  back.textContent = W.step === 0 ? "Cancel" : "Back";
+  next.disabled = false; next.textContent = "Next";
+
+  if(W.step === 0){
+    body.innerHTML = `<p class="wiz-lead">Fill the frame with a leaf or a flower. You can add up to 3 photos of the same plant for a better match.</p>
+      ${W.photos.length ? `<div class="wiz-photos">${W.photos.map((p, i) => `<div class="ph"><img src="${p}" alt="Photo ${i + 1}"><button class="rm" data-wact="rmPhoto" data-i="${i}" aria-label="Remove photo">×</button></div>`).join("")}</div>` : ""}
+      ${W.photos.length < 3 ? `<div class="shot-row"><button class="shot" data-wact="camera">${CAMERA}${W.photos.length ? "Take another photo" : "Take a photo"}</button><button class="shot alt" data-wact="shoot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8 8.5"/></svg>${W.photos.length ? "Add from gallery" : "Choose from gallery"}</button></div>` : ""}
+      <button class="linkish" data-wact="skip">I know what it is, skip the photo</button>`;
+    next.textContent = online && token && IDENTIFY_READY ? "Identify" : "Next";
+    next.disabled = !W.photos.length;
+  }
+  else if(W.step === 1){
+    let html = "";
+    if(W.loading) html = `<div class="loading"><div class="spin"></div>Looking at your photo…</div>`;
+    else{
+      if(W.error) html += `<div class="warn">${esc(W.error)}</div>`;
+      if(W.results && !W.results.length) html += `<div class="warn">No plant was recognised in this photo. Try a closer shot of a leaf or flower, or type the name below.</div>`;
+      if(W.results && W.results.length){
+        const top = W.results[0].score;
+        if(top < 0.25) html += `<div class="warn">Not sure about this one. A close-up of a leaf or flower usually helps. <button class="linkish" data-wact="morePhotos">Add another photo</button></div>`;
+        html += `<p class="wiz-lead">Tap the one that matches. Correct it below if you know better.</p><div class="id-list">` +
+          W.results.slice(0, 3).map((r, i) => `<button class="id-opt" data-wact="pick" data-i="${i}" aria-pressed="${W.pick === i}">
+            ${r.image ? `<img src="${esc(r.image)}" alt="" loading="lazy">` : `<span class="noimg"></span>`}
+            <span><i>${esc(r.species)}</i>${r.common ? `<small>${esc(r.common)}</small>` : ""}<small>${esc([r.genus && "Genus " + r.genus, r.family].filter(Boolean).join(", "))}</small></span>
+            <span class="conf">${Math.round(r.score * 100)}%<span class="bar"><span style="width:${Math.max(3, Math.round(r.score * 100))}%"></span></span></span>
+          </button>`).join("") +
+          `<button class="id-opt" data-wact="pick" data-i="other" aria-pressed="${W.pick === "other"}"><span class="noimg"></span><span><i>Something else</i><small>Type the name yourself</small></span><span></span></button></div>`;
+      }
+      html += `<div class="field"><label for="wSpecies">Species</label><input id="wSpecies" autocomplete="off" autocapitalize="words" spellcheck="false" value="${esc(W.species)}" placeholder="Start typing, e.g. Musa basjoo"></div>
+        <div class="field"><label for="wGenus">Genus</label><input id="wGenus" value="${esc(W.genus)}" placeholder="e.g. Musa"><span class="hint">Leave the species empty if you only know the genus.</span></div>`;
+      if(W.results && W.results.length) html += `<p class="credit">Identification by the Pl@ntNet recognition API (my.plantnet.org).</p>`;
+    }
+    body.innerHTML = html;
+    next.disabled = W.loading;
+    const sp = $("#wSpecies"), ge = $("#wGenus");
+    if(sp){
+      sp.addEventListener("input", () => { W.species = sp.value.trim(); if(!ge.dataset.touched){ W.genus = W.species.split(" ")[0] || ""; ge.value = W.genus; } W.common = ""; applySpecies(); });
+      attachSuggest(sp, it => { W.species = it.name; W.genus = it.genus; W.family = it.family || W.family; W.common = it.common || ""; ge.value = it.genus; applySpecies(); });
+      ge.addEventListener("input", () => { ge.dataset.touched = "1"; W.genus = ge.value.trim(); applySpecies(); });
+    }
+  }
+  else if(W.step === 2){
+    body.innerHTML = `<p class="wiz-lead">What do you call it? It could be the common name, or something like "Big banana by the pond".</p>
+      <div class="field"><label for="wName">Name</label><input id="wName" value="${esc(W.name)}"></div>
+      ${W.species || W.genus ? `<p class="status"><i>${esc(W.species || W.genus)}</i>${W.family ? `, ${esc(W.family)}` : ""}</p>` : ""}`;
+    const n = $("#wName");
+    n.addEventListener("input", () => { W.name = n.value; W.nameTouched = true; next.disabled = !W.name.trim(); });
+    next.disabled = !W.name.trim();
+    setTimeout(() => n.focus(), 50);
+  }
+  else if(W.step === 3){
+    body.innerHTML = `<p class="wiz-lead">Where is it right now?</p><div class="picker" id="wPick">${pickerHtml(W)}</div>
+      <div class="field" style="margin-top:14px"><label for="wPattern">Through the year</label>
+        <select id="wPattern">${patternOptions()}</select><span class="hint">Used for reminders to move it in autumn and out in spring.</span></div>`;
+    $("#wPattern").value = W.pattern;
+    $("#wPattern").addEventListener("change", e => { W.pattern = e.target.value; });
+    $("#wPick").addEventListener("click", e => { if(pickerClick(e, W)){ W.zoneTouched = true; $("#wPick").innerHTML = pickerHtml(W); $("#wizNext").disabled = !W.zone; } });
+    next.disabled = !W.zone;
+  }
+  else if(W.step === 4){
+    const pr = findPreset(W.species, W.genus);
+    const exact = pr && pr.s.toLowerCase() === String(W.species).toLowerCase();
+    body.innerHTML = `${pr ? `<div class="preset-note">${exact ? "Filled in for" : "Filled in from a related plant,"} <i>${esc(pr.s)}</i>. Adjust anything you know better.${pr.note ? "<br>" + esc(pr.note) : ""}</div>`
+        : `<div class="warn">No care data for this plant yet. Set a cautious cold limit; you can change it any time.</div>`}
+      <div class="row3">
+        <div class="field"><label for="wMin">Lowest °C it takes</label><input id="wMin" type="number" step="0.5" value="${esc(W.minTemp)}"></div>
+        <div class="field"><label for="wWs">Water every (summer)</label><input id="wWs" type="number" min="1" value="${esc(W.ws)}"><span class="hint">days</span></div>
+        <div class="field"><label for="wWw">Water every (winter)</label><input id="wWw" type="number" min="1" value="${esc(W.ww)}"><span class="hint">days</span></div>
+      </div>
+      <div class="field"><label for="wLast">Last watered</label><input id="wLast" type="date" value="${esc(W.last)}"></div>
+      <div class="field"><label for="wNotes">Notes</label><textarea id="wNotes" rows="3">${esc(W.notes)}</textarea></div>`;
+    [["#wMin","minTemp"],["#wWs","ws"],["#wWw","ww"],["#wLast","last"],["#wNotes","notes"]].forEach(([id, k]) =>
+      $(id).addEventListener("input", e => { W[k] = e.target.value; if(k !== "last" && k !== "notes") W.careTouched = true; }));
+    next.textContent = "Save plant";
+  }
+}
+async function wizSave(){
+  const min = parseFloat(W.minTemp);
+  if(isNaN(min)){ toast("Add the lowest temperature it takes"); $("#wMin").focus(); return; }
+  const p = {id:uid(), created:new Date().toISOString(), visibility:(me && me.defaultVisibility) || "vault", name:W.name.trim(), species:W.species, genus:W.genus || (W.species.split(" ")[0] || ""), family:W.family,
+    pattern:W.pattern, minTemp:min, ws:Math.max(1, parseInt(W.ws) || 7), ww:Math.max(1, parseInt(W.ww) || 14),
+    lastWatered:W.last || null, notes:String(W.notes || "").trim()};
+  applyZone(p, W.zone, W.planting);
+  state.plants.push(p); addLog(p.id, "add", "Added");
+  const now = Date.now();
+  const list = W.photos.map((data, i) => ({id:uid(), plantId:p.id, date:today(), ts:now - i, data}));
+  for(const ph of list){ try{ await idb.put(ph); }catch(e){} }
+  if(list.length) photos[p.id] = list;
+  save(); wiz.close(); W = null; render(); toast(`${p.name} added`);
+}
+$("#wizBody").addEventListener("click", e => {
+  const b = e.target.closest("[data-wact]"); if(!b || !W) return;
+  const a = b.dataset.wact;
+  if(a === "shoot") $("#wizFile").click();
+  else if(a === "camera") $("#wizCam").click();
+  else if(a === "rmPhoto"){ W.photos.splice(+b.dataset.i, 1); renderWizard(); }
+  else if(a === "skip"){ W.step = 1; W.results = null; W.error = ""; renderWizard(); }
+  else if(a === "morePhotos"){ W.step = 0; renderWizard(); }
+  else if(a === "pick") wizPick(b.dataset.i === "other" ? "other" : +b.dataset.i);
+});
+async function wizAddFiles(input){
+  const files = [...input.files].slice(0, 3 - W.photos.length); input.value = "";
+  for(const f of files){ try{ W.photos.push(await resizeImage(f)); }catch(err){ toast("Couldn't use that photo"); } }
+  renderWizard();
+}
+$("#wizFile").addEventListener("change", e => wizAddFiles(e.target));
+$("#wizCam").addEventListener("change", e => wizAddFiles(e.target));
+$("#wizNext").addEventListener("click", async () => {
+  if(W.step === 0){
+    W.step = 1; renderWizard();
+    if(online && token && IDENTIFY_READY) identify();
+    else { W.error = online && token ? `Plant identification ${MOVING_MSG} Type the name below.` : "Identification works when you're signed in on your site. Type the name below."; renderWizard(); }
+    return;
+  }
+  if(W.step === 4) return wizSave();
+  W.step++; renderWizard();
+});
+$("#wizBack").addEventListener("click", () => {
+  if(W.step === 0){ wiz.close(); W = null; return; }
+  W.step--; renderWizard();
+});
+$("#wizClose").addEventListener("click", () => { wiz.close(); W = null; });
+
+/* ---------- Location: current or saved ---------- */
+const PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+const GPS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+function normalizeLocation(){
+  const st = state.settings;
+  if(!st.saved) st.saved = {name:st.place || "Garden", lat:st.lat, lon:st.lon};
+  if(!st.locMode) st.locMode = "saved";
+}
+/* The forecast, alerts and server all read settings.place/lat/lon: keep them pointing at the active location. */
+function useActiveLocation(){
+  const st = state.settings;
+  const a = st.locMode === "current" && st.current ? st.current : st.saved;
+  const changed = st.lat !== a.lat || st.lon !== a.lon || st.place !== a.name;
+  st.place = a.name; st.lat = a.lat; st.lon = a.lon;
+  return changed;
+}
+function applyLocationChange(){ useActiveLocation(); save(); fillLocation(); render(); fetchWeather(true); }
+const round2 = n => Math.round(n * 100) / 100;
+function distKm(a, b){
+  const r = x => x * Math.PI / 180, dLat = r(b.lat - a.lat), dLon = r(b.lon - a.lon);
+  const h = Math.sin(dLat/2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLon/2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+async function placeName(lat, lon){
+  try{
+    const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+    const j = await r.json();
+    return j.city || j.locality || j.principalSubdivision || "";
+  }catch(e){ return ""; }
+}
+function getPosition(){
+  return new Promise((res, rej) => {
+    if(!navigator.geolocation) return rej(new Error("This browser can't share its location."));
+    navigator.geolocation.getCurrentPosition(p => res({lat:round2(p.coords.latitude), lon:round2(p.coords.longitude)}),
+      e => rej(new Error(e.code === 1 ? "Location access is blocked. Allow it for this site in Chrome's settings." : "Couldn't get your location right now.")),
+      {enableHighAccuracy:false, timeout:12000, maximumAge:10 * 60 * 1000});
+  });
+}
+let locBusy = false;
+async function refreshCurrent(force){
+  const st = state.settings;
+  if(st.locMode !== "current" || locBusy) return;
+  if(!force && st.current && Date.now() - (st.current.at || 0) < 30 * 60 * 1000) return;
+  locBusy = true;
+  if(force) $("#locNowLine").innerHTML = `${GPS}<span>Finding you…</span>`;
+  try{
+    const pos = await getPosition();
+    const moved = !st.current || distKm(st.current, pos) > 1;
+    const name = moved ? (await placeName(pos.lat, pos.lon)) || `${pos.lat}, ${pos.lon}` : st.current.name;
+    st.current = {name, lat:pos.lat, lon:pos.lon, at:Date.now()};
+    if(useActiveLocation() || moved){ save(); render(); fetchWeather(true); } else saveLocal();
+  }catch(e){ if(force) toast(e.message); }
+  locBusy = false; fillLocation();
+}
+function fillLocation(){
+  const st = state.settings;
+  document.querySelectorAll("[data-loc]").forEach(b => b.setAttribute("aria-pressed", b.dataset.loc === st.locMode));
+  $("#locCurrent").hidden = st.locMode !== "current";
+  $("#locSaved").hidden = st.locMode !== "saved";
+  const c = st.current;
+  if(!locBusy) $("#locNowLine").innerHTML = c
+    ? `${GPS}<span><b>${esc(c.name)}</b><small>${c.lat}, ${c.lon}. Checked ${new Date(c.at).toLocaleString("en-GB", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"})}</small></span>`
+    : `${GPS}<span>Not found yet. Tap Update now.</span>`;
+  $("#locSavedLine").innerHTML = `${PIN}<span><b>${esc(st.saved.name)}</b><small>${st.saved.lat}, ${st.saved.lon}</small></span>`;
+  $("#sPlace").value = st.saved.name; $("#sLat").value = st.saved.lat; $("#sLon").value = st.saved.lon;
+}
+document.querySelectorAll("[data-loc]").forEach(b => b.addEventListener("click", () => {
+  const st = state.settings;
+  if(st.locMode === b.dataset.loc) return;
+  st.locMode = b.dataset.loc;
+  applyLocationChange();
+  if(st.locMode === "current") refreshCurrent(true);
+}));
+$("#locRefresh").addEventListener("click", () => refreshCurrent(true));
+function setSaved(name, lat, lon){
+  state.settings.saved = {name:name || "Garden", lat:round2(+lat), lon:round2(+lon)};
+  $("#locResults").innerHTML = ""; $("#locSearch").value = "";
+  applyLocationChange(); toast(`Saved ${state.settings.saved.name}`);
+}
+let locTimer = null, locResults = [];
+$("#locSearch").addEventListener("input", e => {
+  clearTimeout(locTimer);
+  const q = e.target.value.trim();
+  if(q.length < 2){ $("#locResults").innerHTML = ""; return; }
+  locTimer = setTimeout(async () => {
+    try{
+      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=en&format=json`);
+      const j = await r.json();
+      locResults = j.results || [];
+      $("#locResults").innerHTML = locResults.length
+        ? locResults.map((p, i) => `<button data-lr="${i}"><b>${esc(p.name)}</b><small>${esc([p.admin1, p.country].filter(Boolean).join(", "))}</small></button>`).join("")
+        : `<p class="status" style="margin:0">No places found. Try another spelling, or enter coordinates below.</p>`;
+    }catch(err){ $("#locResults").innerHTML = `<p class="status" style="margin:0">Search isn't working right now. Enter coordinates below.</p>`; }
+  }, 350);
+});
+$("#locResults").addEventListener("click", e => {
+  const b = e.target.closest("[data-lr]"); if(!b) return;
+  const p = locResults[+b.dataset.lr]; setSaved(p.name, p.latitude, p.longitude);
+});
+$("#locHere").addEventListener("click", async () => {
+  try{ toast("Finding you…"); const pos = await getPosition(); setSaved((await placeName(pos.lat, pos.lon)) || "Home", pos.lat, pos.lon); }
+  catch(e){ toast(e.message); }
+});
+$("#locManualSave").addEventListener("click", () => {
+  const lat = parseFloat($("#sLat").value), lon = parseFloat($("#sLon").value);
+  if(isNaN(lat) || isNaN(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180){ toast("Check the latitude and longitude"); return; }
+  setSaved($("#sPlace").value.trim(), lat, lon);
+});
+
+/* ---------- Home type ---------- */
+function fillHome(){
+  const apt = isApt();
+  document.querySelectorAll("[data-home]").forEach(b => b.setAttribute("aria-pressed", b.dataset.home === (apt ? "apartment" : "house")));
+  $("#homeLine").textContent = apt ? "Spots: inside (window, low light, grow cabinet) and the balcony (sun, partial sun, shade)."
+    : "Spots: the house, the porch, outside in the garden and the greenhouse.";
+  $("#balcRainRow").hidden = !apt;
+  $("#balcRain").checked = !!state.settings.balconyRain;
+}
+document.querySelectorAll("[data-home]").forEach(b => b.addEventListener("click", () => {
+  if(state.settings.home === b.dataset.home) return;
+  state.settings.home = b.dataset.home;
+  normalizePlants(); sceneMode = "overview";
+  save(); fillHome(); render();
+  const allowed = areaOrder(), off = state.plants.filter(p => !allowed.includes(p.area)).length;
+  toast(off ? `${off} ${off === 1 ? "plant is" : "plants are"} in spots that don't exist here. Move ${off === 1 ? "it" : "them"} from the Plants tab.` : "Home type saved");
+}));
+$("#balcRain").addEventListener("change", e => { state.settings.balconyRain = e.target.checked; normalizePlants(); save(); render(); toast("Saved"); });
+
+/* ---------- Settings ---------- */
+function fillSettings(){
+  fillHome();
+  const s = state.settings;
+  fillLocation();
+  const hours = (a, b) => Array.from({length:b - a + 1}, (_, i) => a + i).map(h => `<option value="${h}">${pad(h)}:00</option>`).join("");
+  $("#sMorning").innerHTML = hours(5, 11); $("#sEvening").innerHTML = hours(16, 22);
+  $("#sMorning").value = s.morningHour; $("#sEvening").value = s.eveningHour; $("#sEveningOn").checked = s.eveningCheck !== false;
+  fillAccount();
+  refreshNotifyStatus();
+  $("#sMargin").value = s.margin; $("#sGh").value = s.gh; $("#sHeat").value = s.heat; $("#sWind").value = s.wind; $("#sRain").value = s.rain;
+}
+$("#saveSettings").addEventListener("click", () => {
+  const n = (sel, fb) => { const v = parseFloat($(sel).value); return isNaN(v) ? fb : v; };
+  const s = state.settings;
+  state.settings = {...s,
+    margin:n("#sMargin", s.margin), gh:n("#sGh", s.gh), heat:n("#sHeat", s.heat), wind:n("#sWind", s.wind), rain:n("#sRain", s.rain)};
+  save(); toast("Settings saved"); fetchWeather(true);
+});
+$("#exportBtn").addEventListener("click", async () => {
+  let allPhotos = [];
+  try{ allPhotos = await idb.all(); }catch(e){}
+  const blob = new Blob([JSON.stringify({...state, weather:null, photos:allPhotos})], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `alvor-backup-${today()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+$("#importBtn").addEventListener("click", () => $("#importFile").click());
+$("#importFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const d = JSON.parse(await f.text());
+    if(!Array.isArray(d.plants)) throw new Error("bad");
+    if(!confirm(`Replace what's here with ${d.plants.length} plants from the backup?`)) return;
+    const base = defaults();
+    const imported = Array.isArray(d.photos) ? d.photos : null;
+    delete d.photos;
+    state = {...base, ...d, settings:{...base.settings, ...(d.settings||{})}, weather:null, account:me ? me.id : d.account};
+    const idMap = upgradeIds();
+    save();
+    if(imported){
+      try{ await idb.clear(); for(const ph of imported) await idb.put(ph); }catch(e){ toast("Plants imported, but the photos couldn't be saved"); }
+      await upgradePhotoIds(idMap);
+      await loadPhotos();
+    } fillSettings(); fetchWeather(true); toast("Backup imported");
+  }catch(err){ toast("That file isn't a garden backup"); }
+  e.target.value = "";
+});
+$("#resetBtn").addEventListener("click", () => {
+  if(!confirm("Delete all plants and history on this device? Export a backup first if you might want them back.")) return;
+  const s = state.settings; state = defaults(); state.settings = s; save();
+  idb.clear().catch(() => {}); photos = {};
+  render(); toast("Everything deleted");
+});
+
+/* ---------- Welcome setup for new accounts ---------- */
+let ONB = null;
+const onbEl = () => $("#onb");
+function maybeOnboard(){
+  if(!online || !token || state.settings.onboarded) return;
+  if(state.plants.length){ state.settings.onboarded = true; save(); return; }
+  ONB = {step:0, home:state.settings.home || "house", rain:!!state.settings.balconyRain, place:null, results:[], busy:false, msg:"", q:""};
+  onbEl().hidden = false; renderOnb();
+}
+function onbFinish(openAdd){
+  state.settings.onboarded = true; save();
+  onbEl().hidden = true; ONB = null;
+  render(); showTab("today");
+  if(openAdd) openWizard();
+}
+function onbPlace(p){
+  ONB.place = p; ONB.results = []; ONB.msg = ""; renderOnb();
+}
+function renderOnb(){
+  const O = ONB, body = $("#onbBody");
+  $("#onbSteps").innerHTML = [0,1,2].map(i => `<span class="${i <= O.step ? "on" : ""}"></span>`).join("");
+  $("#onbBack").hidden = O.step === 0 || O.step === 3;
+  const who = me && me.user ? me.user.charAt(0).toUpperCase() + me.user.slice(1) : "";
+  if(O.step === 0){
+    const card = (h, img, t, sub) => `<button class="home-card" data-ohome="${h}" aria-pressed="${O.home === h && O.picked ? "true" : "false"}"><img src="${img}" alt=""><b>${t}</b><small>${sub}</small></button>`;
+    body.innerHTML = `<h1>Welcome${who ? ", " + esc(who) : ""}!</h1><p class="onb-lead">Where do your plants live?</p>
+      <div class="home-cards">${card("house", "scene-day.webp", "House with garden", "Garden, porch and greenhouse")}${card("apartment", "apt-day.webp", "Apartment", "Inside and a balcony")}</div>
+      ${O.home === "apartment" && O.picked ? `<div class="onb-q"><p><b>Does rain reach your balcony?</b><br><span class="status">If it does, rain counts as watering for balcony plants.</span></p>
+        <div class="seg"><button data-orain="1">Yes</button><button data-orain="0">No, it's covered</button></div></div>` : ""}`;
+  }
+  else if(O.step === 1){
+    const what = O.home === "apartment" ? "balcony" : "garden";
+    let html = `<h1>Where is your ${what}?</h1><p class="onb-lead">The forecast and all the alerts use this place.</p>`;
+    if(O.place){
+      html += `<div class="loc-now onb-place">${ICON.pin}<span><b>${esc(O.place.name)}</b><small>${esc(O.place.region || `${O.place.lat}, ${O.place.lon}`)}</small></span></div>
+        <button class="btn primary wide" data-oact="confirm">That's right</button>
+        <button class="linkish" data-oact="again">Choose another place</button>`;
+    }else{
+      html += `<button class="btn primary wide gps" data-oact="gps" ${O.busy ? "disabled" : ""}>${GPS} ${O.busy ? "Finding you…" : "Use my current location"}</button>
+        <div class="onb-or"><span>or</span></div>
+        <div class="field"><label for="onbSearch">Search a town</label><input id="onbSearch" type="search" autocomplete="off" placeholder="e.g. Lekunberri" value="${esc(O.q)}"></div>
+        <div class="loc-results">${O.results.map((p, i) => `<button data-ores="${i}"><b>${esc(p.name)}</b><small>${esc([p.admin1, p.country].filter(Boolean).join(", "))}</small></button>`).join("")}</div>`;
+    }
+    if(O.msg) html += `<p class="status onb-msg">${esc(O.msg)}</p>`;
+    body.innerHTML = html;
+    const inp = $("#onbSearch");
+    if(inp){
+      let t = null;
+      inp.addEventListener("input", () => {
+        O.q = inp.value; clearTimeout(t);
+        if(O.q.trim().length < 2){ O.results = []; $("#onbBody .loc-results").innerHTML = ""; return; }
+        t = setTimeout(async () => {
+          try{
+            const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(O.q.trim())}&count=5&language=en&format=json`);
+            O.results = (await r.json()).results || [];
+            $("#onbBody .loc-results").innerHTML = O.results.length
+              ? O.results.map((p, i) => `<button data-ores="${i}"><b>${esc(p.name)}</b><small>${esc([p.admin1, p.country].filter(Boolean).join(", "))}</small></button>`).join("")
+              : `<p class="status" style="margin:0">No places found. Try another spelling.</p>`;
+          }catch(e){ $("#onbBody .loc-results").innerHTML = `<p class="status" style="margin:0">Search isn't working right now. Check your connection.</p>`; }
+        }, 350);
+      });
+    }
+  }
+  else if(O.step === 2){
+    body.innerHTML = `<h1>Get alerts</h1>
+      <div class="onb-alerts">
+        <div class="onb-alert"><span class="zi a-house">${ICON.sun}</span><p><b>Every morning at 08:00</b><br>A short summary of what your plants need today.</p></div>
+        <div class="onb-alert"><span class="zi a-greenhouse">${ICON.snow}</span><p><b>In the evening at 19:00</b><br>A warning, only when frost is coming that night.</p></div>
+      </div>
+      ${canPush() ? `<button class="btn primary wide" data-oact="notify" ${O.busy ? "disabled" : ""}>${O.busy ? "Turning on…" : "Turn on notifications"}</button>` : `<p class="status">Notifications work when the app is opened from your site in Chrome. You can turn them on later in Settings.</p>`}
+      <button class="linkish" data-oact="later">${canPush() ? "Later" : "Continue"}</button>
+      ${O.msg ? `<p class="status onb-msg">${esc(O.msg)}</p>` : ""}
+      <p class="status">You can change the times in Settings.</p>`;
+  }
+  else{
+    body.innerHTML = `<div class="onb-done"><img src="${O.home === "apartment" ? "apt-day.webp" : "scene-day.webp"}" alt=""><h1>You're all set</h1>
+      <p class="onb-lead">Start with one plant. Take a photo and the app suggests what it is.</p>
+      <button class="btn primary wide" data-oact="first">Add my first plant</button>
+      <button class="linkish" data-oact="done">Later</button></div>`;
+  }
+}
+$("#onbBody").addEventListener("click", async e => {
+  const O = ONB; if(!O) return;
+  const h = e.target.closest("[data-ohome]"), rn = e.target.closest("[data-orain]"), rs = e.target.closest("[data-ores]"), a = e.target.closest("[data-oact]");
+  if(h){
+    O.home = h.dataset.ohome; O.picked = true;
+    state.settings.home = O.home; normalizePlants(); saveLocal();
+    if(O.home === "house"){ O.step = 1; }
+    renderOnb(); return;
+  }
+  if(rn){
+    O.rain = rn.dataset.orain === "1";
+    state.settings.balconyRain = O.rain; normalizePlants(); saveLocal();
+    O.step = 1; renderOnb(); return;
+  }
+  if(rs){
+    const p = O.results[+rs.dataset.ores];
+    onbPlace({name:p.name, lat:round2(p.latitude), lon:round2(p.longitude), region:[p.admin1, p.country].filter(Boolean).join(", ")});
+    return;
+  }
+  if(!a) return;
+  const act = a.dataset.oact;
+  if(act === "gps"){
+    O.busy = true; O.msg = ""; renderOnb();
+    try{
+      const pos = await getPosition();
+      const name = await placeName(pos.lat, pos.lon);
+      O.busy = false; onbPlace({name:name || "My place", lat:pos.lat, lon:pos.lon, region:name ? `${pos.lat}, ${pos.lon}` : ""});
+    }catch(err){ O.busy = false; O.msg = err.message + " Search your town instead."; renderOnb(); }
+  }
+  else if(act === "again"){ O.place = null; renderOnb(); }
+  else if(act === "confirm"){
+    const st = state.settings;
+    st.saved = {name:O.place.name, lat:O.place.lat, lon:O.place.lon}; st.locMode = "saved";
+    useActiveLocation(); save(); fetchWeather(true);
+    O.step = 2; O.msg = ""; renderOnb();
+  }
+  else if(act === "notify"){
+    O.busy = true; O.msg = ""; renderOnb();
+    const ok = await enableNotifications();
+    O.busy = false;
+    if(ok){ O.step = 3; } else O.msg = $("#notifyStatus").textContent;
+    renderOnb();
+  }
+  else if(act === "later"){ O.step = 3; O.msg = ""; renderOnb(); }
+  else if(act === "first") onbFinish(true);
+  else if(act === "done") onbFinish(false);
+});
+$("#onbBack").addEventListener("click", () => { if(!ONB || ONB.step === 0) return; ONB.step--; ONB.msg = ""; if(ONB.step === 0) ONB.picked = true; renderOnb(); });
+
+/* ---------- Account and sync ---------- */
+/* Alvor's accounts and data live in Supabase. The publishable key is meant to sit in the app:
+   what each person may read or change is enforced by the database itself. */
+const SUPABASE_URL = "https://ihufhwnwzmzuhfxiwbal.supabase.co";
+const SUPABASE_KEY = "sb_publishable_v82YQhQIPQ31xuOArsKzGg_6LZ7e1US";
+const sb = window.supabase && location.protocol === "https:"
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:false}})
+  : null;
+const online = !!sb;
+/* Plant identification and notifications still run on the old server; they move over in the next part. */
+const IDENTIFY_READY = false, PUSH_READY = false;
+const MOVING_MSG = "is moving to Alvor's new home and comes back in the next update.";
+const OLD_TOKEN_KEY = "garden-token", USER_KEY = "garden-user";
+const hadOldAccount = (() => { try{ return !!localStorage.getItem(OLD_TOKEN_KEY); }catch(e){ return false; } })();
+let token = "";   // current session's access token ("" when signed out)
+let me = (() => { try{ return JSON.parse(localStorage.getItem(USER_KEY) || "null"); }catch(e){ return null; } })();
+if(me && !me.id) me = null;   // left over from the old accounts
+let syncTimer = null, syncing = null;
+const hhmm = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const setSync = m => { $("#syncStatus").textContent = m; };
+const setNotify = m => { $("#notifyStatus").textContent = m; };
+const api = (path, opts = {}) => fetch(path, {...opts, headers:{"Content-Type":"application/json", ...(token ? {"Authorization":"Bearer " + token} : {})}});
+const OFFLINE_MSG = "Couldn't reach Alvor. Changes stay on this phone and are saved next time.";
+const isAuthErr = e => e && (e.status === 401 || e.code === "PGRST301" || /jwt|refresh token/i.test(e.message || ""));
+const must = r => { if(r.error) throw r.error; return r.data; };
+
+async function loadMe(session){
+  token = session.access_token;
+  const id = session.user.id;
+  try{
+    const [prof, acct] = await Promise.all([
+      sb.from("profiles").select("username,display_name").eq("id", id).maybeSingle().then(must),
+      sb.from("accounts").select("is_owner,default_visibility,findable,migrated_at").eq("id", id).maybeSingle().then(must)
+    ]);
+    me = {id, email:session.user.email, user:prof ? prof.username : session.user.email, name:prof ? prof.display_name : "",
+      owner:!!(acct && acct.is_owner), defaultVisibility:(acct && acct.default_visibility) || "vault", migrated:!!(acct && acct.migrated_at)};
+  }catch(e){
+    // Offline: keep what we knew about this account.
+    if(!me || me.id !== id) me = {id, email:session.user.email, user:session.user.email, name:"", owner:false, defaultVisibility:"vault"};
+  }
+  try{ localStorage.setItem(USER_KEY, JSON.stringify(me)); }catch(e){}
+}
+async function initAuth(){
+  if(!sb) return;
+  try{
+    const {data} = await sb.auth.getSession();
+    if(data && data.session) await loadMe(data.session);
+  }catch(e){}
+  sb.auth.onAuthStateChange((ev, s) => {
+    token = s ? s.access_token : "";
+    if(ev === "SIGNED_OUT" && me){ me = null; try{ localStorage.removeItem(USER_KEY); }catch(e){} }
+  });
+}
+
+/* A plant is stored in two parts: what friends may see (by its visibility) and everything else, owner only. */
+const sharedRow = p => ({id:p.id, owner_id:me.id, name:String(p.name || "").trim().slice(0, 80) || "Plant",
+  species:p.species ? String(p.species).slice(0, 120) : null, area:p.area ? String(p.area).slice(0, 40) : null,
+  visibility:["friends","everyone","vault"].includes(p.visibility) ? p.visibility : "vault"});
+
+function applyServer(d){
+  const base = defaults(), {updatedAt, ...settings} = d.settings || {};
+  state.plants = d.plants || []; state.log = d.log || []; state.updatedAt = d.updatedAt || 0;
+  state.settings = {...base.settings, ...settings};
+  state.account = me && me.id;
+  normalizePlants(); normalizeLocation(); useActiveLocation();
+  saveLocal(); render(); if(currentTab === "settings") fillSettings();
+}
+function sessionExpired(){
+  token = "";
+  showAuth("Please sign in again.");
+}
+async function serverGarden(){
+  return must(await sb.from("garden_private").select("settings,log").eq("owner_id", me.id).maybeSingle());
+}
+async function downloadGarden(gp){
+  const [priv, rows] = await Promise.all([
+    sb.from("plant_private").select("plant_id,data").eq("owner_id", me.id).then(must),
+    sb.from("plants").select("id,visibility").eq("owner_id", me.id).then(must)
+  ]);
+  const vis = Object.fromEntries(rows.map(r => [r.id, r.visibility]));
+  const plants = priv.filter(r => vis[r.plant_id])
+    .map(r => ({...r.data, id:r.plant_id, visibility:vis[r.plant_id]}))
+    .sort((a, b) => (a._i ?? 0) - (b._i ?? 0))
+    .map(({_i, ...p}) => p);
+  applyServer({plants, log:gp.log || [], settings:gp.settings || {}, updatedAt:+(gp.settings || {}).updatedAt || 0});
+}
+async function uploadGarden(){
+  const ids = state.plants.map(p => p.id);
+  if(state.plants.length){
+    must(await sb.from("plants").upsert(state.plants.map(sharedRow)));
+    must(await sb.from("plant_private").upsert(state.plants.map((p, i) => ({plant_id:p.id, owner_id:me.id, data:{...p, _i:i}}))));
+  }
+  let del = sb.from("plants").delete().eq("owner_id", me.id);   // plants deleted on this phone
+  if(ids.length) del = del.not("id", "in", `(${ids.join(",")})`);
+  must(await del);
+  must(await sb.from("gardens").upsert({owner_id:me.id, home:state.settings.home === "apartment" ? "apartment" : "house",
+    town:String(state.settings.place || "").slice(0, 60) || null}));
+  // Saved last: its timestamp says the whole garden is up to date.
+  must(await sb.from("garden_private").upsert({owner_id:me.id, settings:{...state.settings, updatedAt:state.updatedAt || 0},
+    log:state.log.slice(0, 1000)}));
+}
+async function push(){
+  if(!token || !me) return false;
+  if(syncing) return syncing.then(push);
+  syncing = (async () => {
+    try{
+      const gp = await serverGarden();
+      const serverAt = gp ? +(gp.settings || {}).updatedAt || 0 : 0;
+      if(serverAt > (state.updatedAt || 0)) await downloadGarden(gp);   // another phone saved something newer
+      else await uploadGarden();
+      setSync(`Saved to your account at ${hhmm()}.`); return true;
+    }catch(e){
+      if(isAuthErr(e)){ sessionExpired(); return false; }
+      setSync(OFFLINE_MSG); return false;
+    }finally{ syncing = null; }
+  })();
+  return syncing;
+}
+async function pull(){
+  if(!token || !me) return false;
+  try{
+    const gp = await serverGarden();
+    const serverAt = gp ? +(gp.settings || {}).updatedAt || 0 : 0;
+    if(gp && serverAt > (state.updatedAt || 0)) await downloadGarden(gp);
+    else if(!gp || (state.updatedAt || 0) > serverAt) return push();
+    setSync(`Saved to your account at ${hhmm()}.`); return true;
+  }catch(e){
+    if(isAuthErr(e)){ sessionExpired(); return false; }
+    setSync(OFFLINE_MSG); return false;
+  }
+}
+function queueSync(){ if(!token) return; clearTimeout(syncTimer); syncTimer = setTimeout(push, 1500); }
+
+/* Login screen */
+let authMode = "login";
+function setAuthMode(m){
+  authMode = m;
+  document.querySelectorAll("[data-auth]").forEach(b => b.setAttribute("aria-pressed", b.dataset.auth === m));
+  $("#inviteField").hidden = m !== "signup";
+  $("#userField").hidden = m !== "signup";
+  $("#passHint").hidden = m !== "signup";
+  $("#aPass").setAttribute("autocomplete", m === "signup" ? "new-password" : "current-password");
+  $("#authGo").textContent = m === "signup" ? "Create account" : "Sign in";
+  $("#authLead").textContent = m === "signup" ? "Create your own garden. You need an invite code or a friend's link." : "Sign in to see your garden.";
+  $("#authMsg").textContent = "";
+}
+function showAuth(msg){
+  setAuthMode(authMode);
+  $("#auth").hidden = false;
+  if(msg) $("#authMsg").textContent = msg;
+}
+document.querySelectorAll("[data-auth]").forEach(b => b.addEventListener("click", () => setAuthMode(b.dataset.auth)));
+$("#authGo").addEventListener("click", async () => {
+  const email = $("#aEmail").value.trim().toLowerCase(), password = $("#aPass").value;
+  const msg = $("#authMsg");
+  if(!email || !password){ msg.textContent = "Fill in your email and password."; return; }
+  if(!sb){ msg.textContent = "Couldn't reach Alvor. Check your connection."; return; }
+  const btn = $("#authGo"); btn.disabled = true; msg.textContent = "One moment…";
+  try{
+    if(authMode === "signup"){
+      const username = $("#aUser").value.trim().toLowerCase().replace(/^@/, "");
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/signup`, {method:"POST",
+        headers:{"Content-Type":"application/json", "apikey":SUPABASE_KEY},
+        body:JSON.stringify({email, password, username, invite:$("#aInvite").value.trim()})});
+      const j = await r.json().catch(() => ({}));
+      if(!r.ok){ msg.textContent = j.error || "Something went wrong. Try again."; return; }
+    }
+    const {data, error} = await sb.auth.signInWithPassword({email, password});
+    if(error){ msg.textContent = /invalid/i.test(error.message) ? "Wrong email or password." : "Couldn't sign in. Try again."; return; }
+    await signedIn(data.session);
+  }catch(e){ msg.textContent = "Couldn't reach Alvor. Check your connection."; }
+  finally{ btn.disabled = false; }
+});
+$("#aPass").addEventListener("keydown", e => { if(e.key === "Enter") $("#authGo").click(); });
+
+async function signedIn(session){
+  await loadMe(session);
+  let gp = null;
+  try{ gp = await serverGarden(); }catch(e){}
+  const oldGarden = state.account && !UUID_RE.test(String(state.account));   // from the old Alvor accounts
+  const mine = state.account === me.id;
+  if(gp){
+    if(!mine){ state = defaults(); state.account = me.id; }
+    await downloadGarden(gp);
+  }else if(state.plants.length && (mine || oldGarden || !state.account)
+      && confirm(`This phone has ${state.plants.length} ${state.plants.length === 1 ? "plant" : "plants"}. Move ${state.plants.length === 1 ? "it" : "them"} into this account?`)){
+    state.account = me.id; state.updatedAt = Date.now(); saveLocal();
+    await push();
+    if(oldGarden || !me.migrated){ try{ await sb.from("accounts").update({migrated_at:new Date().toISOString()}).eq("id", me.id); }catch(e){} }
+  }else{
+    const keep = state.settings;
+    state = defaults(); state.account = me.id;
+    state.settings = {...state.settings, ...keep, onboarded:false};   // keep the location, run the welcome setup
+    normalizeLocation(); useActiveLocation(); saveLocal(); render();
+  }
+  try{ localStorage.removeItem(OLD_TOKEN_KEY); }catch(e){}
+  $("#auth").hidden = true; $("#aPass").value = ""; $("#aInvite").value = "";
+  fillAccount();
+  fetchWeather(true);
+  if(state.settings.onboarded || state.plants.length) toast(`Welcome, ${me.name || me.user}`);
+  await joinFromLink();
+  maybeOnboard();
+}
+async function signOut(){
+  try{ await sb.auth.signOut(); }catch(e){}
+  token = ""; me = null;
+  try{ localStorage.removeItem(USER_KEY); }catch(e){}
+  const keep = state.settings; state = defaults(); state.settings = keep; saveLocal(); render();
+  authMode = "login"; showAuth("You're signed out.");
+}
+$("#signOutBtn").addEventListener("click", () => { if(confirm("Sign out on this phone? Your garden stays saved in your account.")) signOut(); });
+
+/* Friend links: opening one connects you at once; without an account it becomes your invite. */
+const linkToken = () => { const m = location.hash.match(/join=([0-9a-f]{32})/); return m ? m[1] : null; };
+async function joinFromLink(){
+  const t = linkToken(); if(!t || !token) return;
+  history.replaceState(null, "", location.pathname + location.search);
+  try{
+    const f = must(await sb.rpc("accept_friend_link", {p_token:t}));
+    const who = f && f[0] ? (f[0].display_name || "@" + f[0].username) : "your friend";
+    toast(`You and ${who} are now friends`);
+  }catch(e){ toast(e.message || "That link doesn't work any more."); }
+}
+
+/* Account card */
+function fillAccount(){
+  if(!online){ $("#acctLine").textContent = "Accounts work once the app is opened from your site."; $("#accountCard").querySelectorAll("button").forEach(b => b.hidden = true); return; }
+  $("#acctLine").textContent = me ? `Signed in as @${me.user}${me.email ? " (" + me.email + ")" : ""}${me.owner ? ", owner of Alvor" : ""}.` : "Not signed in.";
+  $("#inviteBtn").hidden = !(me && me.owner);
+}
+$("#inviteBtn").addEventListener("click", async () => {
+  const out = $("#inviteOut");
+  try{
+    const rows = must(await sb.rpc("create_invite"));
+    const j = rows && rows[0]; if(!j) throw new Error();
+    const until = new Date(j.expires_at).toLocaleDateString("en-GB", {day:"numeric", month:"long"});
+    const site = location.origin + location.pathname;
+    out.innerHTML = `<div>Send this code to your friend, together with the address of Alvor:</div><div class="code">${esc(j.code)}</div>
+      <div class="status" style="margin:0">It works once, until ${until}. They tap Create account and enter it there.</div>
+      <button class="btn small" id="copyInvite" style="margin-top:8px">Copy message</button>`;
+    out.hidden = false;
+    $("#copyInvite").addEventListener("click", async () => {
+      const msg = `Join me on Alvor, the app I use for my plants. Open ${site} , tap "Create account" and use this invite code: ${j.code}`;
+      try{ if(navigator.share) await navigator.share({text:msg}); else { await navigator.clipboard.writeText(msg); toast("Copied"); } }catch(e){}
+    });
+  }catch(e){ out.hidden = false; out.textContent = (e && e.message) || "Couldn't create an invite. Try again."; }
+});
+$("#pwBtn").addEventListener("click", () => { $("#pwBox").hidden = !$("#pwBox").hidden; });
+$("#pwSave").addEventListener("click", async () => {
+  const cur = $("#pwCur").value, next = $("#pwNew").value;
+  if(next.length < 8){ toast("The new password needs at least 8 characters."); return; }
+  try{
+    const chk = await sb.auth.signInWithPassword({email:me.email, password:cur});
+    if(chk.error){ toast("The current password is wrong."); return; }
+    const {error} = await sb.auth.updateUser({password:next});
+    if(error){ toast(/same/i.test(error.message) ? "That's the password you already have." : "Couldn't change the password"); return; }
+    try{ await sb.auth.signOut({scope:"others"}); }catch(e){}
+    $("#pwCur").value = ""; $("#pwNew").value = ""; $("#pwBox").hidden = true;
+    toast("Password changed. Other phones will need to sign in again.");
+  }catch(e){ toast("Couldn't reach Alvor"); }
+});
+
+/* ---------- Notifications ---------- */
+function keyBytes(b64){
+  const s = (b64 + "=".repeat((4 - b64.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(s), c => c.charCodeAt(0));
+}
+const canPush = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window && online;
+async function refreshNotifyStatus(){
+  if(!canPush()){ setNotify("Notifications work once the app is opened from your site in Chrome."); return; }
+  try{
+    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    setNotify(sub && Notification.permission === "granted" ? "Notifications are on for this phone." : "Notifications are off for this phone.");
+  }catch(e){ setNotify(""); }
+}
+$("#notifyBtn").addEventListener("click", () => enableNotifications());
+async function enableNotifications(){
+  if(!token){ showAuth(); return false; }
+  if(!PUSH_READY){ setNotify(`Notifications ${MOVING_MSG}`); return false; }
+  if(!canPush()){ setNotify("This browser can't receive notifications. Open the app from your site in Chrome."); return false; }
+  const perm = await Notification.requestPermission();
+  if(perm !== "granted"){ setNotify("Notifications are blocked. Allow them for this site in Chrome's settings, then try again."); return false; }
+  try{
+    setNotify("Turning on…");
+    const reg = await navigator.serviceWorker.ready;
+    const kr = await api("/api/push/key");
+    if(kr.status === 401){ sessionExpired(); return false; }
+    if(!kr.ok) throw new Error("key");
+    const {publicKey} = await kr.json();
+    let sub = await reg.pushManager.getSubscription();
+    if(sub) await sub.unsubscribe();
+    sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:keyBytes(publicKey)});
+    const r = await api("/api/push/subscribe", {method:"POST", body:JSON.stringify({subscription:sub})});
+    if(!r.ok) throw new Error("sub");
+    await push();
+    setNotify("Notifications are on for this phone."); toast("Notifications on");
+    return true;
+  }catch(e){ setNotify("Couldn't turn on notifications. Check that the latest version is on your site, then try again."); return false; }
+}
+$("#testBtn").addEventListener("click", async () => {
+  if(!token){ showAuth(); return; }
+  if(!PUSH_READY){ setNotify(`Notifications ${MOVING_MSG}`); return; }
+  setNotify("Sending a test…");
+  try{
+    await push();
+    const r = await api("/api/push/test", {method:"POST", body:JSON.stringify({mode:"morning"})});
+    const j = await r.json().catch(() => ({}));
+    if(r.status === 401){ sessionExpired(); return; }
+    if(!r.ok) throw new Error(j.error || r.status);
+    setNotify(j.sent ? "Test sent. It should arrive in a few seconds." : "This phone isn't signed up for notifications yet. Tap Turn on notifications first.");
+  }catch(e){ setNotify("Couldn't send the test. Check that the latest version is on your site."); }
+});
+function saveNotifySettings(){
+  state.settings.morningHour = +$("#sMorning").value;
+  state.settings.eveningHour = +$("#sEvening").value;
+  state.settings.eveningCheck = $("#sEveningOn").checked;
+  save(); toast("Saved");
+}
+["#sMorning","#sEvening","#sEveningOn"].forEach(id => $(id).addEventListener("change", saveNotifySettings));
+
+/* ---------- Start ---------- */
+normalizeLocation(); useActiveLocation();
+try{ const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; if(tz && state.settings.tz !== tz){ state.settings.tz = tz; saveLocal(); } }catch(e){}
+if("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+const startIds = upgradeIds();
+render();
+upgradePhotoIds(startIds).then(loadPhotos);
+fetchWeather(false);
+try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+try{ localStorage.removeItem("garden-sync-key"); }catch(e){}
+initAuth().then(async () => {
+  if(online && !token){
+    if(linkToken()){ authMode = "signup"; showAuth("A friend invited you. Create your account to join their circle."); $("#aInvite").value = location.href; }
+    else if(hadOldAccount) showAuth("Alvor has a new home. Create a new account with the invite you received, or sign in if you already did. The plants on this phone come with you.");
+    else showAuth();
+    return;
+  }
+  fillAccount();
+  await pull();
+  await joinFromLink();
+  maybeOnboard();
+});
+refreshCurrent(false);
+document.addEventListener("visibilitychange", () => { if(!document.hidden){ fetchWeather(false); refreshCurrent(false); if(token) pull(); } });
+</script>
+</body>
+</html>
