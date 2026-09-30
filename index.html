@@ -706,7 +706,7 @@ canvas.fx{width:100%;height:100%}
       </div>
       <div class="card">
         <h2>Backup</h2>
-        <p style="margin-top:0;color:var(--muted)">Your plants are saved in your account, but photos stay on this phone. Export a backup now and then to keep the photos safe. The file grows as you add them.</p>
+        <p style="margin-top:0;color:var(--muted)">Your plants and photos are saved in your account. You can also export a backup file to keep a copy of your own. The file grows as you add photos.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn" id="exportBtn">Export backup</button>
           <button class="btn" id="importBtn">Import backup</button>
@@ -926,18 +926,34 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const uid = () => (crypto.randomUUID ? crypto.randomUUID()
   : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)));
-/* Plants made before the move to Supabase had short ids; the database needs UUIDs. Returns the old -> new map. */
+/* Plants made before the move to Supabase had short ids; the database needs UUIDs.
+   The same old id always becomes the same UUID, so every phone upgrades a plant to the same id. */
+function idFromOld(s){
+  let h = "";
+  for(let k = 0; k < 4; k++){
+    let x = (0x811c9dc5 ^ Math.imul(k + 1, 0x9e3779b9)) >>> 0;
+    for(const c of String(s) + "#" + k){ x ^= c.charCodeAt(0); x = Math.imul(x, 0x01000193) >>> 0; }
+    h += x.toString(16).padStart(8, "0");
+  }
+  return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-8${h.slice(17,20)}-${h.slice(20,32)}`;
+}
 function upgradeIds(){
   const map = {};
-  state.plants.forEach(p => { if(!UUID_RE.test(String(p.id))){ const n = uid(); map[p.id] = n; p.id = n; } });
+  state.plants.forEach(p => { if(!UUID_RE.test(String(p.id))){ const n = idFromOld(p.id); map[p.id] = n; p.id = n; } });
   if(!Object.keys(map).length) return null;
   state.log.forEach(l => { if(map[l.plantId]) l.plantId = map[l.plantId]; });
   saveLocal();
   return map;
 }
 async function upgradePhotoIds(map){
-  if(!map) return;
-  try{ for(const ph of await idb.all()) if(map[ph.plantId]){ ph.plantId = map[ph.plantId]; await idb.put(ph); } }catch(e){}
+  try{
+    for(const ph of await idb.all()){
+      let changed = false;
+      if(map && map[ph.plantId]){ ph.plantId = map[ph.plantId]; changed = true; }
+      if(!UUID_RE.test(String(ph.id))){ await idb.del(ph.id); ph.id = idFromOld(ph.id); changed = true; }
+      if(changed) await idb.put(ph);
+    }
+  }catch(e){}
 }
 const pad = n => String(n).padStart(2,"0");
 const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -1550,18 +1566,24 @@ async function loadPhotos(){
   }catch(e){}
   renderPlants();
 }
+/* Photos are kept at up to 2000 px (about 0.3 to 0.6 MB); friends get an 800 px copy. */
+async function drawJpeg(src, max, quality){
+  const img = new Image();
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src; });
+  const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
 async function resizeImage(file){
   const url = URL.createObjectURL(file);
-  try{
-    const img = new Image();
-    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
-    const k = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
-    const c = document.createElement("canvas");
-    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
-    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-    return c.toDataURL("image/jpeg", 0.82);
-  }finally{ URL.revokeObjectURL(url); }
+  try{ return (await drawJpeg(url, 2000, 0.8)).toDataURL("image/jpeg", 0.8); }
+  finally{ URL.revokeObjectURL(url); }
 }
+const smallJpeg = async data => { const c = await drawJpeg(data, 800, 0.78); return new Promise(res => c.toBlob(res, "image/jpeg", 0.78)); };
+const dataToBlob = async data => (await fetch(data)).blob();
+const blobToData = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
 const galleryList = () => editingId ? (photos[editingId] || []) : pending;
 function renderGallery(){
   const list = galleryList();
@@ -1600,6 +1622,7 @@ $("#viewerDelete").addEventListener("click", async () => {
   if(!viewing || !confirm("Delete this photo?")) return;
   if(viewing.plantId){
     try{ await idb.del(viewing.id); }catch(e){}
+    forgetPhoto(viewing.id);
     photos[viewing.plantId] = (photos[viewing.plantId] || []).filter(p => p.id !== viewing.id);
   }else pending = pending.filter(p => p.id !== viewing.id);
   viewer.close(); renderGallery(); renderPlants(); toast("Photo deleted");
@@ -2117,7 +2140,7 @@ $("#importFile").addEventListener("change", async e => {
     const idMap = upgradeIds();
     save();
     if(imported){
-      try{ await idb.clear(); for(const ph of imported) await idb.put(ph); }catch(e){ toast("Plants imported, but the photos couldn't be saved"); }
+      try{ await idb.clear(); for(const ph of imported){ delete ph.synced; await idb.put(ph); } }catch(e){ toast("Plants imported, but the photos couldn't be saved"); }
       await upgradePhotoIds(idMap);
       await loadPhotos();
     } fillSettings(); fetchWeather(true); toast("Backup imported");
@@ -2353,7 +2376,11 @@ async function uploadGarden(){
     must(await sb.from("plants").upsert(state.plants.map(sharedRow)));
     must(await sb.from("plant_private").upsert(state.plants.map((p, i) => ({plant_id:p.id, owner_id:me.id, data:{...p, _i:i}}))));
   }
-  let del = sb.from("plants").delete().eq("owner_id", me.id);   // plants deleted on this phone
+  let gone = sb.from("photos").select("id").eq("owner_id", me.id);   // plants deleted on this phone: their photo files
+  if(ids.length) gone = gone.not("plant_id", "in", `(${ids.join(",")})`);
+  const goneIds = must(await gone).map(r => r.id);
+  if(goneIds.length) must(await sb.storage.from("photos").remove(goneIds.flatMap(id => [phPath(id, "l"), phPath(id, "s")])));
+  let del = sb.from("plants").delete().eq("owner_id", me.id);   // ...and the plants themselves
   if(ids.length) del = del.not("id", "in", `(${ids.join(",")})`);
   must(await del);
   must(await sb.from("gardens").upsert({owner_id:me.id, home:state.settings.home === "apartment" ? "apartment" : "house",
@@ -2371,7 +2398,7 @@ async function push(){
       const serverAt = gp ? +(gp.settings || {}).updatedAt || 0 : 0;
       if(serverAt > (state.updatedAt || 0)) await downloadGarden(gp);   // another phone saved something newer
       else await uploadGarden();
-      setSync(`Saved to your account at ${hhmm()}.`); return true;
+      setSync(`Saved to your account at ${hhmm()}.`); queuePhotoSync(); return true;
     }catch(e){
       if(isAuthErr(e)){ sessionExpired(); return false; }
       setSync(OFFLINE_MSG); return false;
@@ -2386,13 +2413,78 @@ async function pull(){
     const serverAt = gp ? +(gp.settings || {}).updatedAt || 0 : 0;
     if(gp && serverAt > (state.updatedAt || 0)) await downloadGarden(gp);
     else if(!gp || (state.updatedAt || 0) > serverAt) return push();
-    setSync(`Saved to your account at ${hhmm()}.`); return true;
+    setSync(`Saved to your account at ${hhmm()}.`); queuePhotoSync(); return true;
   }catch(e){
     if(isAuthErr(e)){ sessionExpired(); return false; }
     setSync(OFFLINE_MSG); return false;
   }
 }
 function queueSync(){ if(!token) return; clearTimeout(syncTimer); syncTimer = setTimeout(push, 1500); }
+
+/* ---------- Photo sync ----------
+   Each photo is stored twice in the account: large (only you) and small (what friends see).
+   This phone keeps the large one, so photos also work offline. */
+const PH_DEL_KEY = "garden-photo-deletes";
+const phPath = (id, size) => `${me.id}/${id}-${size}.jpg`;
+const readDels = () => { try{ return JSON.parse(localStorage.getItem(PH_DEL_KEY) || "[]"); }catch(e){ return []; } };
+const writeDels = a => { try{ localStorage.setItem(PH_DEL_KEY, JSON.stringify(a)); }catch(e){} };
+function forgetPhoto(id){ writeDels([...new Set([...readDels(), id])]); queuePhotoSync(); }
+let photoSyncing = null, photoTimer = null;
+function queuePhotoSync(){ if(!token) return; clearTimeout(photoTimer); photoTimer = setTimeout(syncPhotos, 1500); }
+async function syncPhotos(){
+  if(!token || !me || !sb) return;
+  if(photoSyncing) return photoSyncing;
+  photoSyncing = (async () => {
+    let changed = false;
+    try{
+      const store = sb.storage.from("photos");
+      // 1. Photos deleted on this phone
+      const dels = readDels();
+      if(dels.length){
+        must(await store.remove(dels.flatMap(id => [phPath(id, "l"), phPath(id, "s")])));
+        must(await sb.from("photos").delete().in("id", dels));
+        writeDels(readDels().filter(id => !dels.includes(id)));
+      }
+      const plantIds = new Set(state.plants.map(p => p.id));
+      const rows = must(await sb.from("photos").select("id,plant_id,path_large,taken_at").eq("owner_id", me.id));
+      const server = new Set(rows.map(r => r.id));
+      const local = await idb.all(), localIds = new Set(local.map(p => p.id)), pendingDel = new Set(readDels());
+      // 2. New photos on this phone go up, large and small
+      const uploaded = new Set();
+      for(const ph of local){
+        if(ph.synced || !plantIds.has(ph.plantId) || !UUID_RE.test(String(ph.id))) continue;
+        if(!server.has(ph.id)){
+          setSync("Saving photos…");
+          must(await store.upload(phPath(ph.id, "l"), await dataToBlob(ph.data), {upsert:true, contentType:"image/jpeg"}));
+          must(await store.upload(phPath(ph.id, "s"), await smallJpeg(ph.data), {upsert:true, contentType:"image/jpeg"}));
+          must(await sb.from("photos").upsert({id:ph.id, plant_id:ph.plantId, owner_id:me.id,
+            path_large:phPath(ph.id, "l"), path_small:phPath(ph.id, "s"), taken_at:new Date(ph.ts || Date.now()).toISOString()}));
+        }
+        ph.synced = true; await idb.put(ph); uploaded.add(ph.id);
+      }
+      // 3. Photos deleted on another phone
+      for(const ph of local){
+        if(ph.synced && !server.has(ph.id) && !uploaded.has(ph.id)){ await idb.del(ph.id); changed = true; }
+      }
+      // 4. Photos added on another phone come down
+      for(const r of rows){
+        if(localIds.has(r.id) || pendingDel.has(r.id) || !plantIds.has(r.plant_id)) continue;
+        setSync("Getting photos…");
+        const blob = must(await store.download(r.path_large));
+        const at = new Date(r.taken_at || Date.now());
+        await idb.put({id:r.id, plantId:r.plant_id, date:ymd(at), ts:at.getTime(), data:await blobToData(blob), synced:true});
+        changed = true;
+      }
+      if(uploaded.size || changed) setSync(`Saved to your account at ${hhmm()}.`);
+    }catch(e){
+      if(isAuthErr(e)) sessionExpired(); else setSync("Some photos aren't saved to your account yet. Alvor tries again next time.");
+    }finally{
+      photoSyncing = null;
+      if(changed) await loadPhotos();
+    }
+  })();
+  return photoSyncing;
+}
 
 /* Login screen */
 let authMode = "login";
@@ -2442,6 +2534,8 @@ async function signedIn(session){
   try{ gp = await serverGarden(); }catch(e){}
   const oldGarden = state.account && !UUID_RE.test(String(state.account));   // from the old Alvor accounts
   const mine = state.account === me.id;
+  const otherAccount = state.account && !mine && !oldGarden;
+  if(otherAccount){ try{ await idb.clear(); }catch(e){} photos = {}; writeDels([]); }
   if(gp){
     if(!mine){ state = defaults(); state.account = me.id; }
     await downloadGarden(gp);
@@ -2462,9 +2556,11 @@ async function signedIn(session){
   fetchWeather(true);
   if(state.settings.onboarded || state.plants.length) toast(`Welcome, ${me.name || me.user}`);
   await joinFromLink();
+  queuePhotoSync();
   maybeOnboard();
 }
 async function signOut(){
+  try{ await syncPhotos(); }catch(e){}
   try{ await sb.auth.signOut(); }catch(e){}
   token = ""; me = null;
   try{ localStorage.removeItem(USER_KEY); }catch(e){}
