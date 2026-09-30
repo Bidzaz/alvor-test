@@ -1834,8 +1834,8 @@ async function identify(){
   if(W.identifiedFor === sig && W.results) return;
   W.loading = true; W.error = ""; W.results = null; W.pick = null; renderWizard();
   try{
-    const r = await api("/api/identify", {method:"POST", body:JSON.stringify({images:W.photos})});
-    const j = await r.json().catch(() => ({}));
+    const images = await Promise.all(W.photos.map(async p => (await drawJpeg(p, 1280, 0.85)).toDataURL("image/jpeg", 0.85)));
+    const {r, j} = await callFn("identify", {images});
     if(r.status === 401){ W.loading = false; wiz.close(); sessionExpired(); return; }
     if(!r.ok) throw new Error(j.error || "Identification didn't work.");
     W.results = j.results || []; W.identifiedFor = sig;
@@ -2293,9 +2293,8 @@ const sb = window.supabase && location.protocol === "https:"
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:false}})
   : null;
 const online = !!sb;
-/* Plant identification and notifications still run on the old server; they move over in the next part. */
-const IDENTIFY_READY = false, PUSH_READY = false;
-const MOVING_MSG = "is moving to Alvor's new home and comes back in the next update.";
+const IDENTIFY_READY = true, PUSH_READY = true;
+const MOVING_MSG = "isn't available right now.";
 const OLD_TOKEN_KEY = "garden-token", USER_KEY = "garden-user";
 const hadOldAccount = (() => { try{ return !!localStorage.getItem(OLD_TOKEN_KEY); }catch(e){ return false; } })();
 let token = "";   // current session's access token ("" when signed out)
@@ -2305,7 +2304,14 @@ let syncTimer = null, syncing = null;
 const hhmm = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const setSync = m => { $("#syncStatus").textContent = m; };
 const setNotify = m => { $("#notifyStatus").textContent = m; };
-const api = (path, opts = {}) => fetch(path, {...opts, headers:{"Content-Type":"application/json", ...(token ? {"Authorization":"Bearer " + token} : {})}});
+/* Calls one of Alvor's server functions on Supabase as the signed-in person. Returns {r, j}. */
+async function callFn(name, body){
+  let t = token;
+  try{ const {data} = await sb.auth.getSession(); if(data && data.session) t = data.session.access_token; }catch(e){}
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {method:"POST",
+    headers:{"Content-Type":"application/json", "apikey":SUPABASE_KEY, "Authorization":"Bearer " + t}, body:JSON.stringify(body || {})});
+  return {r, j:await r.json().catch(() => ({}))};
+}
 const OFFLINE_MSG = "Couldn't reach Alvor. Changes stay on this phone and are saved next time.";
 const isAuthErr = e => e && (e.status === 401 || e.code === "PGRST301" || /jwt|refresh token/i.test(e.message || ""));
 const must = r => { if(r.error) throw r.error; return r.data; };
@@ -2557,10 +2563,18 @@ async function signedIn(session){
   if(state.settings.onboarded || state.plants.length) toast(`Welcome, ${me.name || me.user}`);
   await joinFromLink();
   queuePhotoSync();
+  ensurePush();
   maybeOnboard();
 }
 async function signOut(){
   try{ await syncPhotos(); }catch(e){}
+  try{
+    if(canPush()){
+      const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+      if(sub){ await sb.from("push_subscriptions").delete().eq("endpoint", sub.endpoint); await sub.unsubscribe(); }
+      localStorage.removeItem(PUSH_KEY);
+    }
+  }catch(e){}
   try{ await sb.auth.signOut(); }catch(e){}
   token = ""; me = null;
   try{ localStorage.removeItem(USER_KEY); }catch(e){}
@@ -2633,41 +2647,48 @@ async function refreshNotifyStatus(){
   }catch(e){ setNotify(""); }
 }
 $("#notifyBtn").addEventListener("click", () => enableNotifications());
-async function enableNotifications(){
-  if(!token){ showAuth(); return false; }
-  if(!PUSH_READY){ setNotify(`Notifications ${MOVING_MSG}`); return false; }
+async function enableNotifications(quiet){
+  if(!token){ if(!quiet) showAuth(); return false; }
   if(!canPush()){ setNotify("This browser can't receive notifications. Open the app from your site in Chrome."); return false; }
   const perm = await Notification.requestPermission();
   if(perm !== "granted"){ setNotify("Notifications are blocked. Allow them for this site in Chrome's settings, then try again."); return false; }
   try{
-    setNotify("Turning on…");
+    if(!quiet) setNotify("Turning on…");
     const reg = await navigator.serviceWorker.ready;
-    const kr = await api("/api/push/key");
+    const {r:kr, j:kj} = await callFn("notify", {action:"key"});
     if(kr.status === 401){ sessionExpired(); return false; }
-    if(!kr.ok) throw new Error("key");
-    const {publicKey} = await kr.json();
+    if(!kr.ok || !kj.publicKey) throw new Error("key");
     let sub = await reg.pushManager.getSubscription();
     if(sub) await sub.unsubscribe();
-    sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:keyBytes(publicKey)});
-    const r = await api("/api/push/subscribe", {method:"POST", body:JSON.stringify({subscription:sub})});
-    if(!r.ok) throw new Error("sub");
+    sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:keyBytes(kj.publicKey)});
+    must(await sb.rpc("save_push_subscription", {p_sub:sub.toJSON()}));
+    try{ localStorage.setItem(PUSH_KEY, kj.publicKey); }catch(e){}
     await push();
-    setNotify("Notifications are on for this phone."); toast("Notifications on");
+    setNotify("Notifications are on for this phone."); if(!quiet) toast("Notifications on");
     return true;
-  }catch(e){ setNotify("Couldn't turn on notifications. Check that the latest version is on your site, then try again."); return false; }
+  }catch(e){ setNotify("Couldn't turn on notifications. Try again in a moment."); return false; }
+}
+/* If this phone had notifications on (also from the old Alvor), sign it up again whenever the server key is new. */
+const PUSH_KEY = "garden-push-key";
+async function ensurePush(){
+  if(!token || !canPush() || Notification.permission !== "granted") return;
+  try{
+    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    const {j} = await callFn("notify", {action:"key"});
+    if(!j.publicKey) return;
+    if(!sub || localStorage.getItem(PUSH_KEY) !== j.publicKey) await enableNotifications(true);
+  }catch(e){}
 }
 $("#testBtn").addEventListener("click", async () => {
   if(!token){ showAuth(); return; }
-  if(!PUSH_READY){ setNotify(`Notifications ${MOVING_MSG}`); return; }
   setNotify("Sending a test…");
   try{
     await push();
-    const r = await api("/api/push/test", {method:"POST", body:JSON.stringify({mode:"morning"})});
-    const j = await r.json().catch(() => ({}));
+    const {r, j} = await callFn("notify", {action:"test", mode:"morning"});
     if(r.status === 401){ sessionExpired(); return; }
     if(!r.ok) throw new Error(j.error || r.status);
     setNotify(j.sent ? "Test sent. It should arrive in a few seconds." : "This phone isn't signed up for notifications yet. Tap Turn on notifications first.");
-  }catch(e){ setNotify("Couldn't send the test. Check that the latest version is on your site."); }
+  }catch(e){ setNotify("Couldn't send the test. Try again in a moment."); }
 });
 function saveNotifySettings(){
   state.settings.morningHour = +$("#sMorning").value;
@@ -2697,6 +2718,7 @@ initAuth().then(async () => {
   fillAccount();
   await pull();
   await joinFromLink();
+  ensurePush();
   maybeOnboard();
 });
 refreshCurrent(false);

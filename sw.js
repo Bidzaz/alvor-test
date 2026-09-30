@@ -7,13 +7,13 @@ self.addEventListener("push", e => {
   try{ if(e.data) d = e.data.json(); }catch(err){ if(e.data) d.body = e.data.text(); }
   e.waitUntil(self.registration.showNotification(d.title, {
     body:d.body, tag:d.tag || "alvor", renotify:true,
-    icon:"/icon-192.png", badge:"/badge-96.png", data:{url:d.url || "/"}
+    icon:"icon-192.png", badge:"badge-96.png", data:{url:d.url || self.registration.scope}
   }));
 });
 
 self.addEventListener("notificationclick", e => {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || "/";
+  const url = (e.notification.data && e.notification.data.url) || self.registration.scope;
   e.waitUntil((async () => {
     const all = await self.clients.matchAll({type:"window", includeUncontrolled:true});
     for(const c of all){ if("focus" in c){ await c.focus(); return; } }
