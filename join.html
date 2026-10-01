@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F4EC">
+<meta name="robots" content="noindex">
+<title>Install Alvor</title>
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script>
+/* Opened inside the Alvor app (a link to this page can open there): go straight to the app with the invitation. */
+(function(){
+  var m = (location.hash + " " + location.search).match(/join=([0-9a-f]{32})/);
+  var inApp = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || /^android-app:/.test(document.referrer || "");
+  if(inApp) location.replace("./" + (m ? "#join=" + m[1] : ""));
+})();
+</script>
+<style>
+:root{
+  --bg:#F5F4EC; --surface:#FFFFFF; --ink:#223127; --muted:#6B7970; --line:#E2E5DA;
+  --fern:#3F6E4C; --fern-soft:#E7F0E2; --on-fern:#FFFFFF;
+  --shadow:0 1px 2px rgba(40,60,40,.05), 0 6px 20px rgba(40,70,40,.07);
+}
+@media (prefers-color-scheme: dark){ :root{ --bg:#141A16; --surface:#1C241E; --ink:#E6EDE7; --muted:#9DAAA1; --line:#2C3830; --fern:#7CB88E; --fern-soft:#223328; --on-fern:#0E1711; --shadow:none; } }
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:500 16px/1.5 "Nunito","Segoe UI",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+main{max-width:460px;margin:0 auto;padding:28px 18px 40px}
+h1,h2{font-weight:800;line-height:1.15;margin:0;letter-spacing:-.01em}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.logo svg{width:44px;height:44px}
+.logo b{font-size:1.5rem;font-weight:800;color:var(--fern)}
+.hero{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.av{width:60px;height:60px;border-radius:50%;overflow:hidden;background:var(--fern-soft);color:var(--fern);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;flex-shrink:0}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.hero h1{font-size:1.6rem}
+.lead{color:var(--muted);font-weight:600;margin:6px 0 22px}
+.step{background:var(--surface);border-radius:22px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px;border:1px solid var(--line)}
+.step h2{font-size:1.1rem;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.num{width:28px;height:28px;border-radius:50%;background:var(--fern);color:var(--on-fern);display:inline-flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.step p{margin:0 0 12px;color:var(--muted);font-size:.93rem}
+.step p:last-child{margin-bottom:0}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:13px 16px;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}
+.btn.primary{background:var(--fern);border-color:var(--fern);color:var(--on-fern);box-shadow:0 3px 10px color-mix(in srgb,var(--fern) 30%,transparent)}
+.btn+.btn{margin-top:10px}
+.small{font-size:.86rem;color:var(--muted)}
+.linkish{background:none;border:0;padding:0;font:inherit;color:var(--fern);font-weight:800;text-decoration:underline;cursor:pointer}
+.warn{background:var(--fern-soft);border-radius:14px;padding:10px 12px;font-size:.88rem;color:var(--ink);margin:0 0 12px}
+.foot{text-align:center;margin-top:20px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="12 12 76 76" aria-hidden="true"><circle cx="50" cy="50" r="36" fill="#E4EFDD"/><path d="M36 56a14 14 0 0 1 28 0z" fill="#F2B45A"/><path d="M14.5 56A36 36 0 0 0 85.5 56Z" fill="#8DBB78"/><path d="M50 79V60" stroke="#3F6E4C" stroke-width="3" stroke-linecap="round"/><path d="M50 64c-2-8-9-11-16-10 1 7 8 11 16 10z" fill="#3F6E4C"/><path d="M50 59c2-9 9-13 17-12-1 8-8 12-17 12z" fill="#4F8A5B"/><circle cx="50" cy="50" r="36" fill="none" stroke="#3F6E4C" stroke-width="2.5"/></svg><b>Alvor</b></div>
+
+  <div class="hero"><div class="av" id="av" hidden></div><h1 id="title">Get Alvor</h1></div>
+  <p class="lead" id="lead">The app for your plants: frost and heat warnings, watering reminders, plant identification, and a small circle of friends who see each other's gardens.</p>
+
+  <!-- Android -->
+  <section id="android" hidden>
+    <div class="step">
+      <h2><span class="num">1</span>Install Alvor</h2>
+      <p>Alvor isn't in the Play Store yet, so it comes as a file you install yourself.</p>
+      <a class="btn primary" id="apkBtn" href="#">Download Alvor for Android</a>
+      <p class="small" style="margin-top:12px">Open the file when it has downloaded. Android will warn you about apps from outside the Play Store and ask to allow installs from your browser: allow it, then tap Install.</p>
+      <p class="small">Already have Alvor? Skip to step 2.</p>
+    </div>
+    <div class="step">
+      <h2><span class="num">2</span><span id="step2Title">Open Alvor</span></h2>
+      <p id="step2Text">Open Alvor and tap Create account. You'll need the invite code you were sent.</p>
+      <a class="btn primary" id="openApp" href="#" hidden>Open Alvor with my invitation</a>
+      <p class="small" id="copyRow" hidden style="margin-top:12px">If Alvor opens without your invitation, <button class="linkish" id="copyBtn">copy it</button> and paste it into "Invite code or link".</p>
+    </div>
+  </section>
+
+  <!-- iPhone, computers -->
+  <section id="other" hidden>
+    <div class="step">
+      <h2>Use Alvor in your browser</h2>
+      <p>The Alvor app is for Android for now. On this device you can use Alvor in the browser, with the same account.</p>
+      <a class="btn primary" id="webBtn" href="./">Open Alvor</a>
+      <p class="small" id="iosHint" hidden style="margin-top:12px">Tip: in Safari, tap Share and then Add to Home Screen to keep Alvor like an app.</p>
+    </div>
+  </section>
+
+  <p class="foot small" id="webRow" hidden>Or <a class="linkish" id="webLink" href="./">use Alvor in the browser</a> instead.</p>
+</main>
+
+<script>
+/* Settings. APK_URL: where the Android app file is. Left empty on GitHub Pages, it becomes the
+   newest Release of this same repository, with the file named Alvor.apk. */
+const APK_URL = "";
+const SUPABASE_URL = "https://ihufhwnwzmzuhfxiwbal.supabase.co";
+const SUPABASE_KEY = "sb_publishable_v82YQhQIPQ31xuOArsKzGg_6LZ7e1US";
+const PACKAGE = "app.alvor.garden";
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const m = (location.hash + " " + location.search).match(/join=([0-9a-f]{32})/);
+const token = m ? m[1] : null;
+const base = location.origin + location.pathname.replace(/[^/]*$/, "");
+const webUrl = base + (token ? "#join=" + token : "");
+const ua = navigator.userAgent;
+const android = /Android/i.test(ua);
+const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+
+function apkUrl(){
+  if(APK_URL) return APK_URL;
+  const gh = location.hostname.match(/^([^.]+)\.github\.io$/i), repo = location.pathname.split("/")[1];
+  return gh && repo ? `https://github.com/${gh[1]}/${repo}/releases/latest/download/Alvor.apk` : "";
+}
+
+$("#webBtn").href = webUrl; $("#webLink").href = webUrl;
+if(android){
+  $("#android").hidden = false; $("#webRow").hidden = false;
+  const apk = apkUrl();
+  if(apk) $("#apkBtn").href = apk;
+  else { $("#apkBtn").removeAttribute("href"); $("#apkBtn").textContent = "Download coming soon"; $("#apkBtn").classList.remove("primary"); }
+  if(token){
+    // Opens the installed app on the invitation; without the app, falls back to Alvor in the browser.
+    const path = location.pathname.replace(/[^/]*$/, "");
+    $("#openApp").href = `intent://${location.host}${path}?join=${token}#Intent;scheme=https;package=${PACKAGE};S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
+    $("#openApp").hidden = false; $("#copyRow").hidden = false;
+    $("#step2Title").textContent = "Open Alvor and join";
+    $("#step2Text").textContent = "Come back to this page once Alvor is installed and tap the button. Alvor opens with your invitation filled in: choose an email, a password and a @username, and you're in.";
+  }
+}else{
+  $("#other").hidden = false;
+  $("#iosHint").hidden = !ios;
+}
+$("#copyBtn").addEventListener("click", async () => {
+  const t = base + "join.html#join=" + token;
+  try{ await navigator.clipboard.writeText(t); $("#copyBtn").textContent = "copied"; }catch(e){ prompt("Copy this:", t); }
+});
+
+/* Who sent the link: their name and photo, as friends see them. */
+async function preview(){
+  if(!token) return;
+  $("#title").textContent = "You're invited to Alvor";
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/link_preview`, {method:"POST",
+      headers:{"Content-Type":"application/json", "apikey":SUPABASE_KEY, "Authorization":"Bearer " + SUPABASE_KEY},
+      body:JSON.stringify({p_token:token})});
+    if(!r.ok) return;
+    const rows = await r.json(), p = rows && rows[0];
+    if(!p){
+      $("#title").textContent = "This link has expired";
+      $("#lead").textContent = "Whoever sent it has made a new one. Ask them for the new link. You can still install Alvor below.";
+      $("#openApp").hidden = true; $("#copyRow").hidden = true;
+      $("#webBtn").href = base; $("#webLink").href = base;
+      return;
+    }
+    const name = p.display_name || "A friend";
+    $("#title").textContent = `${name} invited you to Alvor`;
+    $("#lead").textContent = `Alvor is the app ${name} uses for their plants. Join, and you'll see each other's gardens straight away.`;
+    const av = $("#av"); av.hidden = false;
+    av.innerHTML = p.avatar_path
+      ? `<img alt="" src="${SUPABASE_URL}/storage/v1/object/public/avatars/${p.avatar_path.split("/").map(encodeURIComponent).join("/")}">`
+      : esc(name.trim().charAt(0).toUpperCase());
+  }catch(e){}
+}
+preview();
+</script>
+</body>
+</html>
