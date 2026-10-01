@@ -579,6 +579,43 @@ canvas.fx{width:100%;height:100%}
 .zone-opt .zi{width:36px;height:36px;border-radius:10px}
 .seg.small{margin:10px 0 0}
 .seg button svg{width:16px;height:16px;vertical-align:-3px}
+/* Part 5: profile, sharing, vault, hidden photos */
+.prof-card{display:flex;align-items:center;gap:12px}
+.av{width:52px;height:52px;border-radius:50%;overflow:hidden;background:var(--fern-soft);color:var(--fern);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-weight:800;font-size:1.3rem;flex-shrink:0}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av.big{width:96px;height:96px;font-size:2.2rem}
+.prof-txt{min-width:0;flex:1}.prof-txt b{display:block;font-size:1.05rem;overflow:hidden;text-overflow:ellipsis}.prof-txt span{color:var(--muted);font-size:.9rem}
+.prof-av{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.prof-av .btns{display:flex;gap:8px;flex-wrap:wrap}
+.vis-box{margin:4px 0 8px}
+.vis-row{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px}
+.vis-row .vis-ic svg{width:18px;height:18px;color:var(--fern);display:block}
+.vis-row .linkish{margin-left:auto;padding:0}
+.vis-seg button svg,.priv-seg button svg{width:16px;height:16px;vertical-align:-3px;margin-right:4px}
+.vis-card .vis-big{width:64px;height:64px;border-radius:50%;background:var(--fern-soft);color:var(--fern);display:flex;align-items:center;justify-content:center;margin:6px 0 8px}
+.vis-card .vis-big svg{width:30px;height:30px}
+.share-what{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.share-what div{background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;font-size:.86rem;color:var(--muted);font-weight:600;line-height:1.4}
+.share-what b{display:flex;align-items:center;gap:6px;color:var(--ink);margin-bottom:4px;font-size:.92rem}
+.share-what svg{width:16px;height:16px;flex-shrink:0}
+.onb-card .btn.wide+.btn.wide{margin-top:10px}
+.pick-tools{display:flex;gap:18px}
+.onb-card .pick-tools .linkish{display:inline-block;margin:0}
+.pick-list{display:grid;gap:6px;max-height:46vh;overflow-y:auto;margin:6px 0 14px}
+.pick-row{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:var(--radius-sm);padding:8px 10px}
+.pick-row input{width:20px;height:20px;flex-shrink:0;accent-color:var(--fern)}
+.pick-row .pt{width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0}
+.pick-row .pt img{width:100%;height:100%;object-fit:cover;display:block}
+.pick-row .pt .initial{font-size:1rem}
+.pick-row small{display:block;color:var(--muted)}
+.ph{position:relative}
+.ph-hid{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center}
+.ph-hid svg{width:15px;height:15px}
+.viewer-meta{margin:0;padding:10px 18px 0;color:var(--muted);font-size:.88rem}
+.viewer-meta svg{width:15px;height:15px;vertical-align:-3px}
+.vmark svg{width:14px;height:14px;vertical-align:-2px;margin-left:6px;color:var(--muted)}
+.chip svg{width:14px;height:14px;vertical-align:-2px;margin-right:2px}
+.ph-dot.t-share{background:#6B5BA6}
 </style>
 </head>
 <body>
@@ -617,7 +654,35 @@ canvas.fx{width:100%;height:100%}
       <div id="logList"></div>
     </section>
 
+    <section id="view-profile" hidden>
+      <div class="page-head"><button class="round-back" data-tab="settings" aria-label="Back to settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Your profile</h2></div>
+      <div class="card">
+        <div class="prof-av">
+          <div class="av big" id="pAv"></div>
+          <div class="btns"><button class="btn small primary" id="pAvBtn">Change photo</button><button class="btn small" id="pAvDel">Remove</button></div>
+          <input type="file" id="pAvFile" accept="image/*" hidden>
+        </div>
+        <div class="field"><label for="pName">Your name</label><input id="pName" maxlength="40" autocomplete="name"><span class="hint">How friends see you, e.g. Diogo or Ana G.</span></div>
+        <div class="field"><label for="pUser">@username</label><input id="pUser" maxlength="24" autocapitalize="none" autocomplete="username" spellcheck="false"><span class="hint">3 to 24 letters, numbers, dots or dashes, with no spaces.</span></div>
+        <button class="btn primary" id="pSave">Save profile</button>
+        <p class="status">Friends see your name, @username and photo. Never your email.</p>
+      </div>
+    </section>
+
     <section id="view-settings" hidden>
+      <div class="card prof-card" id="profCard" hidden>
+        <div class="av" id="profAv"></div>
+        <div class="prof-txt"><b id="profName"></b><span id="profUser"></span></div>
+        <button class="btn small" data-tab="profile">Edit profile</button>
+      </div>
+      <div class="card" id="privCard" hidden>
+        <h2>Sharing and privacy</h2>
+        <p class="status" style="margin-top:0">New plants you add are visible to</p>
+        <div class="seg small priv-seg" role="radiogroup" aria-label="New plants are visible to" id="defVisSeg"></div>
+        <p class="status" id="defVisHint"></p>
+        <button class="btn small" id="chooseShareBtn" style="margin-top:12px">Choose which plants friends see</button>
+        <label class="check" style="margin:16px 0 0"><input type="checkbox" id="findable"><span>Let people find me<br><span class="status">When it's on, people can find you by your name or @username and send you a friend request. When it's off, only people you give your friend link to can add you.</span></span></label>
+      </div>
       <div class="card">
         <h2>Your home</h2>
         <div class="seg" role="radiogroup" aria-label="Home type">
@@ -792,6 +857,7 @@ canvas.fx{width:100%;height:100%}
     <div class="field"><label for="fLast">Last watered</label><input id="fLast" type="date"></div>
     <div class="field"><label for="fNotes">Notes</label><textarea id="fNotes" rows="3"></textarea></div>
     <div class="field" id="plantHistBox"><label>History</label><div class="p-hist" id="plantHist"></div></div>
+    <div class="vis-box" id="fVis"></div>
   </div>
   <div class="dlg-f">
     <button class="btn danger" id="dlgDelete">Delete</button>
@@ -814,7 +880,8 @@ canvas.fx{width:100%;height:100%}
 
 <dialog id="viewer">
   <img id="viewerImg" alt="">
-  <div class="dlg-f"><button class="btn danger" id="viewerDelete">Delete photo</button><span id="viewerDate" style="align-self:center;color:var(--muted)"></span><button class="btn" id="viewerClose">Close</button></div>
+  <p class="viewer-meta"><span id="viewerDate"></span><span id="viewerHid"></span></p>
+  <div class="dlg-f"><button class="btn danger" id="viewerDelete">Delete</button><button class="btn" id="viewerHide">Hide from friends</button><button class="btn" id="viewerClose">Close</button></div>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -856,8 +923,19 @@ const ICON = {
   list:SV('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/>'),
   grid:SV('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
   back:SV('<path d="M15 5l-7 7 7 7"/>'),
-  pin:SV('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>')
+  pin:SV('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
+  lock:SV('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/><circle cx="12" cy="15.5" r="1.2" fill="currentColor"/>'),
+  people:SV('<circle cx="9" cy="8.5" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17" cy="9.5" r="2.5"/><path d="M16 14.2c2.9.2 5 2.3 5 5.3"/>'),
+  eyeOff:SV('<path d="M3 3l18 18"/><path d="M10.6 5.6A10.5 10.5 0 0 1 12 5.5c5.5 0 9 6.5 9 6.5a17 17 0 0 1-2.7 3.4M6.6 6.7C4.2 8.3 3 12 3 12s3.5 6.5 9 6.5a8.6 8.6 0 0 0 4.3-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'),
+  check:SV('<path d="M4.5 12.5l5 5 10-11"/>')
 };
+/* Who sees a plant. "Everyone" comes later, when Alvor opens up. */
+const VIS = {
+  friends:{label:"Friends", short:"Friends", icon:ICON.people, hint:"Friends see its name, species, spot and photos. Never your notes or watering."},
+  vault:{label:"Only me (Vault)", short:"Only me", icon:ICON.lock, hint:"Only you see it. It stays in its spot with all its alerts."},
+  everyone:{label:"Everyone", short:"Everyone", icon:ICON.people, hint:"Anyone on Alvor can see it."}
+};
+const visOf = p => VIS[p && p.visibility] ? p.visibility : "vault";
 const AREAS = {
   house:{label:"House", hint:"Inside the house", zones:["house-window","house-low","house-cabinet"]},
   porch:{label:"Porch", hint:"Covered, rain doesn't reach", zones:["porch-partial","porch-shade"]},
@@ -1345,18 +1423,20 @@ let idsFilter = null;
 function renderPlants(){
   const counts = {all:state.plants.length};
   ALL_AREAS.forEach(a => counts[a] = state.plants.filter(p => p.area === a).length);
-  const chips = ["all", ...ALL_AREAS.filter(a => counts[a])];
+  counts.vault = online ? state.plants.filter(p => visOf(p) === "vault").length : 0;
+  if(plantFilter === "vault" && !counts.vault) plantFilter = "all";
+  const chips = ["all", ...ALL_AREAS.filter(a => counts[a]), ...(counts.vault ? ["vault"] : [])];
   if(ZONES[plantFilter] && plantFilter !== "greenhouse") chips.push(plantFilter);
   $("#chips").innerHTML = (idsFilter ? `<button class="chip" data-act="clearIds" aria-pressed="true">From the alert: ${idsFilter.length} ✕</button>` : "") +
     chips.map(k => {
-      const label = k === "all" ? "All" : AREAS[k] ? areaLabel(k) : ZONES[k].label;
-      const n = k === "all" ? counts.all : AREAS[k] ? counts[k] : state.plants.filter(p => p.zone === k).length;
+      const label = k === "all" ? "All" : k === "vault" ? `${ICON.lock}Vault` : AREAS[k] ? areaLabel(k) : ZONES[k].label;
+      const n = k === "all" || k === "vault" ? counts[k] : AREAS[k] ? counts[k] : state.plants.filter(p => p.zone === k).length;
       return `<button class="chip" data-act="filter" data-f="${k}" aria-pressed="${!idsFilter && plantFilter === k}">${label} ${n}</button>`;
     }).join("");
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === plantView));
   const q = $("#search").value.trim().toLowerCase();
   const W = wx();
-  const match = p => idsFilter ? idsFilter.includes(p.id) : plantFilter === "all" || p.area === plantFilter || p.zone === plantFilter;
+  const match = p => idsFilter ? idsFilter.includes(p.id) : plantFilter === "all" || (plantFilter === "vault" ? visOf(p) === "vault" : p.area === plantFilter || p.zone === plantFilter);
   const list = state.plants.filter(p => match(p) && (!q || [p.name, p.species, p.genus, p.notes].join(" ").toLowerCase().includes(q)));
   const el = $("#plantList");
   el.className = "plist v-" + plantView;
@@ -1371,6 +1451,7 @@ function renderPlants(){
     <h2 class="group-h">${zi(a)} ${areaLabel(a)} <small>${by[a].length}</small></h2>
     <div class="pgroup">${by[a].map(p => plantView === "grid" ? plantCard(p, W) : plantRow(p, W)).join("")}</div>`).join("");
 }
+const vaultMark = p => online && visOf(p) === "vault" ? `<span class="vmark" title="In your Vault: only you see it" aria-label="(in your Vault)">${ICON.lock}</span>` : "";
 function thumbHtml(p){
   const ph = latestPhoto(p.id);
   return ph ? `<img src="${ph.data}" alt="">` : `<span class="initial a-${p.area}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`;
@@ -1382,7 +1463,7 @@ function wateredText(p, W){
 function plantRow(p, W){
   return `<div class="plant">
     <button class="thumb" data-act="edit" data-id="${p.id}" aria-label="Open ${esc(p.name)}">${thumbHtml(p)}</button>
-    <div class="pmain"><button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}</button>
+    <div class="pmain"><button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}${vaultMark(p)}</button>
       ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
       <div class="where">${zi(p.zone)}<span>${esc(zoneLabel(p))}</span></div></div>
     <div class="flags">${flagIcons(p.id)}</div>
@@ -1394,7 +1475,7 @@ function plantCard(p, W){
   return `<div class="pcard">
     <button class="pc-photo" data-act="edit" data-id="${p.id}" aria-label="Open ${esc(p.name)}">${thumbHtml(p)}<span class="pc-flags">${flagIcons(p.id)}</span></button>
     <div class="pc-body">
-      <button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}</button>
+      <button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}${vaultMark(p)}</button>
       ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
       <div class="where">${zi(p.zone)}<span>${esc(ZONES[p.zone].short)}</span></div>
       <div class="pc-acts"><button class="icon-btn" data-act="move" data-id="${p.id}" aria-label="Move ${esc(p.name)}">${ICON.move}</button><button class="icon-btn water" data-act="water" data-id="${p.id}" aria-label="Mark ${esc(p.name)} watered">${ICON.drop}</button></div>
@@ -1525,10 +1606,11 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-tab]
 function showTab(tab){
   currentTab = tab;
   if(tab !== "plants") idsFilter = null;
-  const main = tab === "log" ? "settings" : tab;
+  const main = tab === "log" || tab === "profile" ? "settings" : tab;
   document.querySelectorAll("#dial [data-tab], .gear-btn").forEach(b => { if(b.dataset.tab === main) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
-  ["today","plants","log","settings"].forEach(t => $("#view-" + t).hidden = t !== tab);
+  ["today","plants","log","settings","profile"].forEach(t => $("#view-" + t).hidden = t !== tab);
   if(tab === "settings") fillSettings();
+  if(tab === "profile") fillProfile();
   if(tab === "today") applySky(); else cancelAnimationFrame(fxState.raf);
   dial.classList.remove("folded");
   window.scrollTo(0,0);
@@ -1588,7 +1670,7 @@ const galleryList = () => editingId ? (photos[editingId] || []) : pending;
 function renderGallery(){
   const list = galleryList();
   $("#gallery").innerHTML = list.length ? list.map(ph =>
-    `<button class="ph" data-act="viewPhoto" data-ph="${ph.id}"><img src="${ph.data}" alt="Photo from ${ph.date}">${parseDay(ph.date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"2-digit"})}</button>`).join("")
+    `<button class="ph" data-act="viewPhoto" data-ph="${ph.id}"><img src="${ph.data}" alt="Photo from ${ph.date}">${ph.hidden && online ? `<span class="ph-hid" title="Hidden from friends">${ICON.eyeOff}</span>` : ""}${parseDay(ph.date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"2-digit"})}</button>`).join("")
     : `<p class="none">No photos yet. The newest photo becomes the plant's picture.</p>`;
 }
 $("#addPhoto").addEventListener("click", () => $("#photoFile").click());
@@ -1615,8 +1697,23 @@ function viewPhoto(id){
   viewing = galleryList().find(p => p.id === id); if(!viewing) return;
   $("#viewerImg").src = viewing.data;
   $("#viewerDate").textContent = parseDay(viewing.date).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+  fillViewerHide();
   viewer.showModal();
 }
+/* "Hide this photo": friends never see it, even when the plant is shared. */
+function fillViewerHide(){
+  const h = !!(viewing && viewing.hidden);
+  $("#viewerHide").hidden = !online;
+  $("#viewerHide").textContent = h ? "Show to friends" : "Hide from friends";
+  $("#viewerHid").innerHTML = h && online ? ` · ${ICON.eyeOff} Hidden from friends` : "";
+}
+$("#viewerHide").addEventListener("click", async () => {
+  if(!viewing) return;
+  viewing.hidden = !viewing.hidden;
+  if(viewing.plantId){ viewing.hideDirty = true; try{ await idb.put(viewing); }catch(e){} queuePhotoSync(); }
+  fillViewerHide(); renderGallery();
+  toast(viewing.hidden ? "Hidden from friends" : "Friends can see this photo");
+});
 $("#viewerClose").addEventListener("click", () => viewer.close());
 $("#viewerDelete").addEventListener("click", async () => {
   if(!viewing || !confirm("Delete this photo?")) return;
@@ -1632,6 +1729,23 @@ $("#viewerDelete").addEventListener("click", async () => {
 const dlg = $("#dlg");
 $("#presetList").innerHTML = PRESETS.map(p => `<option value="${esc(p.s)}"></option>`).join("");
 let editSel = {area:"outside", zone:"out-sun", planting:"pot"};
+/* "Visible to: Friends · Change", shared by the edit screen and the add-plant steps. */
+const defaultVis = () => (me && VIS[me.defaultVisibility] && me.defaultVisibility) || "vault";
+function visBlock(vis, open){
+  const v = VIS[vis] || VIS.vault;
+  return `<div class="vis-row"><span class="vis-ic">${v.icon}</span><span>Visible to: <b>${v.label}</b></span><button type="button" class="linkish" data-vis-change>${open ? "Done" : "Change"}</button></div>` +
+    (open ? `<div class="seg small vis-seg" role="radiogroup" aria-label="Visible to">${["friends","vault"].map(k => `<button type="button" role="radio" data-vis="${k}" aria-pressed="${k === vis}">${VIS[k].icon}${VIS[k].short}</button>`).join("")}</div><p class="status">${v.hint}</p>` : "");
+}
+function onVisClick(e, st, el){
+  const c = e.target.closest("[data-vis-change]"), v = e.target.closest("[data-vis]");
+  if(c) st.visOpen = !st.visOpen;
+  else if(v) st.visibility = v.dataset.vis;
+  else return;
+  el.innerHTML = visBlock(st.visibility, st.visOpen);
+  if(st.visOpen) el.scrollIntoView({block:"nearest", behavior:"smooth"});
+}
+let editVis = {visibility:"vault", visOpen:false};
+$("#fVis").addEventListener("click", e => onVisClick(e, editVis, $("#fVis")));
 const drawEditPick = () => { $("#fZonePick").innerHTML = pickerHtml(editSel); };
 $("#fZonePick").addEventListener("click", e => { if(pickerClick(e, editSel)) drawEditPick(); });
 attachSuggest($("#fSpecies"), it => { $("#fGenus").value = it.genus; showPresetNote(); $("#fSpecies").dispatchEvent(new Event("change")); });
@@ -1661,6 +1775,9 @@ function openDialog(id){
   renderGallery();
   const hist = p ? state.log.filter(e => e.plantId === p.id).slice(0, 25) : [];
   $("#plantHistBox").hidden = !p;
+  editVis = {visibility:p ? visOf(p) : defaultVis(), visOpen:false};
+  $("#fVis").hidden = !online;
+  $("#fVis").innerHTML = visBlock(editVis.visibility, false);
   $("#plantHist").innerHTML = hist.length ? hist.map(e => `<div class="ph-row"><span class="ph-dot t-${e.type}"></span><span>${esc(e.detail)}</span><small>${new Date(e.t).toLocaleDateString("en-GB", {day:"numeric", month:"short"})}</small></div>`).join("")
     : `<p class="status" style="margin:0">Nothing logged yet.</p>`;
   dlg.showModal();
@@ -1688,14 +1805,15 @@ $("#dlgSave").addEventListener("click", async () => {
   const data = {
     name, species:$("#fSpecies").value.trim(), genus:$("#fGenus").value.trim() || ($("#fSpecies").value.trim().split(" ")[0] || ""), pattern:$("#fPattern").value, minTemp:min,
     ws:Math.max(1, parseInt($("#fWs").value) || 7), ww:Math.max(1, parseInt($("#fWw").value) || 14),
-    lastWatered:$("#fLast").value || null, notes:$("#fNotes").value.trim()
+    lastWatered:$("#fLast").value || null, notes:$("#fNotes").value.trim(), visibility:editVis.visibility
   };
   if(editingId){
     const p = state.plants.find(x => x.id === editingId);
+    if(online && visOf(p) !== data.visibility) addLog(p.id, "share", data.visibility === "vault" ? "Moved to the Vault" : "Shared with friends");
     Object.assign(p, data);
     if(editSel.zone) setZone(p, editSel.zone, editSel.planting);
   }else{
-    const p = {id:uid(), created:new Date().toISOString(), visibility:(me && me.defaultVisibility) || "vault", ...data};
+    const p = {id:uid(), created:new Date().toISOString(), ...data};
     applyZone(p, editSel.zone || "out-sun", editSel.planting);
     state.plants.push(p); addLog(p.id, "add", "Added");
     if(pending.length){
@@ -1812,7 +1930,7 @@ let W = null;
 function openWizard(){
   W = {step:0, photos:[], results:null, loading:false, error:"", pick:null, species:"", genus:"", family:"", common:"",
        name:"", nameTouched:false, pattern:"outdoor", area:ZONES[defaultZone("outdoor")].area, zone:defaultZone("outdoor"), planting:defaultPlanting("outdoor"), zoneTouched:false,
-       minTemp:"", ws:7, ww:14, last:"", notes:"", careTouched:false, identifiedFor:""};
+       minTemp:"", ws:7, ww:14, last:"", notes:"", careTouched:false, identifiedFor:"", visibility:defaultVis(), visOpen:false};
   renderWizard(); wiz.showModal();
 }
 function applySpecies(){
@@ -1918,7 +2036,9 @@ function renderWizard(){
         <div class="field"><label for="wWw">Water every (winter)</label><input id="wWw" type="number" min="1" value="${esc(W.ww)}"><span class="hint">days</span></div>
       </div>
       <div class="field"><label for="wLast">Last watered</label><input id="wLast" type="date" value="${esc(W.last)}"></div>
-      <div class="field"><label for="wNotes">Notes</label><textarea id="wNotes" rows="3">${esc(W.notes)}</textarea></div>`;
+      <div class="field"><label for="wNotes">Notes</label><textarea id="wNotes" rows="3">${esc(W.notes)}</textarea></div>
+      ${online ? `<div class="vis-box" id="wVis">${visBlock(W.visibility, W.visOpen)}</div>` : ""}`;
+    if(online) $("#wVis").addEventListener("click", e => onVisClick(e, W, $("#wVis")));
     [["#wMin","minTemp"],["#wWs","ws"],["#wWw","ww"],["#wLast","last"],["#wNotes","notes"]].forEach(([id, k]) =>
       $(id).addEventListener("input", e => { W[k] = e.target.value; if(k !== "last" && k !== "notes") W.careTouched = true; }));
     next.textContent = "Save plant";
@@ -1927,7 +2047,7 @@ function renderWizard(){
 async function wizSave(){
   const min = parseFloat(W.minTemp);
   if(isNaN(min)){ toast("Add the lowest temperature it takes"); $("#wMin").focus(); return; }
-  const p = {id:uid(), created:new Date().toISOString(), visibility:(me && me.defaultVisibility) || "vault", name:W.name.trim(), species:W.species, genus:W.genus || (W.species.split(" ")[0] || ""), family:W.family,
+  const p = {id:uid(), created:new Date().toISOString(), visibility:VIS[W.visibility] ? W.visibility : defaultVis(), name:W.name.trim(), species:W.species, genus:W.genus || (W.species.split(" ")[0] || ""), family:W.family,
     pattern:W.pattern, minTemp:min, ws:Math.max(1, parseInt(W.ws) || 7), ww:Math.max(1, parseInt(W.ww) || 14),
     lastWatered:W.last || null, notes:String(W.notes || "").trim()};
   applyZone(p, W.zone, W.planting);
@@ -2108,6 +2228,7 @@ function fillSettings(){
   $("#sMorning").innerHTML = hours(5, 11); $("#sEvening").innerHTML = hours(16, 22);
   $("#sMorning").value = s.morningHour; $("#sEvening").value = s.eveningHour; $("#sEveningOn").checked = s.eveningCheck !== false;
   fillAccount();
+  fillProfileCard(); fillPrivacy();
   refreshNotifyStatus();
   $("#sMargin").value = s.margin; $("#sGh").value = s.gh; $("#sHeat").value = s.heat; $("#sWind").value = s.wind; $("#sRain").value = s.rain;
 }
@@ -2164,7 +2285,7 @@ function maybeOnboard(){
   onbEl().hidden = false; renderOnb();
 }
 function onbFinish(openAdd){
-  state.settings.onboarded = true; save();
+  state.settings.onboarded = true; state.settings.sharingIntro = true; save();
   onbEl().hidden = true; ONB = null;
   render(); showTab("today");
   if(openAdd) openWizard();
@@ -2174,8 +2295,9 @@ function onbPlace(p){
 }
 function renderOnb(){
   const O = ONB, body = $("#onbBody");
-  $("#onbSteps").innerHTML = [0,1,2].map(i => `<span class="${i <= O.step ? "on" : ""}"></span>`).join("");
-  $("#onbBack").hidden = O.step === 0 || O.step === 3;
+  if(O.mode) return renderShare();
+  $("#onbSteps").innerHTML = [0,1,2,3].map(i => `<span class="${i <= O.step ? "on" : ""}"></span>`).join("");
+  $("#onbBack").hidden = O.step === 0 || O.step === 4;
   const who = me && me.user ? me.user.charAt(0).toUpperCase() + me.user.slice(1) : "";
   if(O.step === 0){
     const card = (h, img, t, sub) => `<button class="home-card" data-ohome="${h}" aria-pressed="${O.home === h && O.picked ? "true" : "false"}"><img src="${img}" alt=""><b>${t}</b><small>${sub}</small></button>`;
@@ -2218,6 +2340,9 @@ function renderOnb(){
     }
   }
   else if(O.step === 2){
+    body.innerHTML = defaultVisHtml(O, "Sharing with friends", "When you have friends on Alvor, who should see the plants you add?");
+  }
+  else if(O.step === 3){
     body.innerHTML = `<h1>Get alerts</h1>
       <div class="onb-alerts">
         <div class="onb-alert"><span class="zi a-house">${ICON.sun}</span><p><b>Every morning at 08:00</b><br>A short summary of what your plants need today.</p></div>
@@ -2237,6 +2362,7 @@ function renderOnb(){
 }
 $("#onbBody").addEventListener("click", async e => {
   const O = ONB; if(!O) return;
+  if(await shareClick(e, O)) return;
   const h = e.target.closest("[data-ohome]"), rn = e.target.closest("[data-orain]"), rs = e.target.closest("[data-ores]"), a = e.target.closest("[data-oact]");
   if(h){
     O.home = h.dataset.ohome; O.picked = true;
@@ -2269,20 +2395,237 @@ $("#onbBody").addEventListener("click", async e => {
     const st = state.settings;
     st.saved = {name:O.place.name, lat:O.place.lat, lon:O.place.lon}; st.locMode = "saved";
     useActiveLocation(); save(); fetchWeather(true);
-    O.step = 2; O.msg = ""; renderOnb();
+    O.step = 2; O.msg = ""; O.vis = null; renderOnb();
   }
   else if(act === "notify"){
     O.busy = true; O.msg = ""; renderOnb();
     const ok = await enableNotifications();
     O.busy = false;
-    if(ok){ O.step = 3; } else O.msg = $("#notifyStatus").textContent;
+    if(ok){ O.step = 4; } else O.msg = $("#notifyStatus").textContent;
     renderOnb();
   }
-  else if(act === "later"){ O.step = 3; O.msg = ""; renderOnb(); }
+  else if(act === "later"){ O.step = 4; O.msg = ""; renderOnb(); }
   else if(act === "first") onbFinish(true);
   else if(act === "done") onbFinish(false);
 });
-$("#onbBack").addEventListener("click", () => { if(!ONB || ONB.step === 0) return; ONB.step--; ONB.msg = ""; if(ONB.step === 0) ONB.picked = true; renderOnb(); });
+$("#onbBack").addEventListener("click", () => {
+  if(ONB && ONB.mode){ shareBack(); return; }
+  if(!ONB || ONB.step === 0) return; ONB.step--; ONB.msg = ""; if(ONB.step === 0) ONB.picked = true; renderOnb(); });
+
+/* ---------- Sharing: default for new plants, and the one-time screen for existing gardens ---------- */
+const shareWhatHtml = () => `<div class="share-what">
+  <div><b>${ICON.people}Friends see</b>Name, species, spot, photos and how it's growing</div>
+  <div><b>${ICON.lock}Never shared</b>Your notes, watering and exact location</div></div>`;
+function visCard(k, sel){
+  const t = k === "friends" ? ["Friends", "They see the plants you add"] : ["Only me", "New plants go to your Vault. Share them one by one."];
+  return `<button class="home-card vis-card" data-ovis="${k}" aria-pressed="${sel === k}"><span class="vis-big">${VIS[k].icon}</span><b>${t[0]}</b><small>${t[1]}</small></button>`;
+}
+function defaultVisHtml(O, title, lead){
+  return `<h1>${title}</h1><p class="onb-lead">${lead}</p>
+    <div class="home-cards">${visCard("friends", O.vis)}${visCard("vault", O.vis)}</div>
+    ${O.mode ? `<div style="height:16px"></div>` : shareWhatHtml()}
+    <button class="btn primary wide" data-oact="setVis" ${O.vis ? "" : "disabled"}>Continue</button>
+    ${O.msg ? `<p class="status onb-msg">${esc(O.msg)}</p>` : ""}
+    <p class="status">You can change it for any plant, any time, in its edit screen.</p>`;
+}
+const storeMe = () => { try{ localStorage.setItem(USER_KEY, JSON.stringify(me)); }catch(e){} };
+async function setDefaultVis(v){
+  if(!me || !VIS[v]) return false;
+  me.defaultVisibility = v; storeMe();
+  try{ must(await sb.from("accounts").update({default_visibility:v}).eq("id", me.id)); return true; }
+  catch(e){ if(isAuthErr(e)) sessionExpired(); else toast("Couldn't save that to your account. Try again in Settings."); return false; }
+}
+/* Share exactly the plants in the set; the rest go to (or stay in) the Vault. */
+function applyShareSet(sel){
+  let n = 0;
+  state.plants.forEach(p => {
+    const v = sel.has(p.id) ? "friends" : "vault";
+    if(visOf(p) !== v){ p.visibility = v; n++; }
+  });
+  if(n) save();
+  return n;
+}
+function maybeShareIntro(){
+  if(!online || !token || !me || ONB || !state.settings.onboarded || state.settings.sharingIntro) return;
+  ONB = {mode:"intro", step:state.plants.length ? "share" : "default", vis:null, msg:"",
+    sel:new Set(state.plants.filter(p => visOf(p) === "friends").map(p => p.id))};
+  onbEl().hidden = false; renderOnb();
+}
+function openShareChooser(){
+  if(!online || !me) return;
+  ONB = {mode:"choose", step:"choose", msg:"", sel:new Set(state.plants.filter(p => visOf(p) === "friends").map(p => p.id))};
+  onbEl().hidden = false; renderOnb();
+}
+function shareDone(msg){
+  if(ONB && ONB.mode === "intro"){ state.settings.sharingIntro = true; save(); }
+  onbEl().hidden = true; ONB = null;
+  render(); if(currentTab === "settings") fillSettings();
+  if(msg) toast(msg);
+}
+function renderShare(){
+  const O = ONB, body = $("#onbBody");
+  $("#onbSteps").innerHTML = "";
+  $("#onbBack").hidden = O.mode === "intro" ? O.step === "share" || !state.plants.length : false;
+  if(O.step === "share"){
+    const n = state.plants.length, vault = state.plants.filter(p => visOf(p) === "vault").length;
+    body.innerHTML = `<h1>Share your garden with friends</h1>
+      <p class="onb-lead">Friends on Alvor can now see the plants you choose. ${vault === n ? `For now all your plants are in your Vault: only you see them.` : `${vault} of your ${n} plants are in your Vault: only you see them.`}</p>
+      ${shareWhatHtml()}
+      <button class="btn primary wide" data-oact="shareAll">Share all ${n} ${n === 1 ? "plant" : "plants"}</button>
+      <button class="btn wide" data-oact="choose">Choose which</button>
+      <button class="linkish" data-oact="notNow">Not now</button>`;
+  }
+  else if(O.step === "choose"){
+    const list = [...state.plants].sort((a, b) => a.name.localeCompare(b.name)), k = O.sel.size;
+    body.innerHTML = `<h1>Choose what friends see</h1>
+      <p class="onb-lead">Ticked plants are visible to friends. The rest stay in your Vault, with all their alerts.</p>
+      <div class="pick-tools"><button class="linkish" data-oact="pickAll">Tick all</button><button class="linkish" data-oact="pickNone">Untick all</button></div>
+      <div class="pick-list">${list.map(p => `<label class="pick-row"><input type="checkbox" data-pick="${p.id}" ${O.sel.has(p.id) ? "checked" : ""}>
+        <span class="pt">${thumbHtml(p)}</span><span><b>${esc(p.name)}</b><small>${esc(areaLabel(p.area))}</small></span></label>`).join("")}</div>
+      <button class="btn primary wide" data-oact="saveChoice">${k ? `Share ${k} ${k === 1 ? "plant" : "plants"}` : "Keep them all in the Vault"}</button>`;
+  }
+  else{
+    body.innerHTML = defaultVisHtml(O, "And the plants you add from now on?", "Pick who sees new plants. You can still change each one.");
+  }
+}
+function shareBack(){
+  const O = ONB; if(!O) return;
+  if(O.mode === "choose"){ onbEl().hidden = true; ONB = null; return; }
+  if(O.step !== "share" && state.plants.length){ O.step = "share"; O.msg = ""; renderOnb(); }
+}
+/* Handles taps shared by the welcome setup and the sharing screens. Returns true when handled. */
+async function shareClick(e, O){
+  const pick = e.target.closest("[data-pick]"), ov = e.target.closest("[data-ovis]"), a = e.target.closest("[data-oact]");
+  if(pick){ pick.checked ? O.sel.add(pick.dataset.pick) : O.sel.delete(pick.dataset.pick); const b = $("#onbBody [data-oact=saveChoice]"), k = O.sel.size;
+    if(b) b.textContent = k ? `Share ${k} ${k === 1 ? "plant" : "plants"}` : "Keep them all in the Vault"; return true; }
+  if(ov){ O.vis = ov.dataset.ovis; O.msg = ""; renderOnb(); return true; }
+  if(!a) return false;
+  const act = a.dataset.oact;
+  if(act === "setVis"){
+    if(!O.vis) return true;
+    a.disabled = true;
+    await setDefaultVis(O.vis);
+    if(O.mode === "intro" && O.apply) applyShareSet(O.apply);
+    if(O.mode === "intro") shareDone(O.vis === "friends" ? "New plants will be visible to friends" : "New plants will go to your Vault");
+    else { O.step = 3; O.msg = ""; renderOnb(); }
+    return true;
+  }
+  if(!O.mode) return false;
+  if(act === "shareAll"){ O.apply = new Set(state.plants.map(p => p.id)); O.step = "default"; O.vis = "friends"; renderOnb(); }
+  else if(act === "choose"){ O.step = "choose"; renderOnb(); }
+  else if(act === "notNow"){ O.apply = null; O.step = "default"; O.vis = null; renderOnb(); }
+  else if(act === "pickAll"){ state.plants.forEach(p => O.sel.add(p.id)); renderOnb(); }
+  else if(act === "pickNone"){ O.sel.clear(); renderOnb(); }
+  else if(act === "saveChoice"){
+    const k = O.sel.size;
+    if(O.mode === "choose"){ const n = applyShareSet(O.sel); shareDone(n ? (k ? `${k} ${k === 1 ? "plant" : "plants"} visible to friends` : "All plants are in your Vault") : "Nothing changed"); }
+    else { O.apply = new Set(O.sel); O.step = "default"; O.vis = k ? "friends" : null; renderOnb(); }
+  }
+  return true;
+}
+
+/* ---------- Profile ---------- */
+const avatarUrl = path => `${SUPABASE_URL}/storage/v1/object/public/avatars/${path.split("/").map(encodeURIComponent).join("/")}`;
+const initialOf = () => esc(((me && (me.name || me.user)) || "?").trim().charAt(0).toUpperCase());
+const avatarHtml = () => me && me.avatar ? `<img src="${avatarUrl(me.avatar)}" alt="">` : initialOf();
+const USERNAME_RE = /^[a-z0-9._-]{3,24}$/;
+function fillProfileCard(){
+  const show = online && !!me;
+  $("#profCard").hidden = !show;
+  if(!show) return;
+  $("#profAv").innerHTML = avatarHtml();
+  $("#profName").textContent = me.name || me.user;
+  $("#profUser").textContent = "@" + me.user;
+}
+function fillProfile(){
+  if(!online || !me){ showTab("settings"); return; }
+  $("#pAv").innerHTML = avatarHtml();
+  $("#pAvDel").hidden = !me.avatar;
+  $("#pName").value = me.name || "";
+  $("#pUser").value = me.user || "";
+}
+$("#pSave").addEventListener("click", async () => {
+  const name = $("#pName").value.trim().replace(/\s+/g, " "), user = $("#pUser").value.trim().toLowerCase().replace(/^@/, "");
+  if(!name){ toast("Add your name"); $("#pName").focus(); return; }
+  if(name.length > 40){ toast("Keep your name under 40 characters"); return; }
+  if(!USERNAME_RE.test(user)){ toast("Use 3 to 24 letters, numbers, dots or dashes for your @username"); $("#pUser").focus(); return; }
+  const btn = $("#pSave"); btn.disabled = true;
+  try{
+    const {error} = await sb.from("profiles").update({display_name:name, username:user}).eq("id", me.id);
+    if(error){
+      if(error.code === "23505") toast("That @username is already taken");
+      else if(error.code === "23514") toast("That @username can't be used. Try letters and numbers only.");
+      else if(isAuthErr(error)) sessionExpired();
+      else toast("Couldn't save. Check your connection.");
+      return;
+    }
+    me.name = name; me.user = user; storeMe();
+    $("#pUser").value = user; fillProfileCard(); fillAccount();
+    toast("Profile saved");
+  }catch(e){ toast("Couldn't save. Check your connection."); }
+  finally{ btn.disabled = false; }
+});
+/* Profile photo: a 320 px square, cut from the middle of the picture. */
+async function squareJpeg(file, size){
+  const url = URL.createObjectURL(file);
+  try{
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+    const w = img.naturalWidth, h = img.naturalHeight, side = Math.min(w, h);
+    const c = document.createElement("canvas"); c.width = c.height = size;
+    c.getContext("2d").drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, size, size);
+    return await new Promise(res => c.toBlob(res, "image/jpeg", 0.85));
+  }finally{ URL.revokeObjectURL(url); }
+}
+$("#pAvBtn").addEventListener("click", () => $("#pAvFile").click());
+$("#pAvFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = ""; if(!f || !me) return;
+  const btn = $("#pAvBtn"); btn.disabled = true; btn.textContent = "Saving…";
+  try{
+    const blob = await squareJpeg(f, 320);
+    const path = `${me.id}/avatar-${Date.now()}.jpg`, store = sb.storage.from("avatars");
+    must(await store.upload(path, blob, {contentType:"image/jpeg", upsert:false}));
+    must(await sb.from("profiles").update({avatar_path:path}).eq("id", me.id));
+    const old = me.avatar; me.avatar = path; storeMe();
+    if(old && old !== path) store.remove([old]).catch(() => {});
+    fillProfile(); fillProfileCard(); toast("Photo saved");
+  }catch(err){ if(isAuthErr(err)) sessionExpired(); else toast("Couldn't save the photo. Try again."); }
+  finally{ btn.disabled = false; btn.textContent = "Change photo"; }
+});
+$("#pAvDel").addEventListener("click", async () => {
+  if(!me || !me.avatar || !confirm("Remove your profile photo?")) return;
+  try{
+    must(await sb.from("profiles").update({avatar_path:null}).eq("id", me.id));
+    sb.storage.from("avatars").remove([me.avatar]).catch(() => {});
+    me.avatar = null; storeMe(); fillProfile(); fillProfileCard(); toast("Photo removed");
+  }catch(e){ if(isAuthErr(e)) sessionExpired(); else toast("Couldn't remove it. Check your connection."); }
+});
+
+/* ---------- Privacy settings ---------- */
+function fillPrivacy(){
+  const show = online && !!me;
+  $("#privCard").hidden = !show;
+  if(!show) return;
+  const v = defaultVis();
+  $("#defVisSeg").innerHTML = ["friends","vault"].map(k => `<button role="radio" data-defvis="${k}" aria-pressed="${k === v}">${VIS[k].icon}${VIS[k].short}</button>`).join("");
+  $("#defVisHint").textContent = v === "friends" ? "Friends see new plants as soon as you add them." : "New plants go to your Vault. Only you see them until you share them.";
+  $("#chooseShareBtn").hidden = !state.plants.length;
+  $("#findable").checked = !!me.findable;
+}
+$("#defVisSeg").addEventListener("click", async e => {
+  const b = e.target.closest("[data-defvis]"); if(!b || b.dataset.defvis === defaultVis()) return;
+  if(await setDefaultVis(b.dataset.defvis)) toast("Saved");
+  fillPrivacy();
+});
+$("#chooseShareBtn").addEventListener("click", openShareChooser);
+$("#findable").addEventListener("change", async e => {
+  const v = e.target.checked;
+  try{
+    must(await sb.from("accounts").update({findable:v}).eq("id", me.id));
+    me.findable = v; storeMe();
+    toast(v ? "People can find you by name" : "Only people with your link can add you");
+  }catch(err){ e.target.checked = !v; if(isAuthErr(err)) sessionExpired(); else toast("Couldn't save. Check your connection."); }
+});
 
 /* ---------- Account and sync ---------- */
 /* Alvor's accounts and data live in Supabase. The publishable key is meant to sit in the app:
@@ -2321,10 +2664,11 @@ async function loadMe(session){
   const id = session.user.id;
   try{
     const [prof, acct] = await Promise.all([
-      sb.from("profiles").select("username,display_name").eq("id", id).maybeSingle().then(must),
+      sb.from("profiles").select("username,display_name,avatar_path").eq("id", id).maybeSingle().then(must),
       sb.from("accounts").select("is_owner,default_visibility,findable,migrated_at").eq("id", id).maybeSingle().then(must)
     ]);
     me = {id, email:session.user.email, user:prof ? prof.username : session.user.email, name:prof ? prof.display_name : "",
+      avatar:(prof && prof.avatar_path) || null, findable:!!(acct && acct.findable),
       owner:!!(acct && acct.is_owner), defaultVisibility:(acct && acct.default_visibility) || "vault", migrated:!!(acct && acct.migrated_at)};
   }catch(e){
     // Offline: keep what we knew about this account.
@@ -2452,7 +2796,7 @@ async function syncPhotos(){
         writeDels(readDels().filter(id => !dels.includes(id)));
       }
       const plantIds = new Set(state.plants.map(p => p.id));
-      const rows = must(await sb.from("photos").select("id,plant_id,path_large,taken_at").eq("owner_id", me.id));
+      const rows = must(await sb.from("photos").select("id,plant_id,path_large,taken_at,hidden").eq("owner_id", me.id));
       const server = new Set(rows.map(r => r.id));
       const local = await idb.all(), localIds = new Set(local.map(p => p.id)), pendingDel = new Set(readDels());
       // 2. New photos on this phone go up, large and small
@@ -2463,10 +2807,20 @@ async function syncPhotos(){
           setSync("Saving photos…");
           must(await store.upload(phPath(ph.id, "l"), await dataToBlob(ph.data), {upsert:true, contentType:"image/jpeg"}));
           must(await store.upload(phPath(ph.id, "s"), await smallJpeg(ph.data), {upsert:true, contentType:"image/jpeg"}));
-          must(await sb.from("photos").upsert({id:ph.id, plant_id:ph.plantId, owner_id:me.id,
+          must(await sb.from("photos").upsert({id:ph.id, plant_id:ph.plantId, owner_id:me.id, hidden:!!ph.hidden,
             path_large:phPath(ph.id, "l"), path_small:phPath(ph.id, "s"), taken_at:new Date(ph.ts || Date.now()).toISOString()}));
+          delete ph.hideDirty;
         }
         ph.synced = true; await idb.put(ph); uploaded.add(ph.id);
+      }
+      // 2b. "Hide this photo": changes on this phone go up, changes from another phone come down
+      const byId = Object.fromEntries(rows.map(r => [r.id, r]));
+      for(const ph of local){
+        const r = byId[ph.id]; if(!r || uploaded.has(ph.id) && !ph.hideDirty) continue;
+        if(ph.hideDirty){
+          must(await sb.from("photos").update({hidden:!!ph.hidden}).eq("id", ph.id));
+          delete ph.hideDirty; await idb.put(ph);
+        }else if(!!r.hidden !== !!ph.hidden){ ph.hidden = !!r.hidden; await idb.put(ph); changed = true; }
       }
       // 3. Photos deleted on another phone
       for(const ph of local){
@@ -2478,7 +2832,7 @@ async function syncPhotos(){
         setSync("Getting photos…");
         const blob = must(await store.download(r.path_large));
         const at = new Date(r.taken_at || Date.now());
-        await idb.put({id:r.id, plantId:r.plant_id, date:ymd(at), ts:at.getTime(), data:await blobToData(blob), synced:true});
+        await idb.put({id:r.id, plantId:r.plant_id, date:ymd(at), ts:at.getTime(), data:await blobToData(blob), synced:true, hidden:!!r.hidden});
         changed = true;
       }
       if(uploaded.size || changed) setSync(`Saved to your account at ${hhmm()}.`);
@@ -2565,6 +2919,7 @@ async function signedIn(session){
   queuePhotoSync();
   ensurePush();
   maybeOnboard();
+  maybeShareIntro();
 }
 async function signOut(){
   try{ await syncPhotos(); }catch(e){}
@@ -2720,6 +3075,7 @@ initAuth().then(async () => {
   await joinFromLink();
   ensurePush();
   maybeOnboard();
+  maybeShareIntro();
 });
 refreshCurrent(false);
 document.addEventListener("visibilitychange", () => { if(!document.hidden){ fetchWeather(false); refreshCurrent(false); if(token) pull(); } });
