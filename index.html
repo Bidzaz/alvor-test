@@ -682,6 +682,29 @@ canvas.fx{width:100%;height:100%}
 .fp-meta .where{display:flex;align-items:center;gap:8px;font-weight:700}
 .fp-meta small{color:var(--muted)}
 .fpc .pc-body{gap:3px}
+/* ---------- Account basics: your data, delete, reports ---------- */
+a.btn{display:inline-flex;align-items:center;text-decoration:none;color:inherit}
+.btn.danger-fill{background:var(--danger);border-color:var(--danger);color:var(--surface)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.sub-h{font-size:1rem;margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)}
+.del-list{margin:6px 0 12px;padding-left:20px}
+.del-list li{margin:2px 0}
+.rep-reasons{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.rep-reasons label{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:700;cursor:pointer}
+.rep-reasons input{width:18px;height:18px;margin:0;accent-color:var(--fern)}
+.rep-reasons label:has(input:checked){border-color:var(--fern);background:var(--fern-soft)}
+.fp-report{margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-size:.86rem;color:var(--muted)}
+.fp-report .linkish{color:var(--muted);padding:2px 0;font-weight:600}
+.auth-legal{color:var(--muted);font-size:.82rem;text-align:center;margin:10px 0 0}
+.auth-legal a{color:inherit;font-weight:700}
+.adm-item{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}
+.adm-item .adm-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.adm-item .adm-top small{color:var(--muted);margin-left:auto}
+.adm-item .adm-what{margin:4px 0 0}
+.adm-item .adm-why{color:var(--muted);font-size:.9rem;margin:4px 0 0}
+.adm-item img{display:block;max-width:180px;border-radius:10px;margin-top:8px}
+.adm-off{display:inline-block;background:var(--danger-bg);color:var(--danger);border-radius:999px;padding:1px 8px;font-size:.78rem;font-weight:700}
+.acct-off{background:var(--danger-bg);color:var(--ink);border-radius:var(--radius-sm);padding:10px 12px;margin:10px 0 0;font-size:.9rem}
 </style>
 </head>
 <body>
@@ -829,6 +852,11 @@ canvas.fx{width:100%;height:100%}
           <button class="btn primary" id="pwSave">Save new password</button>
         </div>
       </div>
+      <div class="card" id="adminCard" hidden>
+        <h2>Reports <small id="adminCount" class="status"></small></h2>
+        <p class="status" style="margin-top:0">Only you see this, as the owner of Alvor. People's reports land here; the person reported isn't told who sent them.</p>
+        <div id="adminList"></div>
+      </div>
       <div class="card">
         <h2>Notifications</h2>
         <div class="row2">
@@ -855,6 +883,15 @@ canvas.fx{width:100%;height:100%}
           <button class="btn" id="importBtn">Import backup</button>
           <input type="file" id="importFile" accept="application/json" hidden>
         </div>
+      </div>
+      <div class="card" id="dataCard" hidden>
+        <h2>Your data and privacy</h2>
+        <p class="status" style="margin-top:0">Get everything Alvor keeps about you in one file: your plants, notes, history, photos, friends and settings.</p>
+        <div class="btn-row"><button class="btn" id="dataBtn">Download my data</button><a class="btn" href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></div>
+        <p class="status" id="dataStatus" role="status"></p>
+        <h3 class="sub-h">Delete my account</h3>
+        <p class="status" style="margin-top:0">Deletes your account and everything in it, from every phone and for good. Download your data first if you'd like a copy.</p>
+        <button class="btn danger" id="delAcctBtn" style="margin-top:10px">Delete my account</button>
       </div>
       <div class="card">
         <h2>Reset</h2>
@@ -890,6 +927,7 @@ canvas.fx{width:100%;height:100%}
     <div class="field" id="passField"><label for="aPass" id="passLabel">Password</label><input id="aPass" type="password" autocomplete="current-password"><span class="hint" id="passHint" hidden>At least 8 characters.</span></div>
     <button class="btn primary" id="authGo" style="width:100%">Sign in</button>
     <p class="status" id="authMsg" role="alert"></p>
+    <p class="auth-legal" id="authLegal"></p>
     <div class="auth-links">
       <button class="linkbtn" id="forgotBtn">Forgot your password?</button>
       <button class="linkbtn" id="resendBtn" hidden>Send a new code</button>
@@ -976,6 +1014,34 @@ canvas.fx{width:100%;height:100%}
 <dialog id="sheet" class="sheet">
   <div class="sheet-h" id="sheetHead"></div>
   <div class="sheet-b" id="sheetBody"></div>
+</dialog>
+
+<dialog id="delDlg">
+  <div class="dlg-h"><h2>Delete your account?</h2><button class="btn small" id="delClose">Close</button></div>
+  <div class="dlg-b">
+    <p style="margin-top:0">This deletes, from every phone and for good:</p>
+    <ul class="del-list">
+      <li>your plants, notes and history</li>
+      <li>all your photos and your profile photo</li>
+      <li>your profile, friends, requests and friend link</li>
+      <li>reactions and comments you wrote, and the ones on your garden</li>
+    </ul>
+    <p class="status" style="margin-top:0">It can't be undone. Your friends aren't told; you simply disappear from their list. Want a copy first? Close this and tap Download my data.</p>
+    <div class="field" style="margin-top:14px"><label for="delPass">Type your password to confirm</label><input id="delPass" type="password" autocomplete="current-password"></div>
+    <p class="status" id="delMsg" role="alert"></p>
+  </div>
+  <div class="dlg-f"><button class="btn" id="delCancel">Keep my account</button><button class="btn danger-fill" id="delGo">Delete my account</button></div>
+</dialog>
+
+<dialog id="repDlg">
+  <div class="dlg-h"><h2 id="repTitle">Report</h2><button class="btn small" id="repClose">Close</button></div>
+  <div class="dlg-b">
+    <p class="status" style="margin-top:0" id="repLead"></p>
+    <div class="rep-reasons" id="repReasons" role="radiogroup" aria-label="What's wrong"></div>
+    <div class="field"><label for="repNote">Anything to add? <span class="status">(optional)</span></label><textarea id="repNote" rows="3" maxlength="400"></textarea></div>
+    <label class="check" id="repBlockRow"><input type="checkbox" id="repBlock"><span>Also block <span id="repWho"></span><br><span class="status">You stop seeing each other, and they can't find or add you. They aren't told.</span></span></label>
+  </div>
+  <div class="dlg-f"><button class="btn" id="repCancel">Cancel</button><button class="btn primary" id="repSend" disabled>Send report</button></div>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -2327,6 +2393,7 @@ function fillSettings(){
   fillAccount();
   fillProfileCard(); fillPrivacy();
   refreshNotifyStatus();
+  if(me && me.owner && token) loadAdmin();
   $("#sMargin").value = s.margin; $("#sGh").value = s.gh; $("#sHeat").value = s.heat; $("#sWind").value = s.wind; $("#sRain").value = s.rain;
 }
 $("#saveSettings").addEventListener("click", () => {
@@ -2762,11 +2829,11 @@ async function loadMe(session){
   try{
     const [prof, acct] = await Promise.all([
       sb.from("profiles").select("username,display_name,avatar_path").eq("id", id).maybeSingle().then(must),
-      sb.from("accounts").select("is_owner,default_visibility,findable,migrated_at").eq("id", id).maybeSingle().then(must)
+      sb.from("accounts").select("is_owner,default_visibility,findable,migrated_at,disabled").eq("id", id).maybeSingle().then(must)
     ]);
     me = {id, email:session.user.email, user:prof ? prof.username : session.user.email, name:prof ? prof.display_name : "",
       avatar:(prof && prof.avatar_path) || null, findable:!!(acct && acct.findable),
-      owner:!!(acct && acct.is_owner), defaultVisibility:(acct && acct.default_visibility) || "vault", migrated:!!(acct && acct.migrated_at)};
+      owner:!!(acct && acct.is_owner), defaultVisibility:(acct && acct.default_visibility) || "vault", migrated:!!(acct && acct.migrated_at), disabled:!!(acct && acct.disabled)};
   }catch(e){
     // Offline: keep what we knew about this account.
     if(!me || me.id !== id) me = {id, email:session.user.email, user:session.user.email, name:"", owner:false, defaultVisibility:"vault"};
@@ -2966,6 +3033,9 @@ function setAuthMode(m){
     reset:"Enter the email of your account. We'll send you a code to set a new password.",
     code:`If ${resetEmail} has an Alvor account, a code is on its way. It works for an hour. Check the spam folder too.`
   }[m] || "Sign in to see your garden.";
+  $("#authLegal").innerHTML = m === "signup"
+    ? `By creating an account you agree to how Alvor looks after your data, described in the <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a>.`
+    : `<a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>`;
   $("#forgotBtn").hidden = m !== "login";
   $("#resendBtn").hidden = m !== "code";
   $("#backBtn").hidden = !reset;
@@ -3077,6 +3147,7 @@ async function signedIn(session){
   fetchWeather(true);
   if(state.settings.onboarded || state.plants.length) toast(`Welcome, ${me.name || me.user}`);
   loadCircle(true);
+  loadAdmin(true);
   await joinFromLink();
   queuePhotoSync();
   ensurePush();
@@ -3094,7 +3165,7 @@ async function signOut(){
   }catch(e){}
   try{ await sb.auth.signOut(); }catch(e){}
   token = ""; me = null;
-  circle = null; circleAt = 0; myLink = null; visit = null; fSearch = {q:"", results:null}; updateBadge(); fillAccount();
+  circle = null; circleAt = 0; myLink = null; visit = null; fSearch = {q:"", results:null}; admin = null; updateBadge(); fillAccount();
   if(currentTab === "friends" || currentTab === "friend") showTab("today");
   try{ localStorage.removeItem(USER_KEY); }catch(e){}
   const keep = state.settings; state = defaults(); state.settings = keep; saveLocal(); render();
@@ -3123,6 +3194,13 @@ function fillAccount(){
   $("#acctLine").textContent = me ? `Signed in as @${me.user}${me.email ? " (" + me.email + ")" : ""}${me.owner ? ", owner of Alvor" : ""}.` : "Not signed in.";
   $("#inviteBtn").hidden = !(me && me.owner);
   $("#friendsBtn").hidden = !(me && token);
+  let off = $("#acctOff");
+  if(me && me.disabled){
+    if(!off){ off = document.createElement("p"); off.id = "acctOff"; off.className = "acct-off"; $("#acctLine").after(off); }
+    off.textContent = "Your account has been switched off by the owner of Alvor. Your garden still works for you, but nobody else can see it, find you or add you.";
+  }else if(off) off.remove();
+  $("#dataCard").hidden = !(me && token);
+  $("#adminCard").hidden = !(me && me.owner && token);
 }
 $("#inviteBtn").addEventListener("click", async () => {
   const out = $("#inviteOut");
@@ -3355,7 +3433,7 @@ $("#friendsBody").addEventListener("click", async e => {
 });
 
 /* The actions on a person. Declining, removing and blocking are quiet: the other person isn't told. */
-async function personAction(act, id){
+async function personAction(act, id, quiet){
   const p = findPerson(id) || {id};
   if(act === "accept"){
     must(await sb.rpc("accept_friend_request", {p_from:id}));
@@ -3375,9 +3453,9 @@ async function personAction(act, id){
     must(await sb.from("friendships").delete().eq("user_a", a).eq("user_b", b));
     toast(`${personName(p)} removed`);
   }else if(act === "block"){
-    if(!confirm(`Block ${personName(p)}? If you're friends, that ends, and neither of you can see, find or add the other. They aren't told.`)) return;
+    if(!quiet && !confirm(`Block ${personName(p)}? If you're friends, that ends, and neither of you can see, find or add the other. They aren't told.`)) return;
     must(await sb.from("blocks").insert({blocker_id:me.id, blocked_id:id}));
-    toast(`${personName(p)} blocked`);
+    if(!quiet) toast(`${personName(p)} blocked`);
   }else if(act === "unblock"){
     must(await sb.from("blocks").delete().eq("blocker_id", me.id).eq("blocked_id", id));
     toast(`${personName(p)} unblocked. You can add each other again.`);
@@ -3412,9 +3490,11 @@ async function personMenu(id){
   const st = circleStatus(id);
   const acts = st === "friend" ? [["visit", "Visit their garden"], ["remove", "Remove from friends", "danger"], ["block", "Block", "danger"]]
     : st === "incoming" ? [["accept", "Accept"], ["decline", "Decline"], ["block", "Block", "danger"]]
-    : [["block", "Block", "danger"]];
+    : st === "blocked" ? [] : [["block", "Block", "danger"]];
+  acts.push(["report", "Report…", "danger"]);
   const k = await sheet(p, acts); if(!k) return;
   if(k === "visit") return openFriend(id);
+  if(k === "report") return openReport({type:"profile", id, person:p});
   try{ await personAction(k, id); }catch(e){ circleErr(e); }
 }
 
@@ -3509,8 +3589,9 @@ $("#friendBody").addEventListener("click", async e => {
   else if(act === "plant") openFriendPlant(b.dataset.id, 0);
   else if(act === "more"){
     const p = visit.prof, st = circleStatus(visit.id);
-    const k = await sheet(p, st === "friend" ? [["remove", "Remove from friends", "danger"], ["block", "Block", "danger"]] : [["block", "Block", "danger"]]);
-    if(k) try{ await personAction(k, visit.id); }catch(err){ circleErr(err); }
+    const k = await sheet(p, [...(st === "friend" ? [["remove", "Remove from friends", "danger"], ["block", "Block", "danger"]] : [["block", "Block", "danger"]]), ["report", "Report…", "danger"]]);
+    if(k === "report") openReport({type:"profile", id:visit.id, person:p});
+    else if(k) try{ await personAction(k, visit.id); }catch(err){ circleErr(err); }
   }
 });
 
@@ -3527,12 +3608,242 @@ function openFriendPlant(pid, idx){
       <img src="${esc(V.urls[ph.path_small] || "")}" alt="" loading="lazy">${esc(shortDate(ph.taken_at || ph.created_at))}</button>`).join("")}</div>` : ""}
     <div class="fp-meta">${x.species ? `<div class="sp">${esc(x.species)}</div>` : ""}
       <div class="where">${zi(x.area)}<span>${esc(fAreaLabel(x.area, home))}</span></div>
-      <small>${cur ? `Photo from ${esc(longDate(cur.taken_at || cur.created_at))}` : "No photos shared yet"}${phs.length > 1 ? ` · ${phs.length} photos` : ""}</small></div>`;
+      <small>${cur ? `Photo from ${esc(longDate(cur.taken_at || cur.created_at))}` : "No photos shared yet"}${phs.length > 1 ? ` · ${phs.length} photos` : ""}</small></div>
+    <div class="fp-report">Something wrong? <button class="linkish" data-rep="plant">Report this plant</button>${cur ? ` · <button class="linkish" data-rep="photo" data-id="${esc(cur.id)}">Report this photo</button>` : ""}</div>`;
   fplant.dataset.pid = pid;
   if(!fplant.open) fplant.showModal();
 }
-$("#fpBody").addEventListener("click", e => { const b = e.target.closest("[data-fpi]"); if(b) openFriendPlant(fplant.dataset.pid, +b.dataset.fpi); });
+$("#fpBody").addEventListener("click", e => {
+  const r = e.target.closest("[data-rep]");
+  if(r && visit){
+    const x = visit.plants.find(q => q.id === fplant.dataset.pid), who = visit.prof;
+    if(r.dataset.rep === "plant") openReport({type:"plant", id:fplant.dataset.pid, person:who, what:`the plant "${x ? x.name : ""}"`});
+    else openReport({type:"photo", id:r.dataset.id, person:who, what:`this photo of "${x ? x.name : ""}"`});
+    return;
+  }
+  const b = e.target.closest("[data-fpi]"); if(b) openFriendPlant(fplant.dataset.pid, +b.dataset.fpi);
+});
 $("#fpClose").addEventListener("click", () => fplant.close());
+
+/* ---------- Reporting ----------
+   A report goes to the owner of Alvor through report_content(), which checks you can see the thing. */
+const REP_REASONS = [["offensive", "Rude, offensive or hateful"], ["harassment", "Bullying or harassment"],
+  ["sexual", "Nudity or sexual content"], ["spam", "Spam or a fake account"], ["other", "Something else"]];
+let rep = null;
+const repDlg = $("#repDlg");
+function openReport(o){
+  if(!online || !token) return;
+  rep = o;
+  const who = esc(personName(o.person));
+  $("#repTitle").textContent = o.type === "profile" ? `Report ${personName(o.person)}` : o.type === "photo" ? "Report a photo" : "Report a plant";
+  $("#repLead").innerHTML = (o.type === "profile" ? `What's wrong with ${who}'s profile or garden?` : `What's wrong with ${esc(o.what)}?`)
+    + ` Reports go to the owner of Alvor, who looks at each one. ${who} isn't told who sent it.`;
+  $("#repReasons").innerHTML = REP_REASONS.map(([k, l]) => `<label><input type="radio" name="repWhy" value="${k}"> ${l}</label>`).join("");
+  $("#repNote").value = "";
+  const st = o.person && circleStatus(o.person.id);
+  $("#repBlockRow").hidden = !o.person || st === "blocked";
+  $("#repBlock").checked = false;
+  $("#repWho").textContent = personName(o.person);
+  $("#repSend").disabled = true;
+  if(fplant.open) fplant.close();
+  repDlg.showModal();
+}
+$("#repReasons").addEventListener("change", () => { $("#repSend").disabled = false; });
+[$("#repClose"), $("#repCancel")].forEach(b => b.addEventListener("click", () => repDlg.close()));
+$("#repSend").addEventListener("click", async () => {
+  const o = rep, why = (repDlg.querySelector("input[name=repWhy]:checked") || {}).value; if(!o || !why) return;
+  const label = (REP_REASONS.find(r => r[0] === why) || [])[1], note = $("#repNote").value.trim();
+  const btn = $("#repSend"); btn.disabled = true;
+  try{
+    must(await sb.rpc("report_content", {p_type:o.type, p_id:o.id, p_reason:(label + (note ? ": " + note : "")).slice(0, 500)}));
+    const block = $("#repBlock").checked && o.person && !$("#repBlockRow").hidden;
+    repDlg.close();
+    if(block){ await personAction("block", o.person.id, true); toast(`Report sent, and ${personName(o.person)} is blocked`); }
+    else toast("Report sent. Thank you.");
+  }catch(e){ btn.disabled = false; circleErr(e); }
+});
+
+/* ---------- Download my data ----------
+   One .zip: everything the server keeps (alvor-data.json), every photo at full size, and a short read-me. */
+const CRC_T = (() => { const t = new Uint32Array(256); for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b){ let c = ~0; for(let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return ~c >>> 0; }
+/* A plain, uncompressed zip (photos don't shrink anyway). files: [{name, data:Uint8Array, date}] */
+function makeZip(files){
+  const enc = new TextEncoder(), parts = [], central = [];
+  let off = 0, size = 0;
+  for(const f of files){
+    const name = enc.encode(f.name), data = f.data, crc = crc32(data), d = f.date || new Date();
+    const time = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xffff;
+    const day = (((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xffff;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+    h.setUint16(10, time, true); h.setUint16(12, day, true); h.setUint32(14, crc, true);
+    h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true);
+    parts.push(h, name, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+    c.setUint16(12, time, true); c.setUint16(14, day, true); c.setUint32(16, crc, true);
+    c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true);
+    c.setUint32(42, off, true);
+    central.push(c, name);
+    off += 30 + name.length + data.length; size += 46 + name.length;
+  }
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+  e.setUint32(12, size, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...central, e], {type:"application/zip"});
+}
+const safeName = s => String(s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w .-]+/g, "").replace(/\s+/g, " ").trim().slice(0, 50) || "Plant";
+const DATA_README = `Your data from Alvor
+====================
+
+alvor-data.json   Everything Alvor's server keeps about you: your sign-in email,
+                  profile, settings and location, every plant with its notes and
+                  care details, your history, friends, requests, blocks, invitations,
+                  reactions and comments you wrote, and reports you sent.
+                  It opens in any text editor.
+photos/           Every photo, at full size, in a folder per plant.
+profile-photo.jpg Your profile photo, if you have one.
+
+Alvor doesn't keep anything else about you. To delete it all, use
+Settings → Delete my account in the app, or the "Delete your account" page.
+`;
+let dataBusy = false;
+async function downloadMyData(){
+  if(dataBusy || !token || !me) return;
+  dataBusy = true; $("#dataBtn").disabled = true;
+  const st = m => { $("#dataStatus").textContent = m; };
+  try{
+    st("Saving the latest changes…");
+    await push(); await syncPhotos();
+    st("Collecting your data…");
+    const data = must(await sb.rpc("export_my_data"));
+    const enc = new TextEncoder(), files = [], now = new Date();
+    files.push({name:"README.txt", data:enc.encode(DATA_README), date:now});
+    files.push({name:"alvor-data.json", data:enc.encode(JSON.stringify(data, null, 2)), date:now});
+    const names = Object.fromEntries((data.plants || []).map(p => [p.id, safeName(p.name)]));
+    const local = Object.fromEntries((await idb.all().catch(() => [])).map(ph => [ph.id, ph]));
+    const list = data.photos || [];
+    let missing = 0;
+    for(let i = 0; i < list.length; i++){
+      const ph = list[i];
+      st(`Adding photos: ${i + 1} of ${list.length}…`);
+      let bytes = null;
+      try{
+        if(local[ph.id] && local[ph.id].data) bytes = new Uint8Array(await (await dataToBlob(local[ph.id].data)).arrayBuffer());
+        else bytes = new Uint8Array(await must(await sb.storage.from("photos").download(phPath(ph.id, "l"))).arrayBuffer());
+      }catch(e){ missing++; continue; }
+      const at = new Date(ph.taken_at || ph.uploaded_at || now);
+      files.push({name:`photos/${names[ph.plant_id] || "Plant"} (${String(ph.plant_id).slice(0, 4)})/${ymd(at)} ${String(ph.id).slice(0, 8)}.jpg`, data:bytes, date:at});
+    }
+    if(me.avatar){
+      try{ const r = await fetch(avatarUrl(me.avatar)); if(r.ok) files.push({name:"profile-photo.jpg", data:new Uint8Array(await r.arrayBuffer()), date:now}); }catch(e){}
+    }
+    st("Making the file…");
+    const blob = makeZip(files);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = `alvor-my-data-${today()}.zip`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    st(`Done: ${list.length - missing} ${list.length - missing === 1 ? "photo" : "photos"} and all your details, ${(blob.size / 1048576).toFixed(1)} MB.`
+      + (missing ? ` ${missing} ${missing === 1 ? "photo" : "photos"} couldn't be fetched; try again later.` : ""));
+  }catch(e){
+    if(isAuthErr(e)) sessionExpired();
+    else st("Couldn't collect your data. Check your connection and try again.");
+  }finally{ dataBusy = false; $("#dataBtn").disabled = false; }
+}
+$("#dataBtn").addEventListener("click", downloadMyData);
+
+/* ---------- Delete my account ----------
+   The "account" server function checks the password again, removes the photo files and the sign-in;
+   the database removes everything else with it. Then this phone forgets everything too. */
+const delDlg = $("#delDlg");
+$("#delAcctBtn").addEventListener("click", () => {
+  $("#delPass").value = ""; $("#delMsg").textContent = ""; $("#delGo").disabled = false;
+  delDlg.showModal();
+});
+[$("#delClose"), $("#delCancel")].forEach(b => b.addEventListener("click", () => delDlg.close()));
+$("#delGo").addEventListener("click", async () => {
+  const pw = $("#delPass").value;
+  if(!pw){ $("#delMsg").textContent = "Type your password first."; $("#delPass").focus(); return; }
+  $("#delGo").disabled = true; $("#delMsg").textContent = "Deleting…";
+  try{
+    const {r, j} = await callFn("account", {action:"delete", password:pw});
+    if(!r.ok){ $("#delMsg").textContent = j.error || "Couldn't delete the account. Try again."; $("#delGo").disabled = false; return; }
+  }catch(e){ $("#delMsg").textContent = "Couldn't reach Alvor. Check your connection and try again."; $("#delGo").disabled = false; return; }
+  delDlg.close();
+  await forgetEverything();
+  authMode = "login"; showAuth("Your account and everything in it have been deleted. Thank you for growing with Alvor.");
+});
+/* After the account is gone: nothing of it stays on this phone. */
+async function forgetEverything(){
+  clearTimeout(syncTimer); clearTimeout(photoTimer);
+  try{
+    // (with a time limit: "ready" never comes if the service worker didn't install)
+    const reg = canPush() && await Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 3000))]);
+    const sub = reg && await reg.pushManager.getSubscription(); if(sub) await sub.unsubscribe();
+  }catch(e){}
+  try{ await sb.auth.signOut({scope:"local"}); }catch(e){}
+  try{ await idb.clear(); }catch(e){}
+  [KEY, USER_KEY, PUSH_KEY, PH_DEL_KEY, OLD_TOKEN_KEY, ADMIN_SEEN_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+  token = ""; me = null; photos = {}; pending = [];
+  circle = null; circleAt = 0; myLink = null; visit = null; fSearch = {q:"", results:null}; admin = null; updateBadge();
+  state = defaults(); saveLocal();
+  showTab("today"); render(); fillAccount();
+}
+
+/* ---------- The owner's Reports ---------- */
+const ADMIN_SEEN_KEY = "alvor-reports-seen";
+let admin = null, adminBusy = false;
+async function loadAdmin(quiet){
+  if(!me || !me.owner || !token || adminBusy) return;
+  adminBusy = true;
+  try{
+    const [open, off] = await Promise.all([sb.rpc("admin_open_reports").then(must), sb.rpc("admin_disabled_accounts").then(must)]);
+    const paths = open.map(x => x.photo_path).filter(Boolean), urls = {};
+    if(paths.length){
+      const r = await sb.storage.from("photos").createSignedUrls(paths, 3600);
+      (r.data || []).forEach(x => { if(x && x.signedUrl && x.path) urls[x.path] = x.signedUrl; });
+    }
+    admin = {open, off, urls};
+    let seen = []; try{ seen = JSON.parse(localStorage.getItem(ADMIN_SEEN_KEY) || "[]"); }catch(e){}
+    const fresh = open.filter(x => !seen.includes(x.id)).length;
+    if(quiet && fresh) toast(`${fresh} new ${fresh === 1 ? "report" : "reports"} to look at, in Settings`);
+    try{ localStorage.setItem(ADMIN_SEEN_KEY, JSON.stringify(open.map(x => x.id))); }catch(e){}
+  }catch(e){ if(isAuthErr(e)) sessionExpired(); else if(!quiet) admin = {error:true}; }
+  finally{ adminBusy = false; }
+  if(currentTab === "settings") renderAdmin();
+}
+function renderAdmin(){
+  const el = $("#adminList"), A = admin;
+  if(!A){ el.innerHTML = `<p class="f-empty">Loading…</p>`; return; }
+  if(A.error){ el.innerHTML = `<p class="f-empty">Couldn't load the reports. Check your connection.</p>`; return; }
+  $("#adminCount").textContent = A.open.length ? `${A.open.length} open` : "";
+  const at = u => u ? "@" + esc(u) : "a deleted account";
+  let h = A.open.length ? A.open.map(x => `<div class="adm-item">
+      <div class="adm-top"><b>${at(x.about_username)}</b>${x.about_disabled ? ` <span class="adm-off">switched off</span>` : ""}<small>${esc(shortDate(x.created_at))}</small></div>
+      <p class="adm-what">${esc(x.detail)}</p>
+      ${x.photo_path && A.urls[x.photo_path] ? `<img src="${esc(A.urls[x.photo_path])}" alt="The reported photo">` : ""}
+      <p class="adm-why">${esc(x.reason || "No reason given")} · reported by ${at(x.reporter_username)}${x.reports_about_them > 1 ? ` · ${x.reports_about_them} open reports about them` : ""}</p>
+      <div class="btn-row"><button class="btn small" data-adm="done" data-id="${x.id}">Mark as handled</button>
+        ${x.about_id && !x.about_disabled ? `<button class="btn small danger" data-adm="off" data-user="${x.about_id}" data-name="${esc(x.about_username || "")}">Switch off their account</button>` : ""}</div>
+    </div>`).join("") : `<p class="f-empty">No open reports.</p>`;
+  if(A.off.length) h += `<h3 class="sub-h">Switched-off accounts</h3>${A.off.map(p => `<div class="person"><div class="who"><b>${esc(p.display_name)}</b><span>@${esc(p.username)}</span></div>
+    <div class="p-acts"><button class="btn small" data-adm="on" data-user="${p.id}" data-name="${esc(p.username)}">Switch back on</button></div></div>`).join("")}`;
+  el.innerHTML = h;
+}
+$("#adminList").addEventListener("click", async e => {
+  const b = e.target.closest("[data-adm]"); if(!b || b.disabled) return;
+  const act = b.dataset.adm, name = b.dataset.name ? "@" + b.dataset.name : "this account";
+  if(act === "off" && !confirm(`Switch off ${name}? Nobody can see their garden, profile or comments, find them or add them, until you switch it back on. Their open reports are marked as handled. They aren't told.`)) return;
+  b.disabled = true;
+  try{
+    if(act === "done") must(await sb.rpc("admin_resolve_report", {p_id:b.dataset.id}));
+    else must(await sb.rpc("admin_set_disabled", {p_user:b.dataset.user, p_disabled:act === "off"}));
+    toast(act === "done" ? "Marked as handled" : act === "off" ? `${name} switched off` : `${name} switched back on`);
+  }catch(err){ circleErr(err); }
+  await loadAdmin();
+});
 
 /* ---------- Notifications ---------- */
 function keyBytes(b64){
@@ -3619,6 +3930,7 @@ initAuth().then(async () => {
   fillAccount();
   await pull();
   loadCircle();
+  loadAdmin(true);
   await joinFromLink();
   ensurePush();
   maybeOnboard();
