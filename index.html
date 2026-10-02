@@ -705,6 +705,54 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:inherit}
 .adm-item img{display:block;max-width:180px;border-radius:10px;margin-top:8px}
 .adm-off{display:inline-block;background:var(--danger-bg);color:var(--danger);border-radius:999px;padding:1px 8px;font-size:.78rem;font-weight:700}
 .acct-off{background:var(--danger-bg);color:var(--ink);border-radius:var(--radius-sm);padding:10px 12px;margin:10px 0 0;font-size:.9rem}
+/* ---------- Life in the circle: reactions, comments, what's new ---------- */
+.talk .tk-live{display:flex;flex-direction:column;gap:8px}
+.rx-bar{display:flex;flex-wrap:wrap;gap:6px}
+.rx{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 10px;font-size:1.05rem;line-height:1.2;min-height:36px}
+button.rx[aria-pressed=true]{border-color:var(--fern);background:var(--fern-soft)}
+.rx b{font-family:var(--body);font-size:.82rem;font-weight:800;color:var(--muted)}
+button.rx[aria-pressed=true] b{color:var(--fern)}
+span.rx{cursor:default}
+.tk-who{margin:0;display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--muted);font-size:.85rem}
+.tk-who b{color:var(--ink);font-weight:700}
+.tk-none{margin:0;color:var(--muted);font-size:.9rem}
+.tk-h{font-size:1rem;margin:8px 0 0;display:flex;gap:6px;align-items:baseline}
+.tk-h small{font-family:var(--body);color:var(--muted);font-weight:700;font-size:.85rem}
+.tk-open{align-self:flex-start}
+.tk-earlier{align-self:flex-start;padding:0}
+.cms{display:flex;flex-direction:column}
+.cm{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line)}
+.cms .cm:first-child{border-top:0}
+.cm .av{width:34px;height:34px;font-size:.9rem}
+.cm-b{flex:1;min-width:0}
+.cm-h{display:flex;gap:8px;align-items:baseline}
+.cm-h small{color:var(--muted);font-size:.8rem}
+.cm-b p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.cm .icon-more{width:32px;height:32px;margin:-4px -6px 0 0}
+.tk-write{display:flex;gap:8px;align-items:flex-end;margin-top:10px}
+.tk-write textarea{flex:1;min-width:0;resize:none;border:1px solid var(--line);background:var(--bg);border-radius:18px;padding:8px 14px;min-height:40px;max-height:160px;line-height:1.4}
+.tk-write .btn{min-height:40px}
+.talk-dlg .dlg-h h2{font-size:1.2rem;overflow-wrap:anywhere}
+.talk-dlg .tk-write{position:sticky;bottom:-16px;background:var(--surface);padding:10px 0 4px;margin-bottom:-4px}
+.tk-link{margin:14px 0 0;padding-top:10px;border-top:1px solid var(--line)}
+.tk-link .linkish{padding:0}
+.tk-card{padding:12px 14px}
+.tk-card-h{font-size:.98rem;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.tk-card-h .zi{width:24px;height:24px}
+.fp-talk{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.tk-mini{display:inline-block;font-size:.8rem;color:var(--muted);font-weight:700;margin-top:2px;font-style:normal}
+#plantTalk{border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.feed{display:flex;flex-direction:column}
+.fd{display:flex;gap:10px;align-items:flex-start;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:9px 6px;margin:0 -6px;color:var(--ink);border-radius:10px}
+.feed .fd:first-child{border-top:0}
+.fd.fresh{background:var(--fern-soft)}
+.fd.fresh .av{background:var(--surface)}
+.fd.fresh+.fd.fresh{margin-top:4px}
+.fd .av{width:36px;height:36px;font-size:.95rem}
+.fd-t{display:flex;flex-direction:column;min-width:0;font-size:.93rem}
+.fd-q{color:var(--muted);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fd small{color:var(--muted);font-size:.8rem}
+.fd.fresh small{color:var(--fern);font-weight:700}
 </style>
 </head>
 <body>
@@ -864,6 +912,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:inherit}
           <div class="field"><label for="sEvening">Evening frost check at</label><select id="sEvening"></select></div>
         </div>
         <label class="check"><input type="checkbox" id="sEveningOn"><span>Send the evening frost check<br><span class="status">Only arrives when a plant is at risk that night.</span></span></label>
+        <label class="check" id="sSocialRow"><input type="checkbox" id="sSocialOn"><span>Reactions and comments from friends<br><span class="status">When someone reacts to or comments on your plants, or replies where you commented.</span></span></label>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn primary" id="notifyBtn">Turn on notifications</button>
           <button class="btn" id="testBtn">Send a test</button>
@@ -978,6 +1027,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:inherit}
     </div>
     <div class="field"><label for="fLast">Last watered</label><input id="fLast" type="date"></div>
     <div class="field"><label for="fNotes">Notes</label><textarea id="fNotes" rows="3"></textarea></div>
+    <div class="field" id="plantTalkBox" hidden><label>From friends</label><div id="plantTalk"></div></div>
     <div class="field" id="plantHistBox"><label>History</label><div class="p-hist" id="plantHist"></div></div>
     <div class="vis-box" id="fVis"></div>
   </div>
@@ -1009,6 +1059,11 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:inherit}
 <dialog id="fplant">
   <div class="dlg-h"><h2 id="fpTitle"></h2><button class="btn small" id="fpClose">Close</button></div>
   <div class="dlg-b" id="fpBody"></div>
+</dialog>
+
+<dialog id="talkDlg" class="talk-dlg">
+  <div class="dlg-h"><h2 id="talkTitle"></h2><button class="btn small" id="talkClose">Close</button></div>
+  <div class="dlg-b" id="talkBody"></div>
 </dialog>
 
 <dialog id="sheet" class="sheet">
@@ -1621,12 +1676,13 @@ function wateredText(p, W){
   const st = waterStatus(p, W);
   return st.days === null ? "never watered" : st.byRain ? `rain ${st.days}d ago` : `watered ${st.days}d ago`;
 }
+const ownMini = p => online && me && token && typeof miniCounts === "function" ? miniCounts({owner:me.id, type:"plant", id:p.id}) : "";
 function plantRow(p, W){
   return `<div class="plant">
     <button class="thumb" data-act="edit" data-id="${p.id}" aria-label="Open ${esc(p.name)}">${thumbHtml(p)}</button>
     <div class="pmain"><button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}${vaultMark(p)}</button>
       ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
-      <div class="where">${zi(p.zone)}<span>${esc(zoneLabel(p))}</span></div></div>
+      <div class="where">${zi(p.zone)}<span>${esc(zoneLabel(p))}</span></div>${ownMini(p)}</div>
     <div class="flags">${flagIcons(p.id)}</div>
     <div class="facts"><span class="tag">takes ${deg(p.minTemp)}</span><span class="tag">${wateredText(p, W)}</span>
       <span class="acts"><button class="btn small" data-act="move" data-id="${p.id}">Move</button><button class="btn small primary" data-act="water" data-id="${p.id}">Watered</button></span></div>
@@ -1638,7 +1694,7 @@ function plantCard(p, W){
     <div class="pc-body">
       <button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}${vaultMark(p)}</button>
       ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
-      <div class="where">${zi(p.zone)}<span>${esc(ZONES[p.zone].short)}</span></div>
+      <div class="where">${zi(p.zone)}<span>${esc(ZONES[p.zone].short)}</span></div>${ownMini(p)}
       <div class="pc-acts"><button class="icon-btn" data-act="move" data-id="${p.id}" aria-label="Move ${esc(p.name)}">${ICON.move}</button><button class="icon-btn water" data-act="water" data-id="${p.id}" aria-label="Mark ${esc(p.name)} watered">${ICON.drop}</button></div>
     </div>
   </div>`;
@@ -1938,6 +1994,10 @@ function openDialog(id){
   renderGallery();
   const hist = p ? state.log.filter(e => e.plantId === p.id).slice(0, 25) : [];
   $("#plantHistBox").hidden = !p;
+  const ownT = p && online && token && me ? {owner:me.id, type:"plant", id:p.id, name:p.name, ownerName:"You"} : null;
+  const showTalk = ownT && (visOf(p) !== "vault" || talkCount(ownT).r || talkCount(ownT).c);
+  $("#plantTalkBox").hidden = !showTalk;
+  if(showTalk) mountTalk($("#plantTalk"), ownT, "full"); else $("#plantTalk").innerHTML = "";
   editVis = {visibility:p ? visOf(p) : defaultVis(), visOpen:false};
   $("#fVis").hidden = !online;
   $("#fVis").innerHTML = visBlock(editVis.visibility, false);
@@ -2390,6 +2450,7 @@ function fillSettings(){
   const hours = (a, b) => Array.from({length:b - a + 1}, (_, i) => a + i).map(h => `<option value="${h}">${pad(h)}:00</option>`).join("");
   $("#sMorning").innerHTML = hours(5, 11); $("#sEvening").innerHTML = hours(16, 22);
   $("#sMorning").value = s.morningHour; $("#sEvening").value = s.eveningHour; $("#sEveningOn").checked = s.eveningCheck !== false;
+  $("#sSocialOn").checked = s.socialPush !== false; $("#sSocialRow").hidden = !online;
   fillAccount();
   fillProfileCard(); fillPrivacy();
   refreshNotifyStatus();
@@ -2833,7 +2894,7 @@ async function loadMe(session){
     ]);
     me = {id, email:session.user.email, user:prof ? prof.username : session.user.email, name:prof ? prof.display_name : "",
       avatar:(prof && prof.avatar_path) || null, findable:!!(acct && acct.findable),
-      owner:!!(acct && acct.is_owner), defaultVisibility:(acct && acct.default_visibility) || "vault", migrated:!!(acct && acct.migrated_at), disabled:!!(acct && acct.disabled)};
+      owner:!!(acct && acct.is_owner), activitySeen:me && me.id === id ? me.activitySeen || null : null, defaultVisibility:(acct && acct.default_visibility) || "vault", migrated:!!(acct && acct.migrated_at), disabled:!!(acct && acct.disabled)};
   }catch(e){
     // Offline: keep what we knew about this account.
     if(!me || me.id !== id) me = {id, email:session.user.email, user:session.user.email, name:"", owner:false, defaultVisibility:"vault"};
@@ -3165,7 +3226,7 @@ async function signOut(){
   }catch(e){}
   try{ await sb.auth.signOut(); }catch(e){}
   token = ""; me = null;
-  circle = null; circleAt = 0; myLink = null; visit = null; fSearch = {q:"", results:null}; admin = null; updateBadge(); fillAccount();
+  circle = null; circleAt = 0; myLink = null; visit = null; fSearch = {q:"", results:null}; admin = null; forgetTalk(); updateBadge(); fillAccount();
   if(currentTab === "friends" || currentTab === "friend") showTab("today");
   try{ localStorage.removeItem(USER_KEY); }catch(e){}
   const keep = state.settings; state = defaults(); state.settings = keep; saveLocal(); render();
@@ -3285,6 +3346,7 @@ async function loadCircle(force){
         ids.length ? sb.from("profiles").select("id,username,display_name,avatar_path").in("id", ids).then(must) : [],
         friendIds.length ? sb.from("plants").select("owner_id").in("owner_id", friendIds).then(must) : []
       ]);
+      notePeople(profs);
       const P = Object.fromEntries(profs.map(p => [p.id, p])), count = {};
       shared.forEach(r => count[r.owner_id] = (count[r.owner_id] || 0) + 1);
       const byName = (a, b) => personName(a).localeCompare(personName(b));
@@ -3303,9 +3365,10 @@ async function loadCircle(force){
   return circleBusy;
 }
 function updateBadge(){
-  const n = circle ? circle.incoming.length : 0, b = $("#reqBadge");
+  const r = circle ? circle.incoming.length : 0, a = typeof unseenCount === "function" ? unseenCount() : 0, n = r + a, b = $("#reqBadge");
   b.hidden = !n; b.textContent = n > 9 ? "9+" : n;
-  $("#friendsBtn").setAttribute("aria-label", n ? `Friends, ${n} new ${n === 1 ? "request" : "requests"}` : "Friends");
+  const parts = [r ? `${r} new ${r === 1 ? "request" : "requests"}` : "", a ? `${a} new ${a === 1 ? "reaction or comment" : "reactions and comments"}` : ""].filter(Boolean);
+  $("#friendsBtn").setAttribute("aria-label", parts.length ? `Friends, ${parts.join(", ")}` : "Friends");
 }
 async function loadMyLink(){
   if(myLink || !token) return;
@@ -3378,6 +3441,7 @@ function renderFriends(){
   let h = "";
   if(C && C.incoming.length) h += `<div class="card f-card"><h2>Friend requests <small>${C.incoming.length}</small></h2>
     <div class="people">${C.incoming.map(p => personRow(p, `<button class="btn small primary" data-fact="accept" data-id="${p.id}">Accept</button>${moreBtn(p)}`, "request")).join("")}</div></div>`;
+  h += `<div class="card f-card"><h2>What's new</h2><div id="feedBox">${feedHtml()}</div></div>`;
   h += `<div class="card f-card"><h2>Your friend link</h2>
     <p class="f-lead">Send it to people you know. Whoever opens it becomes your friend straight away, and if they don't have Alvor yet, it's their invitation too.</p>
     <div class="f-btns"><button class="btn primary" data-fact="shareLink" ${link ? "" : "disabled"}>Share my link</button>
@@ -3403,9 +3467,11 @@ function renderFriends(){
   if(focused){ const i = $("#fSearch"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
 }
 function openFriends(){
+  feedFreshAfter = null; feedMore = false;
   renderFriends();
   loadMyLink();
   loadCircle(true);
+  loadFeed(true).then(markFeedSeen);
 }
 
 $("#friendsBody").addEventListener("input", e => {
@@ -3419,6 +3485,8 @@ $("#friendsBody").addEventListener("click", async e => {
   const act = b.dataset.fact, id = b.dataset.id;
   if(act === "visit") return openFriend(id);
   if(act === "more") return personMenu(id);
+  if(act === "feed") return openFeedItem(+b.dataset.i);
+  if(act === "feedMore"){ feedMore = true; drawFeed(); return; }
   if(act === "qr"){ showQr = !showQr; renderFriends(); return; }
   if(act === "shareLink" && myLink) return shareText(`Be my friend on Alvor, the app I use for my plants: ${friendLinkUrl(myLink)}`);
   if(act === "resetLink") return resetLink();
@@ -3514,6 +3582,9 @@ async function openFriend(id){
       sb.from("photos").select("id,plant_id,path_small,taken_at,created_at").eq("owner_id", id).then(must)
     ]);
     if(!visit || visit.id !== id) return;
+    try{ await loadGardenTalk(id, true); }catch(e){ if(isAuthErr(e)) throw e; }   // reactions and comments are a bonus here
+    if(!visit || visit.id !== id) return;
+    if(prof) notePeople([prof]);
     const when = ph => new Date(ph.taken_at || ph.created_at).getTime();
     const byPlant = {}, urls = {};
     phs.sort((a, b) => when(b) - when(a)).forEach(ph => (byPlant[ph.plant_id] ||= []).push(ph));
@@ -3550,7 +3621,8 @@ function friendCard(x, V){
       : `<span class="initial a-${esc(x.area)}">${esc((x.name || "?").trim().charAt(0).toUpperCase())}</span>`}</button>
     <div class="pc-body"><button class="nm" data-gact="plant" data-id="${x.id}">${esc(x.name)}</button>
       ${x.species ? `<div class="sp">${esc(x.species)}</div>` : ""}
-      ${n > 1 ? `<div class="sp" style="font-style:normal">${n} photos</div>` : ""}</div>
+      ${n > 1 ? `<div class="sp" style="font-style:normal">${n} photos</div>` : ""}
+      <div class="tkc" data-tkc="${x.id}">${miniCounts({owner:V.id, type:"plant", id:x.id})}</div></div>
   </div>`;
 }
 function renderFriend(){
@@ -3566,21 +3638,25 @@ function renderFriend(){
   const home = V.garden && V.garden.home === "apartment" ? "apartment" : "house";
   h += friendScene(V, home);
   if(!V.plants.length){
-    el.innerHTML = h + fgMsg(`${name} hasn't shared any plants yet`, "Their plants show up here as soon as they share some with friends.");
+    el.innerHTML = h + (V.isFriend ? friendGardenTalkHtml() : "") + fgMsg(`${name} hasn't shared any plants yet`, "Their plants show up here as soon as they share some with friends.");
+    if(V.isFriend) mountFriendTalk({...V, filter:"all"}, home);
     return;
   }
+  h += friendGardenTalkHtml();
   const areas = ALL_AREAS.filter(a => V.plants.some(x => x.area === a));
   if(V.filter !== "all" && !areas.includes(V.filter)) V.filter = "all";
   h += `<div class="chips">${["all", ...areas].map(a => {
     const n = a === "all" ? V.plants.length : V.plants.filter(x => x.area === a).length;
     return `<button class="chip" data-gact="area" data-a="${a}" aria-pressed="${V.filter === a}">${a === "all" ? "All" : esc(fAreaLabel(a, home))} ${n}</button>`;
   }).join("")}</div>`;
+  h += friendAreaTalkHtml(V);
   const list = V.plants.filter(x => V.filter === "all" || x.area === V.filter);
   h += `<div class="plist v-grid">${areas.filter(a => list.some(x => x.area === a)).map(a => {
     const g = list.filter(x => x.area === a);
     return `<h2 class="group-h">${zi(a)} ${esc(fAreaLabel(a, home))} <small>${g.length}</small></h2><div class="pgroup">${g.map(x => friendCard(x, V)).join("")}</div>`;
   }).join("")}</div>`;
   el.innerHTML = h;
+  mountFriendTalk(V, home);
 }
 $("#friendBody").addEventListener("click", async e => {
   const b = e.target.closest("[data-gact]"); if(!b || !visit) return;
@@ -3609,7 +3685,9 @@ function openFriendPlant(pid, idx){
     <div class="fp-meta">${x.species ? `<div class="sp">${esc(x.species)}</div>` : ""}
       <div class="where">${zi(x.area)}<span>${esc(fAreaLabel(x.area, home))}</span></div>
       <small>${cur ? `Photo from ${esc(longDate(cur.taken_at || cur.created_at))}` : "No photos shared yet"}${phs.length > 1 ? ` · ${phs.length} photos` : ""}</small></div>
+    <div class="fp-talk" id="fpTalk"></div>
     <div class="fp-report">Something wrong? <button class="linkish" data-rep="plant">Report this plant</button>${cur ? ` · <button class="linkish" data-rep="photo" data-id="${esc(cur.id)}">Report this photo</button>` : ""}</div>`;
+  mountTalk($("#fpTalk"), {owner:V.id, type:"plant", id:pid, name:x.name, home, ownerName:personName(V.prof || {})}, "full");
   fplant.dataset.pid = pid;
   if(!fplant.open) fplant.showModal();
 }
@@ -3625,6 +3703,365 @@ $("#fpBody").addEventListener("click", e => {
 });
 $("#fpClose").addEventListener("click", () => fplant.close());
 
+/* ---------- Life in the circle: reactions, comments and what's new ----------
+   One system for plants, areas and whole gardens. Who may see or write what is enforced by the database;
+   this part shows it, and keeps a small copy of each garden's reactions and comments. */
+const REACTS = [["love", "❤️", "Love it"], ["growing", "🌱", "Growing well"], ["pretty", "🌸", "So pretty"],
+  ["wow", "😮", "Impressive"], ["thirsty", "💧", "Needs water?"], ["soggy", "🌊", "Too much water?"]];
+const REACT = Object.fromEntries(REACTS.map(([k, e, l]) => [k, {e, l}]));
+const people = {};                     // names and photos seen so far, by id
+const talks = {}, gardenTalkAt = {};   // "owner|type|id" → {reactions, comments}; when each garden was loaded
+let talkT = null;                      // what the talk dialog shows
+const tKey = T => `${T.owner}|${T.type}|${T.id}`;
+const notePeople = list => (list || []).forEach(p => { if(p && p.id) people[p.id] = {...(people[p.id] || {}), ...p}; });
+const meProfile = () => me ? {id:me.id, username:me.user, display_name:me.name || me.user, avatar_path:me.avatar || null} : null;
+const personById = id => me && id === me.id ? meProfile() : people[id] || (findPerson(id)) || {id, display_name:"Someone"};
+const talkOf = T => talks[tKey(T)] || {reactions:[], comments:[]};
+const talkFor = T => talks[tKey(T)] ||= {reactions:[], comments:[]};
+const talkCount = T => { const D = talkOf(T); return {r:D.reactions.length, c:D.comments.length}; };
+/* How a spot is named in a sentence, the same words the notifications use. */
+const areaPhrase = (a, home) => a === "house" ? (home === "apartment" ? "indoor plants" : "house") : a === "outside" ? "outdoor garden" : a;
+const thingName = T => T.type === "plant" ? (T.name || "plant") : T.type === "area" ? areaPhrase(T.id, T.home) : "garden";
+const talkTitle = T => me && T.owner === me.id ? `Your ${thingName(T)}` : `${T.ownerName || "Their"}'s ${thingName(T)}`;
+function ago(s){
+  const m = (Date.now() - new Date(s).getTime()) / 60000;
+  if(m < 1) return "now";
+  if(m < 60) return `${Math.floor(m)} min`;
+  if(m < 1440) return `${Math.floor(m / 60)} h`;
+  if(m < 10080) return `${Math.floor(m / 1440)} d`;
+  return shortDate(s);
+}
+function talkErr(e){
+  if(isAuthErr(e)){ sessionExpired(); return; }
+  if(e && e.code === "42501") toast(me && me.disabled ? "Your account is switched off." : "This isn't shared with you any more.");
+  else circleErr(e);
+}
+
+/* Everything said in one garden, in one go (a small circle keeps this small). */
+async function loadGardenTalk(owner, force){
+  if(!online || !token || !me || !owner) return;
+  if(!force && gardenTalkAt[owner] && Date.now() - gardenTalkAt[owner] < 30000) return;
+  const [rs, cs] = await Promise.all([
+    sb.from("reactions").select("id,user_id,target_type,target_id,kind,created_at").eq("garden_owner", owner).limit(3000).then(must),
+    sb.from("comments").select("id,user_id,target_type,target_id,body,created_at").eq("garden_owner", owner).order("created_at").limit(2000).then(must)
+  ]);
+  Object.keys(talks).forEach(k => { if(k.startsWith(owner + "|")) delete talks[k]; });
+  rs.forEach(r => talkFor({owner, type:r.target_type, id:r.target_id}).reactions.push(r));
+  cs.forEach(c => talkFor({owner, type:c.target_type, id:c.target_id}).comments.push(c));
+  gardenTalkAt[owner] = Date.now();
+  const need = [...new Set([...rs, ...cs].map(x => x.user_id))].filter(id => id !== me.id && !people[id]);
+  if(need.length) notePeople(must(await sb.from("profiles").select("id,username,display_name,avatar_path").in("id", need)));
+}
+
+/* The reactions bar, who reacted, and (in full) the comments with a box to write one. */
+const talkAttrs = T => `data-o="${esc(T.owner)}" data-t="${esc(T.type)}" data-i="${esc(T.id)}"`;
+const boxT = el => { const b = el.closest(".talk"); return b ? {owner:b.dataset.o, type:b.dataset.t, id:b.dataset.i} : null; };
+function reactHtml(T){
+  const D = talkOf(T), mine = T.owner === me.id, counts = {}, my = new Set(), by = {};
+  D.reactions.forEach(r => {
+    counts[r.kind] = (counts[r.kind] || 0) + 1;
+    if(r.user_id === me.id) my.add(r.kind);
+    (by[r.user_id] ||= []).push(r.kind);
+  });
+  let h = "";
+  if(mine){
+    const got = REACTS.filter(([k]) => counts[k]);
+    h += got.length ? `<div class="rx-bar">${got.map(([k, e, l]) => `<span class="rx" title="${l}">${e}<b>${counts[k]}</b></span>`).join("")}</div>`
+      : `<p class="tk-none">No reactions yet.</p>`;
+  }else{
+    h += `<div class="rx-bar" role="group" aria-label="React">${REACTS.map(([k, e, l]) => `<button class="rx" data-tk="react" data-k="${k}" aria-pressed="${my.has(k)}" title="${l}" aria-label="${l}${counts[k] ? ", " + counts[k] : ""}">${e}${counts[k] ? `<b>${counts[k]}</b>` : ""}</button>`).join("")}</div>`;
+  }
+  const who = Object.entries(by);
+  if(who.length) h += `<p class="tk-who">${who.slice(0, 8).map(([id, ks]) => `<span><b>${id === me.id ? "You" : esc(personName(personById(id)))}</b> ${REACTS.filter(([k]) => ks.includes(k)).map(([, e]) => e).join("")}</span>`).join("")}${who.length > 8 ? `<span>and ${who.length - 8} more</span>` : ""}</p>`;
+  return h;
+}
+const showAllTalk = new Set();
+function commentsHtml(T){
+  const D = talkOf(T), all = D.comments, key = tKey(T);
+  if(!all.length) return `<p class="tk-none">${T.owner === me.id ? "No comments yet." : "No comments yet. Say something nice."}</p>`;
+  const list = showAllTalk.has(key) ? all : all.slice(-30);
+  return (list.length < all.length ? `<button class="linkish tk-earlier" data-tk="earlier">Show ${all.length - list.length} earlier</button>` : "") +
+    `<div class="cms">${list.map(c => {
+      const p = personById(c.user_id);
+      return `<div class="cm">${personAv(p)}<div class="cm-b"><div class="cm-h"><b>${esc(c.user_id === me.id ? "You" : personName(p))}</b><small>${esc(ago(c.created_at))}</small></div>
+        <p>${esc(c.body)}</p></div><button class="icon-more" data-tk="cmore" data-id="${esc(c.id)}" aria-label="More for this comment">${MORE}</button></div>`;
+    }).join("")}</div>`;
+}
+function talkLive(T, mode){
+  const n = talkOf(T).comments.length;
+  return reactHtml(T) + (mode === "compact"
+    ? `<button class="btn small tk-open" data-tk="open">💬 ${n ? `${n} ${n === 1 ? "comment" : "comments"}` : "Comment"}</button>`
+    : `<h3 class="tk-h">Comments ${n ? `<small>${n}</small>` : ""}</h3>${commentsHtml(T)}`);
+}
+function talkHtml(T, mode){
+  return `<div class="talk ${mode}" ${talkAttrs(T)} data-mode="${mode}"><div class="tk-live">${talkLive(T, mode)}</div>${mode === "full"
+    ? `<div class="tk-write"><textarea data-tk-input rows="1" maxlength="1000" placeholder="Write a comment…" aria-label="Write a comment"></textarea><button class="btn small primary" data-tk="send">Send</button></div>` : ""}</div>`;
+}
+/* Redraw every box showing this thing (the writing box keeps what's typed), plus the counts around it. */
+function redrawTalk(T){
+  const key = tKey(T);
+  document.querySelectorAll(".talk").forEach(b => {
+    if(`${b.dataset.o}|${b.dataset.t}|${b.dataset.i}` === key){
+      const t = {...T, ...(b._t || {})};
+      b.querySelector(".tk-live").innerHTML = talkLive(t, b.dataset.mode);
+    }
+  });
+  if(me && T.owner === me.id) renderPlants();
+  if(visit && T.owner === visit.id && currentTab === "friend" && !visit.loading) refreshFriendCounts();
+}
+const miniCounts = T => {
+  const {r, c} = talkCount(T);
+  return r || c ? `<span class="tk-mini">${r ? `❤️ ${r}` : ""}${r && c ? " · " : ""}${c ? `💬 ${c}` : ""}</span>` : "";
+};
+
+/* React: tap to add, tap again to take it back. */
+const reactBusy = new Set();
+async function toggleReact(T, k){
+  const D = talkFor(T), bk = tKey(T) + "|" + k;
+  if(reactBusy.has(bk)) return;
+  reactBusy.add(bk);
+  const had = D.reactions.find(r => r.user_id === me.id && r.kind === k);
+  try{
+    if(had){
+      D.reactions = D.reactions.filter(r => r !== had); redrawTalk(T);
+      try{ must(await sb.from("reactions").delete().eq("id", had.id)); }
+      catch(e){ D.reactions.push(had); redrawTalk(T); talkErr(e); }
+    }else{
+      const tmp = {id:"", user_id:me.id, kind:k, created_at:new Date().toISOString()};
+      D.reactions.push(tmp); redrawTalk(T);
+      try{
+        Object.assign(tmp, must(await sb.from("reactions").insert({garden_owner:T.owner, target_type:T.type, target_id:T.id, kind:k})
+          .select("id,user_id,kind,created_at").single()));
+      }catch(e){
+        D.reactions = D.reactions.filter(r => r !== tmp); redrawTalk(T);
+        if(e && e.code === "23505"){ await loadGardenTalk(T.owner, true).catch(() => {}); redrawTalk(T); }
+        else talkErr(e);
+      }
+    }
+  }finally{ reactBusy.delete(bk); }
+}
+async function sendComment(box){
+  const T = boxT(box), ta = box.querySelector("[data-tk-input]"), btn = box.querySelector("[data-tk=send]");
+  const body = ta.value.trim(); if(!T || !body || btn.disabled) return;
+  btn.disabled = true;
+  try{
+    const row = must(await sb.from("comments").insert({garden_owner:T.owner, target_type:T.type, target_id:T.id, body:body.slice(0, 1000)})
+      .select("id,user_id,body,created_at").single());
+    talkFor(T).comments.push(row);
+    ta.value = ""; ta.style.height = "";
+    redrawTalk(T);
+    const list = box.querySelector(".cms"); if(list) list.lastElementChild && list.lastElementChild.scrollIntoView({block:"nearest", behavior:"smooth"});
+  }catch(e){ talkErr(e); }
+  finally{ btn.disabled = false; }
+}
+async function commentMenu(T, cid){
+  const D = talkFor(T), c = D.comments.find(x => x.id === cid); if(!c) return;
+  const p = personById(c.user_id), mineC = c.user_id === me.id, myGarden = T.owner === me.id;
+  const acts = [];
+  if(mineC) acts.push(["delete", "Delete my comment", "danger"]);
+  else{
+    if(myGarden) acts.push(["delete", "Remove from my garden", "danger"]);
+    acts.push(["report", "Report this comment…", "danger"]);
+  }
+  const k = await sheet(p, acts); if(!k) return;
+  if(k === "report") return openReport({type:"comment", id:cid, person:p, what:"this comment"});
+  if(k === "delete"){
+    if(!confirm(mineC ? "Delete your comment?" : `Remove ${personName(p)}'s comment from your garden? They aren't told.`)) return;
+    try{
+      must(await sb.from("comments").delete().eq("id", cid));
+      D.comments = D.comments.filter(x => x.id !== cid); redrawTalk(T); toast("Comment deleted");
+    }catch(e){ talkErr(e); }
+  }
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-tk]"); if(!b || !me) return;
+  const box = b.closest(".talk"), T = box && {...boxT(box), ...(box._t || {})}; if(!T) return;
+  const a = b.dataset.tk;
+  if(a === "react") toggleReact(T, b.dataset.k);
+  else if(a === "send") sendComment(box);
+  else if(a === "cmore") commentMenu(T, b.dataset.id);
+  else if(a === "open") openTalk(T);
+  else if(a === "earlier"){ showAllTalk.add(tKey(T)); redrawTalk(T); }
+});
+document.addEventListener("input", e => {   // the writing box grows with the text
+  const ta = e.target.closest && e.target.closest("[data-tk-input]"); if(!ta) return;
+  ta.style.height = ""; ta.style.height = Math.min(ta.scrollHeight + 2, 160) + "px";
+});
+/* Put a talk box into a container, remembering names used in its sentences. */
+function mountTalk(el, T, mode){
+  el.innerHTML = talkHtml(T, mode);
+  el.querySelector(".talk")._t = {name:T.name, home:T.home, ownerName:T.ownerName};
+}
+
+/* ---------- The talk dialog: one plant, area or garden, opened from the feed, a notification or a button ---------- */
+const talkDlg = $("#talkDlg");
+async function openTalk(T){
+  if(!online || !token || !me || !T || !T.owner) return;
+  talkT = {...T};
+  $("#talkTitle").textContent = T.name || T.ownerName ? talkTitle(T) : "…";
+  $("#talkBody").innerHTML = `<p class="f-empty">Loading…</p>`;
+  if(!talkDlg.open) talkDlg.showModal();
+  try{
+    const mine = T.owner === me.id;
+    await Promise.all([
+      loadGardenTalk(T.owner, true),
+      (async () => {
+        if(mine){
+          talkT.ownerName = "You"; talkT.home = state.settings.home === "apartment" ? "apartment" : "house";
+          if(T.type === "plant"){
+            let p = state.plants.find(x => x.id === T.id);
+            if(!p) p = await sb.from("plants").select("name").eq("id", T.id).eq("owner_id", me.id).maybeSingle().then(must);   // not on this phone yet
+            talkT.name = p ? p.name : null; talkT.gone = !p;
+          }
+        }else{
+          const [prof, g, pl] = await Promise.all([
+            sb.from("profiles").select("id,username,display_name,avatar_path").eq("id", T.owner).maybeSingle().then(must),
+            sb.from("gardens").select("home").eq("owner_id", T.owner).maybeSingle().then(must),
+            T.type === "plant" ? sb.from("plants").select("name").eq("id", T.id).maybeSingle().then(must) : null
+          ]);
+          if(prof) notePeople([prof]);
+          talkT.ownerName = prof ? personName(prof) : "Someone";
+          talkT.home = g && g.home === "apartment" ? "apartment" : "house";
+          if(T.type === "plant"){ talkT.name = pl ? pl.name : null; talkT.gone = !pl; }
+          talkT.gone = talkT.gone || !g;
+        }
+      })()
+    ]);
+  }catch(e){
+    if(isAuthErr(e)){ talkDlg.close(); sessionExpired(); return; }
+    if(talkT && talkT.owner === T.owner) $("#talkBody").innerHTML = fgMsg("Couldn't open this", "Check your connection and try again.");
+    return;
+  }
+  if(!talkT || tKey(talkT) !== tKey(T) || !talkDlg.open) return;
+  drawTalkDlg();
+}
+function drawTalkDlg(){
+  const T = talkT; if(!T) return;
+  $("#talkTitle").textContent = T.gone ? "Not shared any more" : talkTitle(T);
+  if(T.gone){ $("#talkBody").innerHTML = fgMsg("This isn't shared any more", T.type === "plant" ? "The plant was deleted, or moved back to its owner's Vault." : "You're no longer friends with the owner of this garden."); return; }
+  const mine = T.owner === me.id;
+  const link = mine ? (T.type === "plant" ? `<button class="linkish" data-tlk="plant">Open the plant</button>` : "")
+    : `<button class="linkish" data-tlk="visit">Visit ${esc(T.ownerName)}'s garden</button>`;
+  const body = $("#talkBody");
+  body.innerHTML = `<div class="tk-dlg"></div>${link ? `<p class="tk-link">${link}</p>` : ""}`;
+  mountTalk(body.querySelector(".tk-dlg"), T, "full");
+}
+$("#talkClose").addEventListener("click", () => talkDlg.close());
+talkDlg.addEventListener("close", () => { talkT = null; });
+$("#talkBody").addEventListener("click", async e => {
+  const b = e.target.closest("[data-tlk]"); if(!b || !talkT) return;
+  const T = talkT; talkDlg.close();
+  if(b.dataset.tlk === "plant") openDialog(T.id);
+  else{
+    await openFriend(T.owner);
+    if(T.type === "plant" && visit && visit.plants && visit.plants.some(x => x.id === T.id)) openFriendPlant(T.id, 0);
+    else if(T.type === "area" && visit && !visit.loading){ visit.filter = T.id; renderFriend(); }
+  }
+});
+
+function forgetTalk(){
+  feed = null; feedAt = 0; feedFreshAfter = null; feedMore = false;
+  Object.keys(talks).forEach(k => delete talks[k]); Object.keys(gardenTalkAt).forEach(k => delete gardenTalkAt[k]);
+  if(talkDlg.open) talkDlg.close();
+}
+
+/* Links from notifications: #talk=<owner>.<plant|area|garden>.<id> */
+function openFromHash(h){
+  const m = String(h || "").match(/talk=([0-9a-f-]{36})\.(plant|area|garden)\.([A-Za-z0-9-]{1,40})/);
+  if(!m) return false;
+  if(location.hash.includes("talk=")) history.replaceState(null, "", location.pathname);
+  if(token && me) openTalk({owner:m[1], type:m[2], id:m[3]});
+  return true;
+}
+window.addEventListener("hashchange", () => openFromHash(location.hash));
+if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", e => { if(e.data && e.data.open) openFromHash(e.data.open); });
+
+/* ---------- What's new: reactions and comments for you, and friends' new photos ---------- */
+let feed = null, feedAt = 0, feedBusy = null, feedMore = false, feedFreshAfter = null;
+const seenTime = () => me && me.activitySeen ? new Date(me.activitySeen).getTime() : 0;
+const counts4Badge = f => f.kind !== "photo";
+const unseenCount = () => feed ? feed.filter(f => counts4Badge(f) && new Date(f.happened_at).getTime() > seenTime()).length : 0;
+async function loadFeed(force){
+  if(!online || !token || !me) return null;
+  if(!force && feed && Date.now() - feedAt < 60000) return feed;
+  if(feedBusy) return feedBusy;
+  feedBusy = (async () => {
+    try{
+      const [rows, acct] = await Promise.all([
+        sb.rpc("activity_feed", {p_limit:40}).then(must),
+        sb.from("accounts").select("activity_seen_at").eq("id", me.id).maybeSingle().then(must)
+      ]);
+      feed = rows || []; feedAt = Date.now();
+      if(acct && acct.activity_seen_at && seenTime() < new Date(acct.activity_seen_at).getTime()){ me.activitySeen = acct.activity_seen_at; storeMe(); }
+      notePeople(feed.map(f => ({id:f.actor_id, username:f.actor_username, display_name:f.actor_name, avatar_path:f.actor_avatar})));
+    }catch(e){ if(isAuthErr(e)) sessionExpired(); }
+    try{ await loadGardenTalk(me.id); renderPlants(); }catch(e){}
+    updateBadge();
+    if(currentTab === "friends") drawFeed();
+    return feed;
+  })().finally(() => { feedBusy = null; });
+  return feedBusy;
+}
+/* Opening the Friends screen counts as seeing what's new; new lines stay marked while you're there. */
+async function markFeedSeen(){
+  if(!feed || !me) return;
+  const newest = feed.filter(counts4Badge).map(f => f.happened_at).sort().pop();
+  if(!newest || new Date(newest).getTime() <= seenTime()) return;
+  if(feedFreshAfter === null) feedFreshAfter = seenTime();
+  me.activitySeen = newest; storeMe(); updateBadge();
+  try{ must(await sb.from("accounts").update({activity_seen_at:newest}).eq("id", me.id)); }catch(e){}
+}
+function feedLine(f){
+  const actor = `<b>${esc(f.actor_name || "Someone")}</b>`;
+  const plant = f.target_type === "plant", T = {type:f.target_type, id:f.target_id, name:f.target_name, home:f.owner_home};
+  const thing = plant ? `<b>${esc(f.target_name || "a plant")}</b>` : esc(thingName(T));
+  if(f.kind === "photo") return `${actor} added ${f.n === 1 ? "a photo" : f.n + " photos"} of ${thing}`;
+  if(f.kind === "reaction") return `${actor} reacted ${(f.detail || "").split(",").map(k => REACT[k] ? REACT[k].e : "").join("")} to your ${thing}`;
+  if(f.kind === "comment") return `${actor} commented on your ${thing}`;
+  return f.actor_id === f.garden_owner ? `${actor} replied on their ${thing}` : `${actor} also commented on ${esc(f.owner_name || "a friend")}'s ${thing}`;
+}
+function feedRow(f, i){
+  const fresh = counts4Badge(f) && feedFreshAfter !== null && new Date(f.happened_at).getTime() > feedFreshAfter;
+  const p = {id:f.actor_id, username:f.actor_username, display_name:f.actor_name, avatar_path:f.actor_avatar};
+  const quote = f.kind === "comment" || f.kind === "reply" ? `<span class="fd-q">“${esc(f.detail || "")}”</span>` : "";
+  return `<button class="fd ${fresh ? "fresh" : ""}" data-fact="feed" data-i="${i}">${personAv(p)}<span class="fd-t"><span>${feedLine(f)}</span>${quote}<small>${esc(ago(f.happened_at))}${fresh ? " · new" : ""}</small></span></button>`;
+}
+function feedHtml(){
+  if(!feed) return `<p class="f-empty">Loading…</p>`;
+  if(!feed.length) return `<p class="f-empty">Nothing yet. Reactions and comments on your plants, replies to your comments and friends' new photos show up here.</p>`;
+  const list = feedMore ? feed : feed.slice(0, 6);
+  return `<div class="feed">${list.map(feedRow).join("")}</div>${feed.length > list.length ? `<button class="linkish" data-fact="feedMore">Show more</button>` : ""}`;
+}
+function drawFeed(){ const el = $("#feedBox"); if(el) el.innerHTML = feedHtml(); }
+async function openFeedItem(i){
+  const f = feed && feed[i]; if(!f) return;
+  const ownerName = f.garden_owner === me.id ? "You" : f.owner_name;
+  if(f.kind === "photo"){
+    await openFriend(f.garden_owner);
+    if(visit && visit.plants && visit.plants.some(x => x.id === f.target_id)) openFriendPlant(f.target_id, 0);
+  }else openTalk({owner:f.garden_owner, type:f.target_type, id:f.target_id, name:f.target_name, home:f.owner_home, ownerName});
+}
+
+/* ---------- In a friend's garden: the whole garden, the chosen area, and counts on each plant ---------- */
+const friendGardenTalkHtml = () => `<div class="card tk-card" id="fgTalkGarden"></div>`;
+const friendAreaTalkHtml = V => V.filter && V.filter !== "all" ? `<div class="card tk-card" id="fgTalkArea"></div>` : "";
+function mountFriendTalk(V, home){
+  const ownerName = personName(V.prof || {}), g = $("#fgTalkGarden"), a = $("#fgTalkArea");
+  if(g){
+    g.innerHTML = `<h3 class="tk-card-h">${esc(ownerName)}'s garden</h3><div></div>`;
+    mountTalk(g.lastElementChild, {owner:V.id, type:"garden", id:"garden", ownerName, home}, "compact");
+  }
+  if(a){
+    const T = {owner:V.id, type:"area", id:V.filter, ownerName, home};
+    a.innerHTML = `<h3 class="tk-card-h">${zi(V.filter)} ${esc(ownerName)}'s ${esc(thingName(T))}</h3><div></div>`;
+    mountTalk(a.lastElementChild, T, "compact");
+  }
+}
+function refreshFriendCounts(){
+  if(!visit || !visit.plants) return;
+  document.querySelectorAll("#friendBody [data-tkc]").forEach(el => { el.innerHTML = miniCounts({owner:visit.id, type:"plant", id:el.dataset.tkc}); });
+}
+
 /* ---------- Reporting ----------
    A report goes to the owner of Alvor through report_content(), which checks you can see the thing. */
 const REP_REASONS = [["offensive", "Rude, offensive or hateful"], ["harassment", "Bullying or harassment"],
@@ -3635,7 +4072,7 @@ function openReport(o){
   if(!online || !token) return;
   rep = o;
   const who = esc(personName(o.person));
-  $("#repTitle").textContent = o.type === "profile" ? `Report ${personName(o.person)}` : o.type === "photo" ? "Report a photo" : "Report a plant";
+  $("#repTitle").textContent = o.type === "profile" ? `Report ${personName(o.person)}` : o.type === "photo" ? "Report a photo" : o.type === "comment" ? "Report a comment" : "Report a plant";
   $("#repLead").innerHTML = (o.type === "profile" ? `What's wrong with ${who}'s profile or garden?` : `What's wrong with ${esc(o.what)}?`)
     + ` Reports go to the owner of Alvor, who looks at each one. ${who} isn't told who sent it.`;
   $("#repReasons").innerHTML = REP_REASONS.map(([k, l]) => `<label><input type="radio" name="repWhy" value="${k}"> ${l}</label>`).join("");
@@ -3787,7 +4224,7 @@ async function forgetEverything(){
   try{ await idb.clear(); }catch(e){}
   [KEY, USER_KEY, PUSH_KEY, PH_DEL_KEY, OLD_TOKEN_KEY, ADMIN_SEEN_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
   token = ""; me = null; photos = {}; pending = [];
-  circle = null; circleAt = 0; myLink = null; visit = null; fSearch = {q:"", results:null}; admin = null; updateBadge();
+  circle = null; circleAt = 0; myLink = null; visit = null; fSearch = {q:"", results:null}; admin = null; forgetTalk(); updateBadge();
   state = defaults(); saveLocal();
   showTab("today"); render(); fillAccount();
 }
@@ -3906,9 +4343,10 @@ function saveNotifySettings(){
   state.settings.morningHour = +$("#sMorning").value;
   state.settings.eveningHour = +$("#sEvening").value;
   state.settings.eveningCheck = $("#sEveningOn").checked;
+  state.settings.socialPush = $("#sSocialOn").checked;
   save(); toast("Saved");
 }
-["#sMorning","#sEvening","#sEveningOn"].forEach(id => $(id).addEventListener("change", saveNotifySettings));
+["#sMorning","#sEvening","#sEveningOn","#sSocialOn"].forEach(id => $(id).addEventListener("change", saveNotifySettings));
 
 /* ---------- Start ---------- */
 normalizeLocation(); useActiveLocation();
@@ -3932,12 +4370,14 @@ initAuth().then(async () => {
   loadCircle();
   loadAdmin(true);
   await joinFromLink();
+  loadFeed();
+  openFromHash(location.hash);
   ensurePush();
   maybeOnboard();
   maybeShareIntro();
 });
 refreshCurrent(false);
-document.addEventListener("visibilitychange", () => { if(!document.hidden){ fetchWeather(false); refreshCurrent(false); if(token){ pull(); loadCircle(); } } });
+document.addEventListener("visibilitychange", () => { if(!document.hidden){ fetchWeather(false); refreshCurrent(false); if(token){ pull(); loadCircle(); loadFeed(); } } });
 </script>
 </body>
 </html>
