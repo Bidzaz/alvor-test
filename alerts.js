@@ -82,6 +82,8 @@ function waterStatus(p, W, ctx){
   return {due:days >= iv, days, iv, byRain, last};
 }
 const effMin = (p, d, s) => d.min + (p.current === "greenhouse" ? +s.gh : 0);
+/* Cold warnings are per plant: off when the owner switched them off, or when no limit is set. */
+const coldOn = p => p.coldAlert !== false && p.minTemp !== null && p.minTemp !== undefined && p.minTemp !== "" && isFinite(+p.minTemp);
 const coldLimit = (p, s) => +p.minTemp + +s.margin + (p.planting === "pot" && p.current === "outside" ? 1 : 0);
 
 const COLD_KEYS = ["bringIn","toGh","ghProtect","potProtect","groundProtect"];
@@ -103,7 +105,7 @@ function compute(plants, ctx){
     const look = evening ? W.next.slice(1, 2) : W.next.slice(0, 3);
     const coldIds = new Set();
     for(const p of plants){
-      if(p.current === "inside") continue;
+      if(p.current === "inside" || !coldOn(p)) continue;
       let worst = null;
       for(const d of look){ const t = effMin(p, d, s); if(!worst || t < worst.t) worst = {t, date:d.date}; }
       if(!worst || worst.t >= coldLimit(p, s)) continue;
@@ -126,7 +128,7 @@ function compute(plants, ctx){
 
     if(!evening){
       for(const p of plants){
-        if(coldIds.has(p.id)) continue;
+        if(coldIds.has(p.id) || !coldOn(p)) continue;
         const movable = p.pattern === "mover" || p.pattern === "greenhouse";
         if(p.current === "outside" && p.planting === "pot" && movable && ctx.month >= 8 && ctx.month <= 11){
           const hit = W.next.slice(3).find(d => d.min < coldLimit(p, s) + 2);
@@ -196,10 +198,10 @@ function summarize(groups, ctx){
   const t = W && W.next[0];
   const wLine = t ? `${deg(t.min)} to ${deg(t.max)}, ${t.rain >= 0.5 ? Math.round(t.rain) + " mm rain" : "dry"}` : "";
   if(!groups.length) return {title:"Nothing to do in the garden today", body:wLine, tag:"garden-morning"};
-  const title = cold.length ? `Frost warning: down to ${deg(lowest)}`
+  const title = cold.length ? `${lowest <= 0 ? "Frost warning" : "Low temperature warning"}: down to ${deg(lowest)}`
     : `${groups.length} ${groups.length === 1 ? "thing" : "things"} to do in the garden`;
   return {title, body:[...lines, wLine].filter(Boolean).join("\n"), tag:"garden-morning"};
 }
 
-return {PRESETS, LOC, ALLOWED, deg, daysBetween, presetFor, splitWeather, interval, waterStatus, effMin, coldLimit, compute, summarize, COLD_KEYS};
+return {PRESETS, LOC, ALLOWED, deg, daysBetween, presetFor, splitWeather, interval, waterStatus, effMin, coldLimit, coldOn, compute, summarize, COLD_KEYS};
 });

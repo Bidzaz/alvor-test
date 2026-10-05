@@ -119,6 +119,11 @@ button{cursor:pointer}
 .tag{border-radius:6px;padding:1px 7px;background:var(--bg);color:var(--muted)}
 .tag.due{background:var(--fern);color:var(--on-fern)}
 .tag.cold{background:var(--frost-bg);color:var(--frost)}
+.tag.off{opacity:.7}
+.cold-box{margin-top:18px;border-top:1px solid var(--line, rgba(0,0,0,.08));padding-top:12px}
+.cold-box summary{cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;gap:10px;list-style:none}
+.cold-box summary::-webkit-details-marker{display:none}
+.cold-box .pick-list{max-height:52vh}
 .plant .acts{display:flex;gap:6px}
 .thumb{grid-row:1/3;width:64px;height:64px;border-radius:12px;border:0;padding:0;overflow:hidden;background:var(--fern-soft);color:var(--fern);font-family:var(--head);font-weight:700;font-size:1.5rem;display:flex;align-items:center;justify-content:center}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -874,7 +879,7 @@ span.rx{cursor:default}
       <div class="card">
         <h2>Alert rules</h2>
         <div class="row2">
-          <div class="field"><label for="sMargin">Frost margin °C</label><input id="sMargin" type="number" step="0.5"><span class="hint">Warn when the forecast gets this close to a plant's limit.</span></div>
+          <div class="field"><label for="sMargin">Low temperature margin °C</label><input id="sMargin" type="number" step="0.5"><span class="hint">Warn when the forecast gets this close to a plant's limit.</span></div>
           <div class="field"><label for="sGh">Greenhouse warmer by °C</label><input id="sGh" type="number" step="0.5"><span class="hint">How much warmer your greenhouse stays than outside at night.</span></div>
         </div>
         <div class="row3">
@@ -883,6 +888,7 @@ span.rx{cursor:default}
           <div class="field"><label for="sRain">Rain counts as watering, mm</label><input id="sRain" type="number" step="0.5"></div>
         </div>
         <button class="btn primary" id="saveSettings">Save settings</button>
+        <div id="coldPick"></div>
       </div>
       <div class="card" id="accountCard">
         <h2>Account</h2>
@@ -909,9 +915,9 @@ span.rx{cursor:default}
         <h2>Notifications</h2>
         <div class="row2">
           <div class="field"><label for="sMorning">Morning summary at</label><select id="sMorning"></select></div>
-          <div class="field"><label for="sEvening">Evening frost check at</label><select id="sEvening"></select></div>
+          <div class="field"><label for="sEvening">Evening cold check at</label><select id="sEvening"></select></div>
         </div>
-        <label class="check"><input type="checkbox" id="sEveningOn"><span>Send the evening frost check<br><span class="status">Only arrives when a plant is at risk that night.</span></span></label>
+        <label class="check"><input type="checkbox" id="sEveningOn"><span>Send the evening cold check<br><span class="status">Only arrives when a plant is at risk that night.</span></span></label>
         <label class="check" id="sSocialRow"><input type="checkbox" id="sSocialOn"><span>Reactions and comments from friends<br><span class="status">When someone reacts to or comments on your plants, or replies where you commented.</span></span></label>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn primary" id="notifyBtn">Turn on notifications</button>
@@ -1020,6 +1026,7 @@ span.rx{cursor:default}
         <option value="greenhouse">Outside in summer, greenhouse in winter</option>
       </select></div>
     <div class="field"><label>Where it is now</label><div id="fZonePick" class="picker"></div></div>
+    <label class="check"><input type="checkbox" id="fCold"><span>Low temperature warnings for this plant<br><span class="status" id="fColdHint"></span></span></label>
     <div class="row3">
       <div class="field"><label for="fMin">Lowest °C it takes</label><input id="fMin" type="number" step="0.5"></div>
       <div class="field"><label for="fWs">Water every (summer)</label><input id="fWs" type="number" min="1"><span class="hint">days</span></div>
@@ -1103,6 +1110,7 @@ span.rx{cursor:default}
 
 <script src="alerts.js"></script>
 <script src="species.js"></script>
+<script src="hardiness.js"></script>
 <script src="supabase.js"></script>
 <script src="qrcode.js"></script>
 <script>
@@ -1257,7 +1265,47 @@ const daysBetween = (a,b) => Math.round((parseDay(b) - parseDay(a)) / 86400000);
 const dayName = s => s === today() ? "Today" : parseDay(s).toLocaleDateString("en-GB",{weekday:"short"});
 const longDay = s => s === today() ? "today" : parseDay(s).toLocaleDateString("en-GB",{weekday:"long"});
 const deg = n => `${Math.round(n)}°`;
-const presetFor = s => PRESETS.find(p => p.s.toLowerCase() === String(s||"").trim().toLowerCase());
+/* ---------- Care values for a species ---------- */
+/* hardiness.js gives the cold limit for every genus in the species list and many species.
+   PRESETS (alerts.js) add watering and notes for the plants Alvor started with. */
+const PAT = {o:"outdoor", m:"mover", g:"greenhouse", i:"indoor"};
+const patFor = min => min <= -5 ? "outdoor" : min >= 10 ? "indoor" : "mover";
+const HARDY = (() => {
+  const m = {};
+  for(const [k, v] of Object.entries(window.HARDINESS || {})){
+    const [min, pat, note] = Array.isArray(v) ? v : [v];
+    m[k.toLowerCase()] = {s:k, min, pat:PAT[pat] || patFor(min), note:note || ""};
+  }
+  return m;
+})();
+/* "Musa basjoo 'Sakhalin'" → "musa basjoo"; "Abelia × grandiflora" → "abelia x grandiflora" */
+function speciesKey(s){
+  const w = String(s || "").toLowerCase().replace(/×/g, "x").replace(/['"‘’“”].*$/, "").trim().split(/\s+/).filter(Boolean);
+  return (w[1] === "x" ? w.slice(0, 3) : w.slice(0, 2)).join(" ");
+}
+/* Exact species first, then its genus. how: "species" | "genus" (only the genus was given) | "related" (filled in from the genus) */
+function findPreset(species, genus){
+  const sp = speciesKey(species), g = String(genus || "").trim().toLowerCase().split(/\s+/)[0] || sp.split(" ")[0];
+  if(!sp && !g) return null;
+  const byGenus = g ? PRESETS.find(p => p.s.toLowerCase().split(/[ (]/)[0] === g) : null;
+  const water = byGenus ? {ws:byGenus.ws, ww:byGenus.ww} : {};
+  const exact = sp && PRESETS.find(p => p.s.toLowerCase() === sp);
+  if(exact) return {...exact, how:"species"};
+  const oneWord = !sp.includes(" ");
+  if(!oneWord && HARDY[sp]) return {...HARDY[sp], ...water, how:"species"};
+  if(HARDY[g]) return {...HARDY[g], ...water, how:oneWord ? "genus" : "related"};
+  if(byGenus) return {...byGenus, how:"related"};
+  return null;
+}
+const presetFor = s => findPreset(s, "");
+/* Cold warnings start switched on, except for very hardy plants. */
+const COLD_DEFAULT_OFF = -15;
+const coldDefault = min => !(isFinite(parseFloat(min)) && parseFloat(min) <= COLD_DEFAULT_OFF);
+const hasMin = p => p.minTemp !== null && p.minTemp !== undefined && p.minTemp !== "" && isFinite(+p.minTemp);
+function coldTag(p){
+  if(GA.coldOn(p)) return `<span class="tag">takes ${deg(p.minTemp)}</span>`;
+  return `<span class="tag off" title="Low temperature warnings are off for this plant">${hasMin(p) ? `takes ${deg(p.minTemp)}, ` : ""}no low temp alerts</span>`;
+}
 
 let state = load();
 normalizePlants();
@@ -1372,7 +1420,7 @@ function render(){
 let fcOpen = null;
 function dayRisks(d){
   const s = state.settings;
-  const frost = state.plants.filter(p => p.current !== "inside" && effMin(p, d) < coldLimit(p));
+  const frost = state.plants.filter(p => p.current !== "inside" && GA.coldOn(p) && effMin(p, d) < coldLimit(p));
   const heat = state.plants.filter(p => (p.current === "outside" && p.planting === "pot" &&
       (p.sun === "full" ? d.max >= +s.heat : p.sun === "partial" ? d.max >= +s.heat + 3 : false)) ||
     (p.current === "greenhouse" && d.max + 8 >= 35));
@@ -1419,8 +1467,9 @@ function alertLook(g){
     const when = (worst.why || "").split(",")[0];
     const lead = {bringIn:`Bring ${n} ${plural} inside:`, toGh:`Move ${n} ${plural} to the greenhouse:`, ghProtect:g.text,
       potProtect:`Shelter ${n === 1 ? "this pot" : `these ${n} pots`}:`, groundProtect:`Protect ${n} ${plural} in the ground:`}[g.key];
-    return {type:"frost", icon:"snow", label:g.level === "danger" ? "Frost alert" : "Frost watch",
-      title:g.level === "danger" ? "Frost is coming" : "A cold night ahead", chip:when, lead, tip:g.key === "potProtect" || g.key === "groundProtect" ? g.text : ""};
+    const frosty = worst.t <= 0;   /* "frost" only when it really freezes; plants can be hurt well above 0 °C */
+    return {type:"frost", icon:"snow", label:g.level === "danger" ? (frosty ? "Frost alert" : "Low temperature alert") : "Low temperature watch",
+      title:g.level === "danger" ? (frosty ? "Frost is coming" : "Too cold for these plants") : "A cold night ahead", chip:when, lead, tip:g.key === "potProtect" || g.key === "groundProtect" ? g.text : ""};
   }
   if(g.key === "heat" || g.key === "vent") return {type:"heat", icon:"heat", label:"Heat alert", title:g.key === "vent" ? "Open the greenhouse" : "A hot spell", lead:g.text};
   if(g.key === "wind") return {type:"wind", icon:"wind", label:"Wind alert", title:"Strong gusts", lead:g.text};
@@ -1471,7 +1520,7 @@ function flagsFrom(groups){
   }));
   return f;
 }
-const FLAG_INFO = {frost:["snow","Frost risk"], heat:["heat","Too hot"], wind:["wind","Strong wind"], water:["drop","Needs water"], move:["move","Time to move"]};
+const FLAG_INFO = {frost:["snow","Too cold"], heat:["heat","Too hot"], wind:["wind","Strong wind"], water:["drop","Needs water"], move:["move","Time to move"]};
 const flagIcons = id => [...(plantFlags[id] || [])].sort().map(k => `<span class="flag f-${k}" title="${FLAG_INFO[k][1]}" aria-label="${FLAG_INFO[k][1]}">${ICON[FLAG_INFO[k][0]]}</span>`).join("");
 
 /* ---------- The illustrated scene ---------- */
@@ -1541,7 +1590,7 @@ function renderPlaces(W){
   ensureScene();
   const SS = sceneSet(), S = SS.views[sceneMode] || SS.views.overview, orb = $("#orb"), stage = $("#stage");
   const next3 = W ? W.next.slice(0,3) : [];
-  const risk = p => p.current !== "inside" && next3.some(d => effMin(p, d) < coldLimit(p));
+  const risk = p => p.current !== "inside" && GA.coldOn(p) && next3.some(d => effMin(p, d) < coldLimit(p));
   const tx = 50 - Math.min(100 - 50 / S.s, Math.max(50 / S.s, S.cx)), ty = 50 - Math.min(100 - 50 / S.s, Math.max(50 / S.s, S.cy));
   stage.style.transform = `scale(${S.s}) translate(${tx}%, ${ty}%)`;
   stage.style.setProperty("--inv", 1 / S.s);
@@ -1684,7 +1733,7 @@ function plantRow(p, W){
       ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
       <div class="where">${zi(p.zone)}<span>${esc(zoneLabel(p))}</span></div>${ownMini(p)}</div>
     <div class="flags">${flagIcons(p.id)}</div>
-    <div class="facts"><span class="tag">takes ${deg(p.minTemp)}</span><span class="tag">${wateredText(p, W)}</span>
+    <div class="facts">${coldTag(p)}<span class="tag">${wateredText(p, W)}</span>
       <span class="acts"><button class="btn small" data-act="move" data-id="${p.id}">Move</button><button class="btn small primary" data-act="water" data-id="${p.id}">Watered</button></span></div>
   </div>`;
 }
@@ -1984,7 +2033,9 @@ function openDialog(id){
   $("#fPattern").value = p ? (isApt() && p.pattern === "greenhouse" ? "mover" : p.pattern) : "outdoor";
   editSel = p ? {area:p.area, zone:p.zone, planting:p.planting} : {area:"outside", zone:"out-sun", planting:"ground"};
   drawEditPick();
-  $("#fMin").value = p ? p.minTemp : "";
+  $("#fMin").value = p && hasMin(p) ? p.minTemp : "";
+  $("#fCold").checked = p ? p.coldAlert !== false : true;
+  coldHintEdit();
   $("#fWs").value = p ? p.ws : 7;
   $("#fWw").value = p ? p.ww : 14;
   $("#fLast").value = p && p.lastWatered ? p.lastWatered : "";
@@ -2014,19 +2065,26 @@ $("#fSpecies").addEventListener("change", () => {
   const isNew = !editingId;
   if(isNew || $("#fMin").value === "") $("#fMin").value = pr.min;
   if(isNew){
-    $("#fPattern").value = pr.pat;
-    $("#fWs").value = pr.ws; $("#fWw").value = pr.ww;
+    $("#fPattern").value = isApt() && pr.pat === "greenhouse" ? "mover" : pr.pat;
+    if(pr.ws) $("#fWs").value = pr.ws;
+    if(pr.ww) $("#fWw").value = pr.ww;
+    $("#fCold").checked = coldDefault(pr.min); coldHintEdit();
     if(!$("#fName").value.trim()) $("#fName").value = pr.s;
   }
 });
+const COLD_HINT_ON = "You're warned when the forecast gets close to the lowest temperature it takes.";
+const COLD_HINT_OFF = "No low temperature warnings for this plant. Heat, wind and watering reminders still come.";
+function coldHintEdit(){ $("#fColdHint").textContent = $("#fCold").checked ? COLD_HINT_ON : COLD_HINT_OFF; }
+$("#fCold").addEventListener("change", coldHintEdit);
 $("#dlgClose").addEventListener("click", () => dlg.close());
 $("#dlgSave").addEventListener("click", async () => {
   const name = $("#fName").value.trim();
   const min = parseFloat($("#fMin").value);
   if(!name){ toast("Give the plant a name"); $("#fName").focus(); return; }
-  if(isNaN(min)){ toast("Add the lowest temperature it takes"); $("#fMin").focus(); return; }
+  const coldAlert = $("#fCold").checked;
+  if(coldAlert && isNaN(min)){ toast("Add the lowest temperature it takes, or switch low temperature warnings off"); $("#fMin").focus(); return; }
   const data = {
-    name, species:$("#fSpecies").value.trim(), genus:$("#fGenus").value.trim() || ($("#fSpecies").value.trim().split(" ")[0] || ""), pattern:$("#fPattern").value, minTemp:min,
+    name, species:$("#fSpecies").value.trim(), genus:$("#fGenus").value.trim() || ($("#fSpecies").value.trim().split(" ")[0] || ""), pattern:$("#fPattern").value, minTemp:isNaN(min) ? null : min, coldAlert,
     ws:Math.max(1, parseInt($("#fWs").value) || 7), ww:Math.max(1, parseInt($("#fWw").value) || 14),
     lastWatered:$("#fLast").value || null, notes:$("#fNotes").value.trim(), visibility:editVis.visibility
   };
@@ -2139,13 +2197,6 @@ function attachSuggest(input, onPick){
 }
 
 /* ---------- Add a plant, step by step ---------- */
-/* Care values: exact species, then same genus from the preset list. */
-function findPreset(species, genus){
-  const sp = String(species || "").trim().toLowerCase(), g = String(genus || sp.split(" ")[0] || "").trim().toLowerCase();
-  return PRESETS.find(p => p.s.toLowerCase() === sp)
-    || (sp && PRESETS.find(p => p.s.toLowerCase().startsWith(sp + " ")))
-    || (g && PRESETS.find(p => p.s.toLowerCase().split(/[ (]/)[0] === g)) || null;
-}
 const wiz = $("#wiz");
 const STEP_TITLES = ["Take a photo", "What plant is it?", "Give it a name", "Where does it live?", "Care"];
 const CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.6"/></svg>';
@@ -2153,15 +2204,16 @@ let W = null;
 function openWizard(){
   W = {step:0, photos:[], results:null, loading:false, error:"", pick:null, species:"", genus:"", family:"", common:"",
        name:"", nameTouched:false, pattern:"outdoor", area:ZONES[defaultZone("outdoor")].area, zone:defaultZone("outdoor"), planting:defaultPlanting("outdoor"), zoneTouched:false,
-       minTemp:"", ws:7, ww:14, last:"", notes:"", careTouched:false, identifiedFor:"", visibility:defaultVis(), visOpen:false};
+       minTemp:"", ws:7, ww:14, last:"", notes:"", careTouched:false, coldAlert:true, coldTouched:false, identifiedFor:"", visibility:defaultVis(), visOpen:false};
   renderWizard(); wiz.showModal();
 }
 function applySpecies(){
   const pr = findPreset(W.species, W.genus);
   if(!W.careTouched){
-    if(pr){ W.minTemp = pr.min; W.ws = pr.ws; W.ww = pr.ww; if(!W.zoneTouched){ W.pattern = isApt() && pr.pat === "greenhouse" ? "mover" : pr.pat; W.zone = defaultZone(W.pattern); W.area = ZONES[W.zone].area; W.planting = defaultPlanting(W.pattern); } }
+    if(pr){ W.minTemp = pr.min; if(pr.ws) W.ws = pr.ws; if(pr.ww) W.ww = pr.ww; if(!W.zoneTouched){ W.pattern = isApt() && pr.pat === "greenhouse" ? "mover" : pr.pat; W.zone = defaultZone(W.pattern); W.area = ZONES[W.zone].area; W.planting = defaultPlanting(W.pattern); } }
     else { W.minTemp = ""; }
   }
+  if(!W.coldTouched) W.coldAlert = coldDefault(W.minTemp);
   if(!W.nameTouched) W.name = W.common || W.species || W.genus || "";
 }
 function wizPick(i){
@@ -2250,9 +2302,10 @@ function renderWizard(){
   }
   else if(W.step === 4){
     const pr = findPreset(W.species, W.genus);
-    const exact = pr && pr.s.toLowerCase() === String(W.species).toLowerCase();
-    body.innerHTML = `${pr ? `<div class="preset-note">${exact ? "Filled in for" : "Filled in from a related plant,"} <i>${esc(pr.s)}</i>. Adjust anything you know better.${pr.note ? "<br>" + esc(pr.note) : ""}</div>`
-        : `<div class="warn">No care data for this plant yet. Set a cautious cold limit; you can change it any time.</div>`}
+    const from = pr && ({species:"Filled in for", genus:"Filled in for the genus", related:"Filled in from its genus,"}[pr.how] || "Filled in from a related plant,");
+    body.innerHTML = `${pr ? `<div class="preset-note">${from} <i>${esc(pr.s)}</i>. Adjust anything you know better.${pr.note ? "<br>" + esc(pr.note) : ""}</div>`
+        : `<div class="warn">No care data for this plant yet. Set a cautious cold limit, or switch low temperature warnings off; you can change it any time.</div>`}
+      <label class="check"><input type="checkbox" id="wCold" ${W.coldAlert ? "checked" : ""}><span>Low temperature warnings for this plant<br><span class="status" id="wColdHint">${W.coldAlert ? COLD_HINT_ON : COLD_HINT_OFF}</span></span></label>
       <div class="row3">
         <div class="field"><label for="wMin">Lowest °C it takes</label><input id="wMin" type="number" step="0.5" value="${esc(W.minTemp)}"></div>
         <div class="field"><label for="wWs">Water every (summer)</label><input id="wWs" type="number" min="1" value="${esc(W.ws)}"><span class="hint">days</span></div>
@@ -2264,14 +2317,17 @@ function renderWizard(){
     if(online) $("#wVis").addEventListener("click", e => onVisClick(e, W, $("#wVis")));
     [["#wMin","minTemp"],["#wWs","ws"],["#wWw","ww"],["#wLast","last"],["#wNotes","notes"]].forEach(([id, k]) =>
       $(id).addEventListener("input", e => { W[k] = e.target.value; if(k !== "last" && k !== "notes") W.careTouched = true; }));
+    const showCold = () => { $("#wCold").checked = W.coldAlert; $("#wColdHint").textContent = W.coldAlert ? COLD_HINT_ON : COLD_HINT_OFF; };
+    $("#wCold").addEventListener("change", e => { W.coldAlert = e.target.checked; W.coldTouched = true; showCold(); });
+    $("#wMin").addEventListener("input", () => { if(!W.coldTouched){ W.coldAlert = coldDefault(W.minTemp); showCold(); } });
     next.textContent = "Save plant";
   }
 }
 async function wizSave(){
   const min = parseFloat(W.minTemp);
-  if(isNaN(min)){ toast("Add the lowest temperature it takes"); $("#wMin").focus(); return; }
+  if(W.coldAlert && isNaN(min)){ toast("Add the lowest temperature it takes, or switch low temperature warnings off"); $("#wMin").focus(); return; }
   const p = {id:uid(), created:new Date().toISOString(), visibility:VIS[W.visibility] ? W.visibility : defaultVis(), name:W.name.trim(), species:W.species, genus:W.genus || (W.species.split(" ")[0] || ""), family:W.family,
-    pattern:W.pattern, minTemp:min, ws:Math.max(1, parseInt(W.ws) || 7), ww:Math.max(1, parseInt(W.ww) || 14),
+    pattern:W.pattern, minTemp:isNaN(min) ? null : min, coldAlert:!!W.coldAlert, ws:Math.max(1, parseInt(W.ws) || 7), ww:Math.max(1, parseInt(W.ww) || 14),
     lastWatered:W.last || null, notes:String(W.notes || "").trim()};
   applyZone(p, W.zone, W.planting);
   state.plants.push(p); addLog(p.id, "add", "Added");
@@ -2455,8 +2511,38 @@ function fillSettings(){
   fillProfileCard(); fillPrivacy();
   refreshNotifyStatus();
   if(me && me.owner && token) loadAdmin();
+  renderColdPick();
   $("#sMargin").value = s.margin; $("#sGh").value = s.gh; $("#sHeat").value = s.heat; $("#sWind").value = s.wind; $("#sRain").value = s.rain;
 }
+/* Low temperature warnings per plant, in Alert rules. Changes save at once. */
+function renderColdPick(open){
+  const el = $("#coldPick");
+  const list = state.plants.filter(p => p.pattern !== "indoor").sort((a, b) => a.name.localeCompare(b.name));
+  if(!list.length){ el.innerHTML = ""; return; }
+  const on = list.filter(p => GA.coldOn(p)).length;
+  el.innerHTML = `<details class="cold-box" ${open ? "open" : ""}><summary><b>Low temperature warnings per plant</b><span class="status" id="coldCount">On for ${on} of ${list.length}</span></summary>
+    <p class="status">Untick plants you've already protected for the winter, or that take far more cold than your garden gets. Heat, wind and watering reminders still come for every plant.</p>
+    <div class="pick-tools"><button class="linkish" data-cold-all="1">Tick all</button><button class="linkish" data-cold-all="0">Untick all</button></div>
+    <div class="pick-list">${list.map(p => `<label class="pick-row"><input type="checkbox" data-cold="${p.id}" ${GA.coldOn(p) ? "checked" : ""}>
+      <span class="pt">${thumbHtml(p)}</span><span><b>${esc(p.name)}</b><small>${hasMin(p) ? `takes ${deg(p.minTemp)}` : "no cold limit set"} · ${esc(areaLabel(p.area))}</small></span></label>`).join("")}</div></details>`;
+}
+$("#coldPick").addEventListener("change", e => {
+  const c = e.target.closest("[data-cold]"); if(!c) return;
+  const p = state.plants.find(x => x.id === c.dataset.cold); if(!p) return;
+  if(c.checked && !hasMin(p)){ c.checked = false; toast(`Set the lowest temperature ${p.name} takes first`); return; }
+  p.coldAlert = c.checked;
+  save(); render();
+  const list = state.plants.filter(x => x.pattern !== "indoor");
+  $("#coldCount").textContent = `On for ${list.filter(x => GA.coldOn(x)).length} of ${list.length}`;
+});
+$("#coldPick").addEventListener("click", e => {
+  const b = e.target.closest("[data-cold-all]"); if(!b) return;
+  e.preventDefault();
+  const on = b.dataset.coldAll === "1"; let skipped = 0;
+  state.plants.filter(p => p.pattern !== "indoor").forEach(p => { if(on && !hasMin(p)){ skipped++; return; } p.coldAlert = on; });
+  save(); render(); renderColdPick(true);
+  if(skipped) toast(`${skipped} ${skipped === 1 ? "plant has" : "plants have"} no cold limit yet`);
+});
 $("#saveSettings").addEventListener("click", () => {
   const n = (sel, fb) => { const v = parseFloat($(sel).value); return isNaN(v) ? fb : v; };
   const s = state.settings;
@@ -2571,7 +2657,7 @@ function renderOnb(){
     body.innerHTML = `<h1>Get alerts</h1>
       <div class="onb-alerts">
         <div class="onb-alert"><span class="zi a-house">${ICON.sun}</span><p><b>Every morning at 08:00</b><br>A short summary of what your plants need today.</p></div>
-        <div class="onb-alert"><span class="zi a-greenhouse">${ICON.snow}</span><p><b>In the evening at 19:00</b><br>A warning, only when frost is coming that night.</p></div>
+        <div class="onb-alert"><span class="zi a-greenhouse">${ICON.snow}</span><p><b>In the evening at 19:00</b><br>A warning, only when a plant could get too cold that night.</p></div>
       </div>
       ${canPush() ? `<button class="btn primary wide" data-oact="notify" ${O.busy ? "disabled" : ""}>${O.busy ? "Turning on…" : "Turn on notifications"}</button>` : `<p class="status">Notifications work when the app is opened from your site in Chrome. You can turn them on later in Settings.</p>`}
       <button class="linkish" data-oact="later">${canPush() ? "Later" : "Continue"}</button>
