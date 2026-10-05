@@ -367,7 +367,6 @@ h1,h2,h3{font-weight:700;letter-spacing:-.01em}
 .fc .rn{color:#4E7C99;font-size:.78rem;font-weight:700;margin-top:2px}
 .fc .rn.dry{color:var(--muted);opacity:.6}
 .fc-lab .rn{font-size:.62rem;white-space:nowrap}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fc .rn{color:#8FB8D3}}
 .fc-day.frost{background:var(--frost-bg)} .fc-day.heat{background:var(--heat-bg)}
 .fc-day.open{outline:2px solid var(--fern);outline-offset:-2px}
 .fc-badge{position:absolute;top:-8px;right:-2px;width:22px;height:22px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.15)}
@@ -939,6 +938,70 @@ h1,h2,h3{font-weight:700}
 .fc .fc-lab .rn{color:var(--muted)}
 .a-lead{font-weight:500;font-size:.95rem}
 .acard li{font-weight:500}
+
+/* ===== Remaining pages in the new look ===== */
+/* Plant list */
+.toolbar input[type=search]{background:var(--glass);border:1px solid var(--glass-bd);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:11px 16px;color:var(--ink)}
+.viewtog{background:var(--glass);border:1px solid var(--glass-bd)}
+.chip{background:var(--glass);border:1px solid var(--glass-bd);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font-weight:600;padding:7px 14px;color:var(--ink)}
+.chip[aria-pressed=true]{background:var(--fern);border-color:var(--fern);color:#fff}
+.plant{border-radius:22px!important;padding:12px!important;margin-bottom:10px}
+.plant .thumb{width:72px;height:72px;border-radius:18px;overflow:hidden}
+.pcard{border-radius:22px!important}
+.f-frost{background:var(--frost-red-bg);color:var(--frost-red)}
+.f-water{background:var(--water-bg);color:var(--water)}
+.f-move{background:var(--fern-soft);color:var(--fern)}
+.tag{border-radius:999px}
+.group-h{font-weight:700}
+/* Buttons and forms */
+.btn{padding:9px 18px}
+.btn.primary{background:var(--fern);border-color:var(--fern);box-shadow:0 4px 12px color-mix(in srgb,var(--fern) 30%,transparent)}
+.field label{font-weight:600}
+.field input,.field select,.field textarea,.f-search,.auth input{border:1px solid var(--line);border-radius:14px;padding:11px 13px;background:color-mix(in srgb,var(--surface) 82%,transparent);color:var(--ink);font:inherit}
+.field input:focus,.field select:focus,.field textarea:focus,.f-search:focus{outline:2px solid color-mix(in srgb,var(--fern) 55%,transparent);outline-offset:0;border-color:var(--fern)}
+.seg{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.seg button{font-weight:600}
+.zone-opt{border-radius:18px;background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.zone-opt[aria-pressed=true],.zone-opt[aria-current=true]{border:2px solid var(--fern);background:var(--fern-soft)}
+.card h2,.f-card h2{font-size:1.1rem;font-weight:700}
+/* Dialogs become frosted sheets */
+dialog{border-radius:28px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--glass-bd);
+  -webkit-backdrop-filter:blur(28px) saturate(1.4);backdrop-filter:blur(28px) saturate(1.4);box-shadow:0 20px 60px rgba(8,20,12,.35)}
+dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.dlg-h,.dlg-f{background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-color:color-mix(in srgb,var(--line) 70%,transparent)}
+.dlg-h h2,.dlg-h h3{font-size:1.2rem;font-weight:700}
+@media (max-width:640px){
+  dialog{width:100%;max-width:100%;margin:auto 0 0;border-radius:28px 28px 0 0;max-height:92vh;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .dlg-h::before{content:"";position:absolute;left:50%;top:6px;width:38px;height:4px;margin-left:-19px;border-radius:2px;background:color-mix(in srgb,var(--ink) 20%,transparent)}
+}
+/* Onboarding choice cards */
+.home-card{background:var(--glass);border:2px solid var(--glass-bd);padding:18px 12px 16px}
+.home-card[aria-pressed=true]{border-color:var(--fern);background:var(--fern-soft)}
+.hc-ic{width:76px;height:76px;border-radius:50%;margin-bottom:8px;display:flex;align-items:center;justify-content:center;background:var(--fern-soft);color:var(--fern)}
+.hc-ic svg{width:36px;height:36px}
+/* Profile, settings, history */
+.prof-card .av{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--fern-soft)}
+/* Community and a friend's garden */
+.f-card{border-radius:var(--radius-lg)}
+.fg-head{color:#fff;margin-top:6px}
+.fg-head .who h2{color:#fff;font-size:1.5rem;text-shadow:0 1px 12px rgba(0,0,0,.4)}
+.fg-head .who span{color:rgba(255,255,255,.9);font-weight:600;text-shadow:0 1px 8px rgba(0,0,0,.4)}
+.fg-head .av{width:56px;height:56px;box-shadow:0 0 0 3px rgba(255,255,255,.85)}
+.fg-head .icon-more{background:var(--glass);border-radius:50%;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.fl-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:4px 0 14px}
+.fl-tile{position:relative;isolation:isolate;overflow:hidden;aspect-ratio:1.25;border:0;padding:0;border-radius:22px;color:#fff;text-align:left;
+  background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 10px 26px rgba(10,25,15,.22)}
+.fl-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.fl-tile::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgba(8,18,12,.7),rgba(8,18,12,.05) 65%)}
+.fl-art{position:absolute;right:-12px;top:-10px;color:rgba(255,255,255,.16);z-index:-1}
+.fl-art svg{width:110px;height:110px}
+.fl-t{position:absolute;left:12px;right:12px;bottom:10px;display:flex;flex-direction:column}
+.fl-ic{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.92);color:var(--acc);display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.fl-ic svg{width:17px;height:17px}
+.fl-t b{font-size:1.05rem;font-weight:700;line-height:1.2}
+.fl-t small{font-weight:600;opacity:.9}
+.fl-tile[aria-pressed=true]{outline:3px solid #fff;outline-offset:-3px}
+.loc-porch{--acc:#8A6A3B;--c1:#5A4A33;--c2:#9C8661}
 </style>
 </head>
 <body data-page="today">
@@ -1012,7 +1075,7 @@ h1,h2,h3{font-weight:700}
     </section>
 
     <section id="view-friends" hidden>
-      <div class="page-head"><h2>Friends</h2></div>
+      <div class="page-title"><h2>Community</h2><p>Friends, plants, inspiration</p></div>
       <div id="friendsBody"></div>
     </section>
 
@@ -1021,6 +1084,7 @@ h1,h2,h3{font-weight:700}
     </section>
 
     <section id="view-settings" hidden>
+      <div class="page-title"><h2>More</h2><p>Your profile, settings and account</p></div>
       <div class="card prof-card" id="profCard" hidden>
         <div class="av" id="profAv"></div>
         <div class="prof-txt"><b id="profName"></b><span id="profUser"></span></div>
@@ -2886,7 +2950,7 @@ function renderOnb(){
   $("#onbBack").hidden = O.step === 0 || O.step === 4;
   const who = me && me.user ? me.user.charAt(0).toUpperCase() + me.user.slice(1) : "";
   if(O.step === 0){
-    const card = (h, img, t, sub) => `<button class="home-card" data-ohome="${h}" aria-pressed="${O.home === h && O.picked ? "true" : "false"}"><img src="${img}" alt=""><b>${t}</b><small>${sub}</small></button>`;
+    const card = (h, img, t, sub) => `<button class="home-card" data-ohome="${h}" aria-pressed="${O.home === h && O.picked ? "true" : "false"}"><span class="hc-ic">${h === "apartment" ? ICON.balcony : ICON.house}</span><b>${t}</b><small>${sub}</small></button>`;
     body.innerHTML = `<h1>Welcome${who ? ", " + esc(who) : ""}!</h1><p class="onb-lead">Where do your plants live?</p>
       <div class="home-cards">${card("house", "scene-day.webp", "House with garden", "Garden, porch and greenhouse")}${card("apartment", "apt-day.webp", "Apartment", "Inside and a balcony")}</div>
       ${O.home === "apartment" && O.picked ? `<div class="onb-q"><p><b>Does rain reach your balcony?</b><br><span class="status">If it does, rain counts as watering for balcony plants.</span></p>
@@ -3964,16 +4028,17 @@ async function openFriend(id){
 }
 const fgMsg = (t, p) => `<div class="fg-msg"><h3>${t}</h3><p>${p}</p></div>`;
 function friendScene(V, home){
-  const SS = SCENES[home], S = SS.views.overview, h = new Date().getHours(), night = h < 7 || h >= 21;
-  const pills = S.pills.map(pl => {
-    const n = V.plants.filter(x => x.area === pl.k).length;
-    return `<button class="pill area ${n ? "" : "empty"}" data-gact="area" data-a="${pl.k}" aria-pressed="${V.filter === pl.k}"
-      style="left:${pl.at[0]}%;top:${pl.at[1]}%" aria-label="${esc(fAreaLabel(pl.k, home))}: ${plantsWord(n)}">${ICON[pl.k]}<b>${n}</b></button>`;
-  }).join("");
-  return `<div class="fg-scene"><div class="orb ph-${night ? "night" : "day"}"><div class="stage">
-      <img class="img-day" src="${SS.img[0]}" alt="${home === "apartment" ? "Their apartment and balcony" : "Their house and garden"}" draggable="false">
-      <img class="img-night" src="${SS.img[1]}" alt="" draggable="false"></div>
-    <div class="pills">${pills}</div></div></div>`;
+  const order = home === "apartment" ? ["house","balcony"] : ["house","outside","greenhouse","porch"];
+  const tiles = order.filter(a => a !== "porch" || V.plants.some(x => x.area === "porch"));
+  return `<div class="fl-tiles">${tiles.map(a => {
+    const list = V.plants.filter(x => x.area === a);
+    let url = null;
+    for(const x of list){ const ph = (V.byPlant[x.id] || [])[0], u = ph && V.urls[ph.path_small]; if(u){ url = u; break; } }
+    const k = a === "outside" ? "garden" : a, label = a === "outside" ? "Garden" : fAreaLabel(a, home);
+    return `<button class="fl-tile loc-${k} ${url ? "has-img" : ""}" data-gact="area" data-a="${a}" aria-pressed="${V.filter === a}" aria-label="${esc(label)}: ${plantsWord(list.length)}">
+      ${url ? `<img src="${esc(url)}" alt="" loading="lazy">` : `<span class="fl-art">${ICON[a]}</span>`}
+      <span class="fl-t"><span class="fl-ic">${ICON[a]}</span><b>${esc(label)}</b><small>${plantsWord(list.length)}</small></span></button>`;
+  }).join("")}</div>`;
 }
 function friendCard(x, V){
   const ph = (V.byPlant[x.id] || [])[0], url = ph && V.urls[ph.path_small], n = (V.byPlant[x.id] || []).length;
@@ -4022,7 +4087,7 @@ function renderFriend(){
 $("#friendBody").addEventListener("click", async e => {
   const b = e.target.closest("[data-gact]"); if(!b || !visit) return;
   const act = b.dataset.gact;
-  if(act === "area"){ visit.filter = visit.filter === b.dataset.a && b.classList.contains("pill") ? "all" : b.dataset.a; renderFriend(); }
+  if(act === "area"){ visit.filter = visit.filter === b.dataset.a && (b.classList.contains("pill") || b.classList.contains("fl-tile")) ? "all" : b.dataset.a; renderFriend(); }
   else if(act === "plant") openFriendPlant(b.dataset.id, 0);
   else if(act === "more"){
     const p = visit.prof, st = circleStatus(visit.id);
