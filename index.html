@@ -1051,6 +1051,22 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .pt-flags .flag{width:18px;height:18px;box-shadow:0 0 0 1.5px var(--surface)}
 .pt-flags .flag svg{width:11px;height:11px}
 .ptile:active{transform:scale(.97)}
+
+/* Alerts grouped by kind: closed shows the count, open shows the plants */
+.agroup{align-items:center}
+.agroup .a-ic{grid-row:auto}
+.a-head{grid-column:2;display:block;width:100%;min-width:0;background:none;border:0;padding:0 30px 0 0;text-align:left;color:inherit;font:inherit;position:relative;cursor:pointer}
+.a-head .a-top{display:flex}
+.a-head .a-lab{white-space:nowrap}
+.a-head .a-chip{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.a-count{display:block;color:var(--muted);font-weight:600;font-size:.9rem}
+.a-chev{position:absolute;right:0;top:50%;width:22px;height:22px;transform:translateY(-50%);color:var(--a-ink);transition:transform .2s}
+.agroup.open .a-chev{transform:translateY(-50%) rotate(180deg)}
+.a-body{grid-column:1/-1;margin-top:8px}
+.a-sub + .a-sub{border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent);margin-top:12px;padding-top:12px}
+.a-sub h4{margin:0 0 4px;font-size:.95rem}
+.a-sub .a-act{display:flex;justify-content:flex-end;margin-top:8px}
+@media (prefers-reduced-motion: reduce){.a-chev{transition:none}}
 /* ===================== Themes: accent colours, backdrops, Appearance card ===================== */
 /* Accents never use blue, teal or orange: those mean cold, water and heat. */
 :root[data-accent="moss"]{--fern:#5C6B2A;--fern-soft:#ECEFD9}
@@ -1891,6 +1907,7 @@ function alertLook(g){
   if(g.key === "goOut") return {type:"info", icon:"move", label:"Good news", title:"Safe to move outside", lead:g.text};
   return {type:"info", icon:"move", label:"Heads-up", title:g.title, lead:g.text};
 }
+const alertsOpen = new Set();   // kinds of alert opened on this visit
 function renderAlerts(groups){
   const el = $("#alerts");
   if(!state.plants.length){
@@ -1901,24 +1918,52 @@ function renderAlerts(groups){
     el.innerHTML = `<div class="acard t-calm"><div class="a-ic">${ICON.leaf}</div><div class="a-main"><span class="a-lab">All good</span><h3>Nothing to do today</h3><p class="a-lead">No plant needs water, and the next three days stay within what your plants can take.</p></div></div>`;
     return;
   }
-  el.innerHTML = groups.map(g => {
-    const L = alertLook(g), ids = g.items.map(i => i.p.id).join(",");
-    const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}">Mark as moved</button>`
-      : g.waterAll ? `<button class="btn primary" data-act="waterAll" data-ids="${ids}">Mark all watered</button>`
-      : `<button class="btn primary" data-act="seePlants" data-ids="${ids}">See plants</button>`;
-    return `<div class="acard t-${L.type}">
-      <div class="a-ic">${ICON[L.icon]}</div>
-      <div class="a-main">
-        <div class="a-top"><span class="a-lab">${esc(L.label)}</span>${L.chip ? `<span class="a-chip">${esc(L.chip)}</span>` : ""}</div>
-        <h3>${esc(L.title)}</h3>
+  // One card per kind of alert (frost, heat, wind, watering…), closed by default: the count first, the plants on a tap.
+  const kinds = [];
+  groups.forEach(g => {
+    const L = alertLook(g);
+    let k = kinds.find(x => x.type === L.type);
+    if(!k) kinds.push(k = {type:L.type, parts:[]});
+    k.parts.push({g, L});
+  });
+  el.innerHTML = kinds.map(k => {
+    const head = (k.parts.find(x => x.g.level === "danger") || k.parts[0]).L;
+    const n = new Set(k.parts.flatMap(x => x.g.items.map(i => i.p.id))).size;
+    const open = alertsOpen.has(k.type), many = k.parts.length > 1;
+    const chip = k.parts.map(x => x.L.chip).find(Boolean) || "";
+    const title = k.type === "water" && k.parts.some(x => x.g.key === "water") ? k.parts.find(x => x.g.key === "water").L.title : head.title;
+    const parts = k.parts.map(({g, L}) => {
+      const ids = g.items.map(i => i.p.id).join(",");
+      const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}">Mark as moved</button>`
+        : g.waterAll ? `<button class="btn primary" data-act="waterAll" data-ids="${ids}">Mark all watered</button>`
+        : `<button class="btn primary" data-act="seePlants" data-ids="${ids}">See plants</button>`;
+      return `<div class="a-sub">
+        ${many && L.title !== title ? `<h4>${esc(L.title)}</h4>` : ""}
         ${L.lead ? `<p class="a-lead">${esc(L.lead)}</p>` : ""}
         <ul>${g.items.map(i => `<li>${ICON.leaf}<span><span class="pn">${esc(i.p.name)}</span>${i.p.species && i.p.species !== i.p.name ? ` <i>(${esc(i.p.species)})</i>` : ""}<small>${esc(i.why)}</small></span></li>`).join("")}</ul>
         ${L.tip ? `<p class="a-tip">${esc(L.tip)}</p>` : ""}
-      </div>
-      <div class="a-act">${btn}</div>
+        <div class="a-act">${btn}</div>
+      </div>`;
+    }).join("");
+    return `<div class="acard agroup t-${k.type} ${open ? "open" : ""}">
+      <div class="a-ic">${ICON[head.icon]}</div>
+      <button class="a-head" data-atype="${k.type}" aria-expanded="${open}">
+        <span class="a-top"><span class="a-lab">${esc(head.label)}</span>${chip ? `<span class="a-chip">${esc(chip)}</span>` : ""}</span>
+        <h3>${esc(title)}</h3>
+        ${/^\d/.test(title) ? "" : `<span class="a-count">${n} ${n === 1 ? "plant" : "plants"}</span>`}
+        <svg class="a-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="a-body" ${open ? "" : "hidden"}>${parts}</div>
     </div>`;
   }).join("");
 }
+$("#alerts").addEventListener("click", e => {
+  const h = e.target.closest("[data-atype]"); if(!h) return;
+  const t = h.dataset.atype, card = h.closest(".agroup"), open = !alertsOpen.has(t);
+  if(open) alertsOpen.add(t); else alertsOpen.delete(t);
+  card.classList.toggle("open", open); h.setAttribute("aria-expanded", open);
+  card.querySelector(".a-body").hidden = !open;
+});
 
 /* Per-plant status icons, from the same rules as the alerts */
 let plantFlags = {};
