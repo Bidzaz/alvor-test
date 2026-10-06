@@ -891,17 +891,13 @@ body:not([data-page="today"]):not([data-page="locations"]) .bg::after{background
 
 /* Tab bar */
 .navbar{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:536px;margin:0 auto;z-index:20;display:flex;align-items:center;gap:8px}
-.tabbar,.tb-more{background:var(--glass);border:1px solid var(--glass-bd);box-shadow:0 12px 34px rgba(12,30,18,.22);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5)}
+.tabbar{background:var(--glass);border:1px solid var(--glass-bd);box-shadow:0 12px 34px rgba(12,30,18,.22);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5)}
 .tabbar{flex:1;min-width:0;height:72px;display:flex;align-items:center;justify-content:space-around;padding:0 4px;border-radius:28px}
-/* More: its own round button, to the right of the bar */
-.tb-more{flex-shrink:0;width:58px;height:58px;border-radius:50%;color:var(--muted);display:flex;align-items:center;justify-content:center}
-.tb-more svg{width:24px;height:24px}
-.tb-more[aria-current="page"]{color:var(--fern);border-color:var(--fern)}
-.tb-more:active{transform:scale(.95)}
-/* Five places plus the round More button: let the buttons share the width and keep labels on one line */
+
+/* Five buttons share the width; labels stay on one line */
 .tabbar .tb{flex:1 1 0;min-width:0;font-size:.68rem;letter-spacing:-.01em;white-space:nowrap}
 .tabbar .tb-add{margin:0 2px}
-@media (max-width:380px){.navbar{left:8px;right:8px;gap:6px}.tabbar{padding:0 2px}.tb-more{width:52px;height:52px}.tabbar .tb-add{width:54px;height:54px}}
+@media (max-width:360px){.tabbar{padding:0 2px}.tabbar .tb-add{width:54px;height:54px}}
 .round-back[hidden]{display:none}
 .tb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:50px;min-height:56px;border:0;border-radius:18px;background:none;color:var(--muted);font:600 .72rem var(--body)}
 .tb svg{width:24px;height:24px}
@@ -1063,6 +1059,7 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
         <div class="hero-top"><div class="hero-loc"><svg class="pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22s-7.5-6.6-7.5-12.2a7.5 7.5 0 0 1 15 0C19.5 15.4 12 22 12 22zm0-9.3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg><span id="heroPlace"></span></div>
           <div class="hero-btns">
             <button class="hb" id="heroAcct" data-tab="profile" aria-label="Your account" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c.8-3.8 3.9-6 7.5-6s6.7 2.2 7.5 6"/></svg></button>
+            <button class="hb" data-tab="settings" aria-label="More: profile, settings and account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
             
           </div></div>
         <button class="hero-now" id="heroNow" aria-label="Current weather, tap to refresh"></button>
@@ -1301,7 +1298,6 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
     <button class="tb" data-tab="plants" data-all="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/></svg><span>Plants</span></button>
     <button class="tb" data-tab="friends" id="friendsBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17" cy="9.5" r="2.5"/><path d="M16 14.2c2.9.2 5 2.3 5 5.3"/></svg><span>Community</span><i class="req-badge" id="reqBadge" hidden></i></button>
   </div>
-  <button class="tb-more" data-tab="settings" aria-label="More: profile, settings and account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
 </nav>
 
 <dialog id="dlg">
