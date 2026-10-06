@@ -762,11 +762,11 @@ span.rx{cursor:default}
   --head:"Manrope","Segoe UI",system-ui,sans-serif; --body:"Manrope","Segoe UI",system-ui,sans-serif;
   --fern:#2F6B45; --fern-soft:#E3EFE5; --page:#F3F2EC; --bg:#F3F2EC;
   --glass:rgba(255,255,255,.76); --glass-bd:rgba(255,255,255,.66); --glass-sh:0 10px 30px rgba(18,38,24,.13);
-  --frost-red:#D04A43; --frost-red-bg:#FBE1DF; --water:#2B72B5; --water-bg:#DDEBF8;
+  --frost-red:#2F6CC0; --frost-red-bg:#DCE7F8; --water:#12817A; --water-bg:#D5EFEB;
   --radius-lg:24px;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#111713;--bg:#111713;--glass:rgba(22,30,25,.74);--glass-bd:rgba(255,255,255,.08);--glass-sh:0 10px 30px rgba(0,0,0,.35);--frost-red-bg:#3D2120;--water-bg:#1B2C3D;--fern-soft:#1F3226}}
-:root[data-theme="dark"]{--page:#111713;--bg:#111713;--glass:rgba(22,30,25,.74);--glass-bd:rgba(255,255,255,.08);--glass-sh:0 10px 30px rgba(0,0,0,.35);--frost-red-bg:#3D2120;--water-bg:#1B2C3D;--fern-soft:#1F3226}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#111713;--bg:#111713;--glass:rgba(22,30,25,.74);--glass-bd:rgba(255,255,255,.08);--glass-sh:0 10px 30px rgba(0,0,0,.35);--frost-red-bg:#1C2D46;--water-bg:#143532;--frost-red:#8DB6F0;--water:#6FCFC4;--fern-soft:#1F3226}}
+:root[data-theme="dark"]{--page:#111713;--bg:#111713;--glass:rgba(22,30,25,.74);--glass-bd:rgba(255,255,255,.08);--glass-sh:0 10px 30px rgba(0,0,0,.35);--frost-red-bg:#1C2D46;--water-bg:#143532;--frost-red:#8DB6F0;--water:#6FCFC4;--fern-soft:#1F3226}
 body{background:#22382A;font-family:var(--body)}
 h1,h2,h3{font-family:var(--head)}
 
@@ -809,7 +809,7 @@ body:not([data-page="today"]):not([data-page="locations"]) .bg::after{background
 
 /* Home hero */
 .hero{color:#fff;padding:6px 4px 16px;display:flex;flex-direction:column;gap:12px}
-.hero-loc{display:flex;align-items:center;gap:6px;font-weight:700;font-size:1.1rem;text-shadow:0 1px 10px rgba(0,0,0,.35);margin-bottom:16vh}
+.hero-loc{display:flex;align-items:center;gap:6px;font-weight:700;font-size:1.1rem;text-shadow:0 1px 10px rgba(0,0,0,.35)}
 .hero-loc .pin{width:18px;height:18px}
 .hero-now{display:flex;align-items:center;gap:14px;width:100%;border:0;border-radius:var(--radius-lg);padding:16px 18px;color:#fff;text-align:left;
   background:rgba(16,30,22,.34);border:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 10px 30px rgba(0,0,0,.18)}
@@ -822,7 +822,7 @@ body:not([data-page="today"]):not([data-page="locations"]) .bg::after{background
 .hchip{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:8px 13px;font:600 .86rem var(--body);color:#fff;
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 4px 14px rgba(0,0,0,.15)}
 .hchip svg{width:16px;height:16px}
-.hchip.frost{background:rgba(208,74,67,.9)} .hchip.heat{background:rgba(190,105,30,.9)} .hchip.water{background:rgba(43,114,181,.88)}
+.hchip.frost{background:rgba(47,108,192,.92)} .hchip.heat{background:rgba(190,105,30,.9)} .hchip.water{background:rgba(18,129,122,.9)}
 .hchip.calm{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35)}
 
 /* Section headings */
@@ -882,7 +882,7 @@ body:not([data-page="today"]):not([data-page="locations"]) .bg::after{background
 .loc-status{padding:0 16px}
 .lchip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 11px;font-weight:700;font-size:.8rem;color:#fff}
 .lchip svg{width:14px;height:14px}
-.lchip.frost{background:rgba(208,74,67,.92)} .lchip.water{background:rgba(43,114,181,.9)}
+.lchip.frost{background:rgba(47,108,192,.94)} .lchip.water{background:rgba(18,129,122,.92)}
 .loc-spots{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px 16px}
 .spot{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.32);border-radius:999px;padding:7px 8px 7px 12px;color:#fff;font:600 .84rem var(--body);
   background:rgba(14,28,20,.38);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
@@ -979,6 +979,13 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .home-card[aria-pressed=true]{border-color:var(--fern);background:var(--fern-soft)}
 .hc-ic{width:76px;height:76px;border-radius:50%;margin-bottom:8px;display:flex;align-items:center;justify-content:center;background:var(--fern-soft);color:var(--fern)}
 .hc-ic svg{width:36px;height:36px}
+/* Welcome choice: a photo fills the top of each card, with a tick on the chosen one */
+.home-card.hc-pic{position:relative;padding:0 0 14px;overflow:hidden}
+.home-card img.hc-photo{width:100%;aspect-ratio:4/3;border-radius:0;box-shadow:none;object-fit:cover;margin:0 0 8px}
+.home-card.hc-pic b,.home-card.hc-pic small{padding:0 10px}
+.home-card.hc-pic[aria-pressed=true]::after{content:"";position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;
+  background:var(--fern) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/16px no-repeat;
+  box-shadow:0 2px 8px rgba(0,0,0,.3)}
 /* Profile, settings, history */
 .prof-card .av{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--fern-soft)}
 /* Community and a friend's garden */
@@ -1002,6 +1009,27 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .fl-t small{font-weight:600;opacity:.9}
 .fl-tile[aria-pressed=true]{outline:3px solid #fff;outline-offset:-3px}
 .loc-porch{--acc:#8A6A3B;--c1:#5A4A33;--c2:#9C8661}
+
+/* Home: account and settings in the top corner */
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16vh}
+.hero-top .hero-loc{margin:10px 0 0}
+.hero-btns{display:flex;gap:8px}
+.hb{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.3);color:#fff;display:flex;align-items:center;justify-content:center;
+  background:rgba(16,30,22,.3);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.hb svg{width:22px;height:22px}
+.hb[hidden]{display:none}
+/* Plant cards: their own photo as a soft, foggy background */
+.plant.has-bg,.pcard.has-bg{position:relative;isolation:isolate;overflow:hidden}
+.p-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transform:scale(1.15);filter:blur(2.5px) saturate(1.1);pointer-events:none}
+.plant.has-bg::before,.pcard.has-bg::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,color-mix(in srgb,var(--surface) 78%,transparent),color-mix(in srgb,var(--surface) 52%,transparent) 55%,color-mix(in srgb,var(--surface) 22%,transparent))}
+.pcard.has-bg::before{background:linear-gradient(to bottom,transparent 40%,color-mix(in srgb,var(--surface) 70%,transparent) 62%)}
+.pcard .p-bg{top:auto;height:60%;bottom:0}
+/* Stock pictures for each location until you have your own photos there */
+.loc-house:not(.has-img),.fl-tile.loc-house:not(.has-img){background:url(loc-house.jpg) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
+.loc-garden:not(.has-img),.fl-tile.loc-garden:not(.has-img){background:url(loc-garden.jpg) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
+.loc-greenhouse:not(.has-img),.fl-tile.loc-greenhouse:not(.has-img){background:url(loc-greenhouse.jpg) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
+.loc-balcony:not(.has-img),.fl-tile.loc-balcony:not(.has-img){background:url(loc-balcony.jpg) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
+.loc:not(.has-img)::before{background:linear-gradient(100deg,rgba(8,18,12,.55),rgba(8,18,12,.12) 72%)}
 </style>
 </head>
 <body data-page="today">
@@ -1022,7 +1050,11 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
   <main>
     <section id="view-today">
       <div class="hero" id="hero">
-        <div class="hero-loc"><svg class="pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22s-7.5-6.6-7.5-12.2a7.5 7.5 0 0 1 15 0C19.5 15.4 12 22 12 22zm0-9.3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg><span id="heroPlace"></span></div>
+        <div class="hero-top"><div class="hero-loc"><svg class="pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22s-7.5-6.6-7.5-12.2a7.5 7.5 0 0 1 15 0C19.5 15.4 12 22 12 22zm0-9.3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg><span id="heroPlace"></span></div>
+          <div class="hero-btns">
+            <button class="hb" id="heroAcct" data-tab="profile" aria-label="Your account" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c.8-3.8 3.9-6 7.5-6s6.7 2.2 7.5 6"/></svg></button>
+            <button class="hb" data-tab="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.6 2.3 2.8-.5.5 2.8 2.3 1.6-1.2 2.5 1.2 2.5-2.3 1.6-.5 2.8-2.8-.5L12 21.2l-1.6-2.3-2.8.5-.5-2.8-2.3-1.6L6 12.5 4.8 10l2.3-1.6.5-2.8 2.8.5z"/></svg></button>
+          </div></div>
         <button class="hero-now" id="heroNow" aria-label="Current weather, tap to refresh"></button>
         <div class="hero-chips" id="heroChips"></div>
       </div>
@@ -2064,8 +2096,9 @@ function wateredText(p, W){
   return st.days === null ? "never watered" : st.byRain ? `rain ${st.days}d ago` : `watered ${st.days}d ago`;
 }
 const ownMini = p => online && me && token && typeof miniCounts === "function" ? miniCounts({owner:me.id, type:"plant", id:p.id}) : "";
+const plantBg = p => { const ph = latestPhoto(p.id); return ph ? `<img class="p-bg" src="${ph.data}" alt="" aria-hidden="true">` : ""; };
 function plantRow(p, W){
-  return `<div class="plant">
+  return `<div class="plant ${latestPhoto(p.id) ? "has-bg" : ""}">${plantBg(p)}
     <button class="thumb" data-act="edit" data-id="${p.id}" aria-label="Open ${esc(p.name)}">${thumbHtml(p)}</button>
     <div class="pmain"><button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}${vaultMark(p)}</button>
       ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
@@ -2076,7 +2109,7 @@ function plantRow(p, W){
   </div>`;
 }
 function plantCard(p, W){
-  return `<div class="pcard">
+  return `<div class="pcard ${latestPhoto(p.id) ? "has-bg" : ""}">${plantBg(p)}
     <button class="pc-photo" data-act="edit" data-id="${p.id}" aria-label="Open ${esc(p.name)}">${thumbHtml(p)}<span class="pc-flags">${flagIcons(p.id)}</span></button>
     <div class="pc-body">
       <button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}${vaultMark(p)}</button>
@@ -2950,9 +2983,9 @@ function renderOnb(){
   $("#onbBack").hidden = O.step === 0 || O.step === 4;
   const who = me && me.user ? me.user.charAt(0).toUpperCase() + me.user.slice(1) : "";
   if(O.step === 0){
-    const card = (h, img, t, sub) => `<button class="home-card" data-ohome="${h}" aria-pressed="${O.home === h && O.picked ? "true" : "false"}"><span class="hc-ic">${h === "apartment" ? ICON.balcony : ICON.house}</span><b>${t}</b><small>${sub}</small></button>`;
+    const card = (h, img, t, sub) => `<button class="home-card hc-pic" data-ohome="${h}" aria-pressed="${O.home === h && O.picked ? "true" : "false"}"><img class="hc-photo" src="${img}" alt="" draggable="false"><b>${t}</b><small>${sub}</small></button>`;
     body.innerHTML = `<h1>Welcome${who ? ", " + esc(who) : ""}!</h1><p class="onb-lead">Where do your plants live?</p>
-      <div class="home-cards">${card("house", "scene-day.webp", "House with garden", "Garden, porch and greenhouse")}${card("apartment", "apt-day.webp", "Apartment", "Inside and a balcony")}</div>
+      <div class="home-cards">${card("house", "loc-home-house.jpg", "House with garden", "Garden, porch and greenhouse")}${card("apartment", "loc-home-apartment.jpg", "Apartment", "Inside and a balcony")}</div>
       ${O.home === "apartment" && O.picked ? `<div class="onb-q"><p><b>Does rain reach your balcony?</b><br><span class="status">If it does, rain counts as watering for balcony plants.</span></p>
         <div class="seg"><button data-orain="1">Yes</button><button data-orain="0">No, it's covered</button></div></div>` : ""}`;
   }
@@ -3004,7 +3037,7 @@ function renderOnb(){
       <p class="status">You can change the times in Settings.</p>`;
   }
   else{
-    body.innerHTML = `<div class="onb-done"><img src="${O.home === "apartment" ? "apt-day.webp" : "scene-day.webp"}" alt=""><h1>You're all set</h1>
+    body.innerHTML = `<div class="onb-done"><img src="${O.home === "apartment" ? "loc-home-apartment.jpg" : "loc-home-house.jpg"}" alt=""><h1>You're all set</h1>
       <p class="onb-lead">Start with one plant. Take a photo and the app suggests what it is.</p>
       <button class="btn primary wide" data-oact="first">Add my first plant</button>
       <button class="linkish" data-oact="done">Later</button></div>`;
@@ -3680,6 +3713,7 @@ function fillAccount(){
   $("#acctLine").textContent = me ? `Signed in as @${me.user}${me.email ? " (" + me.email + ")" : ""}${me.owner ? ", owner of Alvor" : ""}.` : "Not signed in.";
   $("#inviteBtn").hidden = !(me && me.owner);
   $("#friendsBtn").hidden = !(me && token);
+  $("#heroAcct").hidden = !(me && token);
   let off = $("#acctOff");
   if(me && me.disabled){
     if(!off){ off = document.createElement("p"); off.id = "acctOff"; off.className = "acct-off"; $("#acctLine").after(off); }
