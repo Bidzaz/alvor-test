@@ -90,7 +90,7 @@ a{color:var(--fern);font-weight:700}
       <li><b>Your profile:</b> your name, @username and profile photo, if you add one.</li>
       <li><b>Your garden:</b> your plants with their names, species, spot, notes, watering and care details, your activity history, your settings and alert rules, whether you live in a house or an apartment, and your town.</li>
       <li><b>Your location:</b> the coordinates of your saved place, or, if you choose "My current location", the last place the app saw you. It's used for the forecast and the frost, heat and wind alerts.</li>
-      <li><b>Your photos:</b> each photo at full size, plus a smaller copy that friends can see if the plant is shared.</li>
+      <li><b>Your photos:</b> each photo at full size, plus a smaller copy that friends can see if the plant is shared. If you choose your own backdrop photo, Alvor keeps that too.</li>
       <li><b>Your circle:</b> your friends, friend requests, the people you block, your friend link, who invited you and who you invited.</li>
       <li><b>What you write:</b> reactions and comments, and any report you send.</li>
       <li><b>Notifications:</b> if you turn them on, an address for your phone given by its notification service, so Alvor can send the morning summary and the evening frost check.</li>
@@ -103,7 +103,7 @@ a{color:var(--fern);font-weight:700}
     <h2>What your friends see</h2>
     <table class="tbl">
       <tr><th>Friends can see</th><th>Nobody else ever sees</th></tr>
-      <tr><td>Your name, @username and profile photo; your garden's illustration and town; and, for each plant you share, its name, species, spot and photos (except photos you hide).</td>
+      <tr><td>Your name, @username and profile photo; your garden's backdrop and town; and, for each plant you share, its name, species, spot and photos (except photos you hide).</td>
           <td>Your email, your notes, your watering and activity history, your care settings, your exact location, and every plant you keep in the Vault.</td></tr>
     </table>
     <p>Each plant has its own "Visible to" setting. If "Let people find me" is switched on, people can also find your name, @username and profile photo by searching. It's off unless you turn it on.</p>
@@ -167,8 +167,8 @@ a{color:var(--fern);font-weight:700}
 </main>
 <script>
 /* Fill these in: who runs Alvor, and the email for privacy questions. */
-const OWNER_NAME = "Diogo Oliveira";
-const CONTACT_EMAIL = "alvor.garden@gmail.com";
+const OWNER_NAME = "";
+const CONTACT_EMAIL = "";
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 if(OWNER_NAME) document.querySelectorAll(".owner").forEach(e => e.textContent = OWNER_NAME);

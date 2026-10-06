@@ -1030,12 +1030,74 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .plant.has-bg::before,.pcard.has-bg::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,color-mix(in srgb,var(--surface) 78%,transparent),color-mix(in srgb,var(--surface) 52%,transparent) 55%,color-mix(in srgb,var(--surface) 22%,transparent))}
 .pcard.has-bg::before{background:linear-gradient(to bottom,transparent 40%,color-mix(in srgb,var(--surface) 70%,transparent) 62%)}
 .pcard .p-bg{top:auto;height:60%;bottom:0}
-/* Stock pictures for each location until you have your own photos there */
-.loc-house:not(.has-img),.fl-tile.loc-house:not(.has-img){background:url(loc-house.jpg) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
-.loc-garden:not(.has-img),.fl-tile.loc-garden:not(.has-img){background:url(loc-garden.jpg) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
-.loc-greenhouse:not(.has-img),.fl-tile.loc-greenhouse:not(.has-img){background:url(loc-greenhouse.jpg) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
-.loc-balcony:not(.has-img),.fl-tile.loc-balcony:not(.has-img){background:url(loc-balcony.jpg) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
+/* Each location shows its style's picture; people's own photos stay with their plants */
+.loc-house{--img0:url(loc-house.jpg)} .loc-garden{--img0:url(loc-garden.jpg)} .loc-greenhouse{--img0:url(loc-greenhouse.jpg)} .loc-balcony{--img0:url(loc-balcony.jpg)}
+/* --img is the chosen style's picture; if that file is missing, Classic's (--img0) shows through underneath */
+.loc:not(.has-img),.fl-tile:not(.has-img){background:var(--img,none) center/cover,var(--img0,none) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
 .loc:not(.has-img)::before{background:linear-gradient(100deg,rgba(8,18,12,.55),rgba(8,18,12,.12) 72%)}
+
+/* ===================== Themes: accent colours, backdrops, Appearance card ===================== */
+/* Accents never use blue, teal or orange: those mean cold, water and heat. */
+:root[data-accent="moss"]{--fern:#5C6B2A;--fern-soft:#ECEFD9}
+:root[data-accent="plum"]{--fern:#7A3D6A;--fern-soft:#F3E4EF}
+:root[data-accent="rose"]{--fern:#AD4A74;--fern-soft:#F8E3EC}
+:root[data-accent="graphite"]{--fern:#3E4A52;--fern-soft:#E4E8EB}
+@media (prefers-color-scheme: dark){
+  :root[data-accent="moss"]:not([data-theme="light"]){--fern:#B3C077;--fern-soft:#2A2F1B}
+  :root[data-accent="plum"]:not([data-theme="light"]){--fern:#D7A0C8;--fern-soft:#35212F}
+  :root[data-accent="rose"]:not([data-theme="light"]){--fern:#F0A3C2;--fern-soft:#3A2130}
+  :root[data-accent="graphite"]:not([data-theme="light"]){--fern:#C3CDD5;--fern-soft:#263038}
+}
+:root[data-accent="moss"][data-theme="dark"]{--fern:#B3C077;--fern-soft:#2A2F1B}
+:root[data-accent="plum"][data-theme="dark"]{--fern:#D7A0C8;--fern-soft:#35212F}
+:root[data-accent="rose"][data-theme="dark"]{--fern:#F0A3C2;--fern-soft:#3A2130}
+:root[data-accent="graphite"][data-theme="dark"]{--fern:#C3CDD5;--fern-soft:#263038}
+/* The glass panels take a faint tint of the accent */
+:root[data-accent]{--glass:color-mix(in srgb,var(--fern) 6%,rgba(255,255,255,.76))}
+@media (prefers-color-scheme: dark){:root[data-accent]:not([data-theme="light"]){--glass:color-mix(in srgb,var(--fern) 7%,rgba(20,24,24,.76))}}
+:root[data-accent][data-theme="dark"]{--glass:color-mix(in srgb,var(--fern) 7%,rgba(20,24,24,.76))}
+
+/* The + button keeps a deep shade of the accent in light and dark */
+:root[data-accent="moss"] .tb-add{background:radial-gradient(circle at 35% 30%,#7E8F3E,#46521F);box-shadow:0 8px 20px rgba(70,82,31,.45)}
+:root[data-accent="plum"] .tb-add{background:radial-gradient(circle at 35% 30%,#9A5689,#5A2B4E);box-shadow:0 8px 20px rgba(90,43,78,.45)}
+:root[data-accent="rose"] .tb-add{background:radial-gradient(circle at 35% 30%,#C9668F,#86344F);box-shadow:0 8px 20px rgba(134,52,79,.45)}
+:root[data-accent="graphite"] .tb-add{background:radial-gradient(circle at 35% 30%,#5E6B74,#2C353B);box-shadow:0 8px 20px rgba(44,53,59,.45)}
+/* A friend's garden lets their backdrop through behind the header and tiles */
+body[data-page="friend"] .bg::after{background:linear-gradient(to bottom,rgba(8,20,12,.30) 0,rgba(8,20,12,.04) 160px,color-mix(in srgb,var(--page) 70%,transparent) 400px,var(--page) 560px)}
+
+/* Appearance card */
+.look-row{display:flex;gap:10px;overflow-x:auto;padding:6px 6px 8px;margin:6px -6px 0;scrollbar-width:none}
+.look-row::-webkit-scrollbar{display:none}
+.bgt{flex:0 0 auto;width:74px;border:0;background:none;padding:0;color:var(--ink);font:inherit;text-align:center}
+.bgt .im{display:block;width:74px;height:112px;border-radius:16px;background:var(--fern-soft) center/cover no-repeat;position:relative;
+  outline:2px solid transparent;outline-offset:2px;transition:outline-color .2s}
+.bgt[aria-pressed="true"] .im{outline-color:var(--fern)}
+.bgt[aria-pressed="true"] .im::after{content:"";position:absolute;right:6px;top:6px;width:20px;height:20px;border-radius:50%;
+  background:var(--fern) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/13px no-repeat;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.bgt small{display:block;margin-top:6px;font-size:12px;font-weight:600;color:var(--muted)}
+.bgt[aria-pressed="true"] small{color:var(--ink)}
+.bgt.add .im{display:flex;align-items:center;justify-content:center;border:1.5px dashed color-mix(in srgb,var(--ink) 28%,transparent);background:transparent;color:var(--muted)}
+.bgt.add .im svg{width:24px;height:24px}
+.acc-row{display:flex;gap:14px;margin:12px 0 4px;flex-wrap:wrap}
+.acc{width:34px;height:34px;border-radius:50%;border:0;padding:0;background:var(--c);position:relative;outline:2px solid transparent;outline-offset:3px}
+.acc[aria-pressed="true"]{outline-color:var(--c)}
+.acc span{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:7px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.acc-row{padding-bottom:18px}
+.look-own{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.look-h{font-size:14px;font-weight:700;margin:18px 0 0}
+.look-h:first-of-type{margin-top:6px}
+
+/* Own photo: pick from plants, then tap where the light is */
+#bgPickDlg .bp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#bgPickDlg .bp-grid button{border:0;padding:0;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--fern-soft)}
+#bgPickDlg .bp-grid img{width:100%;height:100%;object-fit:cover;display:block}
+.bge-wrap{text-align:center}
+.bge-stage{position:relative;display:inline-block;vertical-align:top;max-width:100%;border-radius:18px;overflow:hidden;background:#0d1410;touch-action:manipulation;cursor:crosshair;user-select:none}
+.bge-stage img{display:block;max-width:100%;max-height:56vh;width:auto;height:auto;pointer-events:none}
+.bge-dot{position:absolute;width:120px;height:120px;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,244,200,.85),rgba(255,214,140,.32) 45%,transparent 72%);mix-blend-mode:screen;animation:sunbreath 8s ease-in-out infinite}
+.bge-dot::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.bge-dot[hidden]{display:none}
 </style>
 </head>
 <body data-page="today">
@@ -1127,6 +1189,26 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
         <div class="av" id="profAv"></div>
         <div class="prof-txt"><b id="profName"></b><span id="profUser"></span></div>
         <button class="btn small" data-tab="profile">Edit profile</button>
+      </div>
+      <div class="card" id="lookCard">
+        <h2>Appearance</h2>
+        <h3 class="look-h">Style</h3>
+        <div class="look-row" id="styleRow" role="radiogroup" aria-label="Style"></div>
+        <p class="status" style="margin-top:2px">Changes the backdrop and the pictures of your places.</p>
+        <h3 class="look-h">Backdrop</h3>
+        <div class="look-row" id="bgRow" role="radiogroup" aria-label="Backdrop"></div>
+        <p class="status" id="bgHint" style="margin-top:2px"></p>
+        <div class="look-own" id="ownBtns" hidden>
+          <button class="btn small" id="ownFromPlants">From my plant photos</button>
+          <button class="btn small" id="ownFromPhone">From the phone</button>
+          <button class="btn small" id="ownLight" hidden>Move the light</button>
+          <button class="btn small danger" id="ownRemove" hidden>Remove my photo</button>
+          <input type="file" id="ownFile" accept="image/*" hidden>
+        </div>
+        <h3 class="look-h">Accent colour</h3>
+        <div class="acc-row" id="accRow" role="radiogroup" aria-label="Accent colour"></div>
+        <h3 class="look-h">Light or dark</h3>
+        <div class="seg small" role="radiogroup" aria-label="Light or dark" id="modeSeg"></div>
       </div>
       <div class="card" id="privCard" hidden>
         <h2>Sharing and privacy</h2>
@@ -1377,13 +1459,29 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
   <div class="sheet-b" id="sheetBody"></div>
 </dialog>
 
+<dialog id="bgPickDlg">
+  <div class="dlg-h"><h2>Choose a photo</h2><button class="btn small" id="bgPickClose">Close</button></div>
+  <div class="dlg-b"><p class="status" style="margin-top:0">Your plant photos, newest first.</p><div class="bp-grid" id="bpGrid"></div></div>
+</dialog>
+
+<dialog id="bgEditDlg">
+  <div class="dlg-h"><h2>Where is the light?</h2><button class="btn small" id="bgEditClose">Close</button></div>
+  <div class="dlg-b">
+    <p class="status" style="margin-top:0">Tap the brightest spot, like the sun or a bright window. A soft glow breathes there on clear days, and the photo keeps that spot in view on every screen.</p>
+    <div class="bge-wrap"><div class="bge-stage" id="bgeStage"><img id="bgeImg" alt="Your backdrop photo"><div class="bge-dot" id="bgeDot" hidden></div></div></div>
+    <label class="check" style="margin:14px 0 0"><input type="checkbox" id="bgeSun"><span>Glow on clear days<br><span class="status">Untick it if the photo has no sun or bright spot.</span></span></label>
+    <p class="status" id="bgeNote"></p>
+  </div>
+  <div class="dlg-f"><button class="btn" id="bgeCancel">Cancel</button><button class="btn primary" id="bgeSave">Use this photo</button></div>
+</dialog>
+
 <dialog id="delDlg">
   <div class="dlg-h"><h2>Delete your account?</h2><button class="btn small" id="delClose">Close</button></div>
   <div class="dlg-b">
     <p style="margin-top:0">This deletes, from every phone and for good:</p>
     <ul class="del-list">
       <li>your plants, notes and history</li>
-      <li>all your photos and your profile photo</li>
+      <li>all your photos, your profile photo and your backdrop photo</li>
       <li>your profile, friends, requests and friend link</li>
       <li>reactions and comments you wrote, and the ones on your garden</li>
     </ul>
@@ -2028,8 +2126,6 @@ function renderLocations(W){
   const r0 = W && W.next.length ? dayRisks(W.next[0]) : {frost:[], heat:[]};
   el.innerHTML = LOCS().map(L => {
     const list = state.plants.filter(p => L.areas.includes(p.area));
-    let cover = null;
-    list.forEach(p => { const ph = latestPhoto(p.id); if(ph && (!cover || ph.ts > cover.ts)) cover = ph; });
     const risk = r0.frost.filter(p => L.areas.includes(p.area)).length;
     const thirsty = list.filter(p => (plantFlags[p.id] || new Set()).has("water")).length;
     const spots = [];
@@ -2039,8 +2135,8 @@ function renderLocations(W){
     });
     if(L.k === "greenhouse"){ const g = list.filter(p => p.pattern === "greenhouse").length; if(g) spots.push({f:"greenhouse", icon:"snow", label:"Wintering guests", c:g}); }
     const status = risk ? `<span class="lchip frost">${ICON.snow}${risk} at risk tonight</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${thirsty} need water</span>` : "";
-    return `<div class="loc loc-${L.k} ${cover ? "has-img" : ""} ${list.length ? "" : "empty"}">
-      ${cover ? `<img class="loc-img" src="${cover.data}" alt="">` : `<span class="loc-art">${ICON[L.icon]}</span>`}
+    return `<div class="loc loc-${L.k} ${list.length ? "" : "empty"}" style="${locStyle(look().style, L.k)}">
+      <span class="loc-art">${ICON[L.icon]}</span>
       <button class="loc-main" data-loc="${L.k === "garden" ? "garden" : L.areas[0]}" aria-label="${L.label}: ${list.length} plants">
         <span class="loc-ic">${ICON[L.icon]}</span>
         <span class="loc-t"><b>${L.label}</b><small>${L.sub} · ${list.length ? `${list.length} ${list.length === 1 ? "plant" : "plants"}` : "no plants yet"}</small></span>
@@ -2267,6 +2363,7 @@ function showTab(tab, from){
   if(tab === "friends") openFriends();
   if(tab === "friend") renderFriend();
   if(tab === "today") applySky(); else { cancelAnimationFrame(fxState.raf); applyBackdrop(); }
+  applyLook();
   dial.classList.remove("folded");
   window.scrollTo(0,0);
 }
@@ -2895,7 +2992,7 @@ function fillSettings(){
   $("#sMorning").value = s.morningHour; $("#sEvening").value = s.eveningHour; $("#sEveningOn").checked = s.eveningCheck !== false;
   $("#sSocialOn").checked = s.socialPush !== false; $("#sSocialRow").hidden = !online;
   fillAccount();
-  fillProfileCard(); fillPrivacy();
+  fillProfileCard(); fillPrivacy(); fillLook();
   refreshNotifyStatus();
   if(me && me.owner && token) loadAdmin();
   renderColdPick();
@@ -3397,7 +3494,7 @@ function applyServer(d){
   state.settings = {...base.settings, ...settings};
   state.account = me && me.id;
   normalizePlants(); normalizeLocation(); useActiveLocation();
-  saveLocal(); render(); if(currentTab === "settings") fillSettings();
+  saveLocal(); applyLook(); render(); if(currentTab === "settings") fillSettings();
 }
 function sessionExpired(){
   token = "";
@@ -3433,6 +3530,8 @@ async function uploadGarden(){
   must(await del);
   must(await sb.from("gardens").upsert({owner_id:me.id, home:state.settings.home === "apartment" ? "apartment" : "house",
     town:String(state.settings.place || "").slice(0, 60) || null}));
+  // The backdrop friends see. A separate write, so a missing column (part 9 not run) can't stop the sync.
+  try{ await sb.from("gardens").update({theme:publicLook()}).eq("owner_id", me.id); }catch(e){}
   // Saved last: its timestamp says the whole garden is up to date.
   must(await sb.from("garden_private").upsert({owner_id:me.id, settings:{...state.settings, updatedAt:state.updatedAt || 0},
     log:state.log.slice(0, 1000)}));
@@ -4047,6 +4146,7 @@ async function openFriend(id){
   if(!online || !token || !me || !id) return;
   visit = {id, loading:true, filter:"all", prof:findPerson(id)};
   showTab("friend");
+  friendLook(id).then(F => { if(visit && visit.id === id){ visit.bgSpec = F.spec; visit.style = F.style; if(currentTab === "friend"){ applyLook(); renderFriend(); } } }).catch(() => {});
   try{
     await loadCircle();
     const [prof, garden, plants, phs] = await Promise.all([
@@ -4081,11 +4181,9 @@ function friendScene(V, home){
   const tiles = order.filter(a => a !== "porch" || V.plants.some(x => x.area === "porch"));
   return `<div class="fl-tiles">${tiles.map(a => {
     const list = V.plants.filter(x => x.area === a);
-    let url = null;
-    for(const x of list){ const ph = (V.byPlant[x.id] || [])[0], u = ph && V.urls[ph.path_small]; if(u){ url = u; break; } }
     const k = a === "outside" ? "garden" : a, label = a === "outside" ? "Garden" : fAreaLabel(a, home);
-    return `<button class="fl-tile loc-${k} ${url ? "has-img" : ""}" data-gact="area" data-a="${a}" aria-pressed="${V.filter === a}" aria-label="${esc(label)}: ${plantsWord(list.length)}">
-      ${url ? `<img src="${esc(url)}" alt="" loading="lazy">` : `<span class="fl-art">${ICON[a]}</span>`}
+    return `<button class="fl-tile loc-${k}" data-gact="area" data-a="${a}" aria-pressed="${V.filter === a}" aria-label="${esc(label)}: ${plantsWord(list.length)}" style="${locStyle(V.style || "classic", k)}">
+      <span class="fl-art">${ICON[a]}</span>
       <span class="fl-t"><span class="fl-ic">${ICON[a]}</span><b>${esc(label)}</b><small>${plantsWord(list.length)}</small></span></button>`;
   }).join("")}</div>`;
 }
@@ -4616,6 +4714,7 @@ alvor-data.json   Everything Alvor's server keeps about you: your sign-in email,
                   It opens in any text editor.
 photos/           Every photo, at full size, in a folder per plant.
 profile-photo.jpg Your profile photo, if you have one.
+backdrop-photo.jpg Your own backdrop photo, if you chose one.
 
 Alvor doesn't keep anything else about you. To delete it all, use
 Settings → Delete my account in the app, or the "Delete your account" page.
@@ -4650,6 +4749,10 @@ async function downloadMyData(){
     }
     if(me.avatar){
       try{ const r = await fetch(avatarUrl(me.avatar)); if(r.ok) files.push({name:"profile-photo.jpg", data:new Uint8Array(await r.arrayBuffer()), date:now}); }catch(e){}
+    }
+    const own = look().own;
+    if(own && own.path){
+      try{ const d = await ownData(own); if(d) files.push({name:"backdrop-photo.jpg", data:new Uint8Array(await (await dataToBlob(d)).arrayBuffer()), date:now}); }catch(e){}
     }
     st("Making the file…");
     const blob = makeZip(files);
@@ -4697,7 +4800,7 @@ async function forgetEverything(){
   }catch(e){}
   try{ await sb.auth.signOut({scope:"local"}); }catch(e){}
   try{ await idb.clear(); }catch(e){}
-  [KEY, USER_KEY, PUSH_KEY, PH_DEL_KEY, OLD_TOKEN_KEY, ADMIN_SEEN_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+  [KEY, USER_KEY, PUSH_KEY, PH_DEL_KEY, OLD_TOKEN_KEY, ADMIN_SEEN_KEY, LOOK_BG_KEY].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
   token = ""; me = null; photos = {}; pending = [];
   circle = null; circleAt = 0; myLink = null; visit = null; fSearch = {q:"", results:null}; admin = null; forgetTalk(); updateBadge();
   state = defaults(); saveLocal();
@@ -4823,11 +4926,246 @@ function saveNotifySettings(){
 }
 ["#sMorning","#sEvening","#sEveningOn","#sSocialOn"].forEach(id => $(id).addEventListener("change", saveNotifySettings));
 
+/* ---------- Themes: backdrop, accent colour, light or dark ----------
+   Saved with the garden's settings, so every phone and the browser look the same.
+   The backdrop (not the colours) also goes to gardens.theme: friends see it when they visit. */
+const LOOK_BG_KEY = "alvor-backdrop";   // this phone's copy of your own backdrop photo
+/* Styles: each is a matching set of a backdrop and the four location pictures.
+   pos: which part of the backdrop stays in view (0..1 across, 0..1 down). sun: its bright spot, or null for no glow.
+   A style whose backdrop file isn't uploaded yet simply doesn't appear; a missing location picture falls back to Classic's. */
+const STYLES = [
+  {k:"classic", label:"Classic", bg:"bg-hero.webp", pos:[0, .5], sun:[.393, .36],
+   loc:{house:"loc-house.jpg", garden:"loc-garden.jpg", greenhouse:"loc-greenhouse.jpg", balcony:"loc-balcony.jpg"}},
+  {k:"modern", label:"Modern", bg:"bg-modern.webp", pos:[.35, .5], sun:[.345, .298],
+   loc:{house:"loc-house-modern.jpg", garden:"loc-garden-modern.jpg", greenhouse:"loc-greenhouse-modern.jpg", balcony:"loc-balcony-modern.jpg"}},
+  {k:"future", label:"Futuristic", bg:"bg-future.webp", pos:[.5, .5], sun:null,
+   loc:{house:"loc-house-future.jpg", garden:"loc-garden-future.jpg", greenhouse:"loc-greenhouse-future.jpg", balcony:"loc-balcony-future.jpg"}}
+];
+const ACCENTS = [
+  {k:"fern", label:"Fern", c:"#2F6B45"}, {k:"moss", label:"Moss", c:"#5C6B2A"}, {k:"plum", label:"Plum", c:"#7A3D6A"},
+  {k:"rose", label:"Rose", c:"#AD4A74"}, {k:"graphite", label:"Graphite", c:"#3E4A52"}
+];
+const MODES = [["auto", "Automatic"], ["light", "Light"], ["dark", "Dark"]];
+/* bg is "own" (your photo) or "style" (the style's backdrop); older values mean "style". */
+const look = () => ({style:"classic", bg:"style", accent:"fern", mode:"auto", own:null, ...(state.settings.look || {})});
+const styleOf = k => STYLES.find(x => x.k === k && !bgMissing.has(x.k)) || STYLES[0];
+/* The picture on a location card or a friend's tile: always the style's, never people's photos. */
+const locStyle = (style, k) => { const st = styleOf(style); return st.loc[k] ? `--img:url('${st.loc[k]}')` : ""; };
+const bgMissing = new Set(), bgChecked = new Set();   // styles whose backdrop file is missing
+let ownCache = (() => { try{ return JSON.parse(localStorage.getItem(LOOK_BG_KEY) || "null"); }catch(e){ return null; } })();
+function keepOwnCache(c){
+  ownCache = c;
+  try{ if(c) localStorage.setItem(LOOK_BG_KEY, JSON.stringify(c)); else localStorage.removeItem(LOOK_BG_KEY); }
+  catch(e){ /* too big for this phone's storage: it's fetched again next time */ }
+}
+/* Your own photo: from this phone's copy, or from your account (another phone chose it). */
+async function ownData(own){
+  if(!own || !own.path) return null;
+  if(ownCache && ownCache.path === own.path) return ownCache.data;
+  if(!sb || !token) return null;
+  const blob = must(await sb.storage.from("backdrops").download(own.path));
+  const data = await blobToData(blob);
+  keepOwnCache({path:own.path, data});
+  return data;
+}
+const imgSizes = {};
+function imgSize(src){
+  return imgSizes[src] ||= new Promise((res, rej) => { const i = new Image(); i.onload = () => res({w:i.naturalWidth, h:i.naturalHeight}); i.onerror = rej; i.src = src; });
+}
+/* What the backdrop shows: {k, src, pos, sun} */
+function styleSpec(k){ const st = styleOf(k); return {k:st.k === "classic" ? "sunrise" : st.k, src:st.bg, pos:st.pos, sun:st.sun}; }
+function ownSpec(t, src){
+  const x = Math.min(1, Math.max(0, +t.x || .5)), y = Math.min(1, Math.max(0, +t.y || .5));
+  return {k:"own", src, pos:t.sun ? [x, y] : [.5, .5], sun:t.sun ? [x, y] : null};
+}
+let bgShown = null, bgTurn = 0;
+function placeSun(){
+  const S = bgShown, sun = $(".bg-sun"), box = $(".bg");
+  if(!S || S.k === "sunrise" || !S.sun || !S.size){ return; }
+  const vw = box.clientWidth, vh = box.clientHeight, {w, h} = S.size;
+  const k = Math.max(vw / w, vh / h), rw = w * k, rh = h * k;
+  const left = (vw - rw) * S.pos[0] + S.sun[0] * rw, top = (vh - rh) * S.pos[1] + S.sun[1] * rh;
+  Object.assign(sun.style, {left:left + "px", top:top + "px", width:.7 * vh + "px", height:.7 * vh + "px", display:""});
+}
+async function showBackdrop(S){
+  const turn = ++bgTurn, photo = $(".bg-photo"), sun = $(".bg-sun");
+  if(!S || S.k === "sunrise"){   // the original: its sun is placed by the stylesheet
+    bgShown = {k:"sunrise"};
+    photo.style.backgroundImage = photo.style.backgroundPosition = "";
+    ["left","top","width","height","display"].forEach(p => sun.style[p] = "");
+    return;
+  }
+  let size = null;
+  try{ size = await imgSize(S.src); }catch(e){ if(turn === bgTurn) showBackdrop(null); return; }
+  if(turn !== bgTurn) return;
+  bgShown = {...S, size};
+  photo.style.backgroundImage = `url("${S.src}")`;
+  photo.style.backgroundPosition = `${S.pos[0] * 100}% ${S.pos[1] * 100}%`;
+  if(S.sun) placeSun(); else sun.style.display = "none";
+}
+window.addEventListener("resize", placeSun);
+async function applyLook(){
+  const L = look(), root = document.documentElement;
+  if(L.accent && L.accent !== "fern") root.dataset.accent = L.accent; else delete root.dataset.accent;
+  if(L.mode === "light" || L.mode === "dark") root.dataset.theme = L.mode; else delete root.dataset.theme;
+  if(currentTab === "friend" && visit) return showBackdrop(visit.bgSpec || null);   // their garden, their backdrop
+  if(L.bg === "own" && L.own){
+    try{ const d = await ownData(L.own); if(d) return showBackdrop(ownSpec(L.own, d)); }catch(e){}
+    return showBackdrop(null);
+  }
+  return showBackdrop(styleSpec(L.style));
+}
+/* Sent to gardens.theme with each save: only the backdrop. */
+const publicLook = () => { const L = look(), style = STYLES.some(x => x.k === L.style) ? L.style : "classic";
+  return L.bg === "own" && L.own ? {style, bg:"own", path:L.own.path, x:L.own.x, y:L.own.y, sun:!!L.own.sun} : {style, bg:"style"}; };
+/* A friend's look: {style, spec}. Their location tiles follow their style too. */
+async function friendLook(id){
+  const r = await sb.from("gardens").select("theme").eq("owner_id", id).maybeSingle();
+  const t = r && !r.error && r.data && r.data.theme;
+  if(!t) return {style:"classic", spec:null};
+  let style = STYLES.some(x => x.k === t.style) ? t.style : "classic";
+  if(style !== "classic"){ try{ await imgSize(styleOf(style).bg); }catch(e){ style = "classic"; } }   // not on this version of the app
+  if(t.bg === "own" && t.path){
+    const u = await sb.storage.from("backdrops").createSignedUrl(t.path, 3600);
+    if(u && u.data && u.data.signedUrl) return {style, spec:ownSpec(t, u.data.signedUrl)};
+  }
+  return {style, spec:style === "classic" ? null : styleSpec(style)};
+}
+function setLook(patch){
+  state.settings.look = {...look(), ...patch};
+  save(); applyLook(); fillLook();
+}
+
+/* Appearance card */
+let ownOpen = false;
+function fillLook(){
+  const L = look(), canOwn = online && !!me && !!token;
+  STYLES.forEach(st => {
+    if(bgChecked.has(st.k)) return; bgChecked.add(st.k);
+    imgSize(st.bg).catch(() => { bgMissing.add(st.k); if(currentTab === "settings") fillLook(); applyLook(); render(); });
+  });
+  const tile = (attr, label, img, on) => `<button class="bgt" role="radio" ${attr} aria-pressed="${on}"><span class="im" style="${img ? `background-image:url('${img}')` : ""}"></span><small>${label}</small></button>`;
+  const cur = styleOf(L.style);
+  $("#styleRow").innerHTML = STYLES.filter(st => !bgMissing.has(st.k)).map(st => tile(`data-style="${st.k}"`, st.label, st.bg, cur.k === st.k)).join("");
+  let h = tile(`data-bg="style"`, cur.label, cur.bg, L.bg !== "own");
+  if(L.own) h += tile(`data-bg="own"`, "My photo", ownCache && ownCache.path === L.own.path ? ownCache.data : "", L.bg === "own");
+  else if(canOwn) h += `<button class="bgt add" data-bg="add" aria-expanded="${ownOpen}"><span class="im">${ICON.plus}</span><small>My photo</small></button>`;
+  $("#bgRow").innerHTML = h;
+  if(L.own && !(ownCache && ownCache.path === L.own.path)) ownData(L.own).then(d => { if(d && currentTab === "settings") fillLook(); }).catch(() => {});
+  $("#bgHint").textContent = !canOwn ? "" : L.bg === "own" ? "Friends see this photo when they visit your garden, with your style's pictures on their tiles." : "Friends see your style when they visit your garden.";
+  $("#ownBtns").hidden = !canOwn || !(ownOpen || L.bg === "own");
+  $("#ownLight").hidden = $("#ownRemove").hidden = !L.own;
+  $("#ownFromPlants").hidden = !Object.values(photos).some(l => l.length);
+  $("#ownFromPlants").textContent = L.own ? "Change: my plant photos" : "From my plant photos";
+  $("#ownFromPhone").textContent = L.own ? "Change: from the phone" : "From the phone";
+  $("#accRow").innerHTML = ACCENTS.map(a => `<button class="acc" role="radio" data-acc="${a.k}" aria-pressed="${L.accent === a.k}" aria-label="${a.label}" style="--c:${a.c}"><span>${a.label}</span></button>`).join("");
+  $("#modeSeg").innerHTML = MODES.map(([k, t]) => `<button role="radio" data-mode="${k}" aria-pressed="${L.mode === k}">${t}</button>`).join("");
+}
+$("#styleRow").addEventListener("click", e => {
+  const b = e.target.closest("[data-style]"); if(!b || b.dataset.style === styleOf(look().style).k) return;
+  setLook({style:b.dataset.style}); render();
+});
+$("#bgRow").addEventListener("click", e => {
+  const b = e.target.closest("[data-bg]"); if(!b) return;
+  const k = b.dataset.bg;
+  if(k === "add"){ ownOpen = !ownOpen; fillLook(); return; }
+  if(k === (look().bg === "own" ? "own" : "style")) return;
+  setLook({bg:k});
+});
+$("#accRow").addEventListener("click", e => { const b = e.target.closest("[data-acc]"); if(b && b.dataset.acc !== look().accent) setLook({accent:b.dataset.acc}); });
+$("#modeSeg").addEventListener("click", e => { const b = e.target.closest("[data-mode]"); if(b && b.dataset.mode !== look().mode) setLook({mode:b.dataset.mode}); });
+
+/* Own photo: kept at up to 1600 px; you tap where the light is. */
+const bgPickDlg = $("#bgPickDlg"), bgEditDlg = $("#bgEditDlg");
+let bgEdit = null;   // {data, x, y, sun, isNew}
+async function shrinkForBackdrop(src){ return (await drawJpeg(src, 1600, 0.82)).toDataURL("image/jpeg", 0.82); }
+function openBgEdit(E){
+  bgEdit = E;
+  $("#bgeImg").src = E.data;
+  $("#bgeSun").checked = !!E.sun;
+  $("#bgeNote").textContent = E.vault ? "This plant is in your Vault, but friends who visit your garden will see this photo as its backdrop." : "Friends who visit your garden will see this photo.";
+  $("#bgeSave").textContent = E.isNew ? "Use this photo" : "Save";
+  $("#bgeSave").disabled = false;
+  drawBgeDot();
+  bgEditDlg.showModal();
+}
+function drawBgeDot(){
+  const d = $("#bgeDot");
+  d.hidden = !bgEdit || !bgEdit.sun;
+  if(bgEdit){ d.style.left = bgEdit.x * 100 + "%"; d.style.top = bgEdit.y * 100 + "%"; }
+}
+$("#bgeStage").addEventListener("click", e => {
+  if(!bgEdit) return;
+  const r = $("#bgeImg").getBoundingClientRect();
+  bgEdit.x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  bgEdit.y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+  bgEdit.sun = true; $("#bgeSun").checked = true; drawBgeDot();
+});
+$("#bgeSun").addEventListener("change", e => { if(bgEdit){ bgEdit.sun = e.target.checked; drawBgeDot(); } });
+[$("#bgEditClose"), $("#bgeCancel")].forEach(b => b.addEventListener("click", () => { bgEditDlg.close(); bgEdit = null; }));
+$("#bgeSave").addEventListener("click", async () => {
+  const E = bgEdit; if(!E || !me || !token) return;
+  const btn = $("#bgeSave"); btn.disabled = true; btn.textContent = "Saving…";
+  try{
+    const old = look().own;
+    let path = old && old.path;
+    if(E.isNew){
+      path = `${me.id}/bg-${Date.now()}.jpg`;
+      must(await sb.storage.from("backdrops").upload(path, await dataToBlob(E.data), {contentType:"image/jpeg", upsert:false}));
+      keepOwnCache({path, data:E.data});
+      if(old && old.path && old.path !== path) sb.storage.from("backdrops").remove([old.path]).catch(() => {});
+    }
+    bgEditDlg.close(); bgEdit = null; ownOpen = false;
+    setLook({bg:"own", own:{path, x:+E.x.toFixed(4), y:+E.y.toFixed(4), sun:!!E.sun}});
+    toast(E.isNew ? "Backdrop saved" : "Saved");
+  }catch(err){
+    if(isAuthErr(err)){ bgEditDlg.close(); sessionExpired(); return; }
+    toast("Couldn't save the photo. Check your connection and try again.");
+    btn.disabled = false; btn.textContent = E.isNew ? "Use this photo" : "Save";
+  }
+});
+$("#ownFromPhone").addEventListener("click", () => $("#ownFile").click());
+$("#ownFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = ""; if(!f) return;
+  const url = URL.createObjectURL(f);
+  try{ openBgEdit({data:await shrinkForBackdrop(url), x:.5, y:.35, sun:false, isNew:true}); }
+  catch(err){ toast("Couldn't use that photo"); }
+  finally{ URL.revokeObjectURL(url); }
+});
+$("#ownFromPlants").addEventListener("click", () => {
+  const list = Object.values(photos).flat().filter(ph => ph && ph.data).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 90);
+  $("#bpGrid").innerHTML = list.map(ph => `<button data-bp="${esc(ph.id)}" aria-label="Use this photo"><img src="${ph.data}" alt="" loading="lazy"></button>`).join("");
+  bgPickDlg.showModal();
+});
+$("#bgPickClose").addEventListener("click", () => bgPickDlg.close());
+$("#bpGrid").addEventListener("click", async e => {
+  const b = e.target.closest("[data-bp]"); if(!b) return;
+  const ph = Object.values(photos).flat().find(x => x && x.id === b.dataset.bp); if(!ph) return;
+  const plant = state.plants.find(p => p.id === ph.plantId);
+  try{
+    const data = await shrinkForBackdrop(ph.data);
+    bgPickDlg.close();
+    openBgEdit({data, x:.5, y:.35, sun:false, isNew:true, vault:!!plant && plant.visibility === "vault"});
+  }catch(err){ toast("Couldn't use that photo"); }
+});
+$("#ownLight").addEventListener("click", async () => {
+  const o = look().own; if(!o) return;
+  try{ const d = await ownData(o); if(d) openBgEdit({data:d, x:+o.x || .5, y:+o.y || .35, sun:!!o.sun, isNew:false}); }
+  catch(e){ toast("Couldn't open the photo. Check your connection."); }
+});
+$("#ownRemove").addEventListener("click", () => {
+  const o = look().own; if(!o || !confirm("Remove your backdrop photo? The app goes back to your style's photo.")) return;
+  if(sb && token && o.path) sb.storage.from("backdrops").remove([o.path]).catch(() => {});
+  keepOwnCache(null); ownOpen = false;
+  setLook({bg:"style", own:null});
+});
+
 /* ---------- Start ---------- */
 normalizeLocation(); useActiveLocation();
 try{ const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; if(tz && state.settings.tz !== tz){ state.settings.tz = tz; saveLocal(); } }catch(e){}
 if("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 const startIds = upgradeIds();
+applyLook();
 render();
 upgradePhotoIds(startIds).then(loadPhotos);
 fetchWeather(false);
