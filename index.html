@@ -890,10 +890,20 @@ body:not([data-page="today"]):not([data-page="locations"]) .bg::after{background
 .spot b{min-width:22px;padding:1px 7px;border-radius:999px;background:rgba(255,255,255,.22);font-size:.78rem;text-align:center}
 
 /* Tab bar */
-.tabbar{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:536px;margin:0 auto;height:72px;z-index:20;
-  display:flex;align-items:center;justify-content:space-around;padding:0 6px;border-radius:28px;
-  background:var(--glass);border:1px solid var(--glass-bd);box-shadow:0 12px 34px rgba(12,30,18,.22);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5)}
-.tb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:58px;min-height:56px;border:0;border-radius:18px;background:none;color:var(--muted);font:600 .72rem var(--body)}
+.navbar{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:536px;margin:0 auto;z-index:20;display:flex;align-items:center;gap:8px}
+.tabbar,.tb-more{background:var(--glass);border:1px solid var(--glass-bd);box-shadow:0 12px 34px rgba(12,30,18,.22);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5)}
+.tabbar{flex:1;min-width:0;height:72px;display:flex;align-items:center;justify-content:space-around;padding:0 4px;border-radius:28px}
+/* More: its own round button, to the right of the bar */
+.tb-more{flex-shrink:0;width:58px;height:58px;border-radius:50%;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.tb-more svg{width:24px;height:24px}
+.tb-more[aria-current="page"]{color:var(--fern);border-color:var(--fern)}
+.tb-more:active{transform:scale(.95)}
+/* Five places plus the round More button: let the buttons share the width and keep labels on one line */
+.tabbar .tb{flex:1 1 0;min-width:0;font-size:.68rem;letter-spacing:-.01em;white-space:nowrap}
+.tabbar .tb-add{margin:0 2px}
+@media (max-width:380px){.navbar{left:8px;right:8px;gap:6px}.tabbar{padding:0 2px}.tb-more{width:52px;height:52px}.tabbar .tb-add{width:54px;height:54px}}
+.round-back[hidden]{display:none}
+.tb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:50px;min-height:56px;border:0;border-radius:18px;background:none;color:var(--muted);font:600 .72rem var(--body)}
 .tb svg{width:24px;height:24px}
 .tb[hidden]{display:none}
 .tb[aria-current="page"]{color:var(--fern)}
@@ -1053,7 +1063,7 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
         <div class="hero-top"><div class="hero-loc"><svg class="pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22s-7.5-6.6-7.5-12.2a7.5 7.5 0 0 1 15 0C19.5 15.4 12 22 12 22zm0-9.3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg><span id="heroPlace"></span></div>
           <div class="hero-btns">
             <button class="hb" id="heroAcct" data-tab="profile" aria-label="Your account" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c.8-3.8 3.9-6 7.5-6s6.7 2.2 7.5 6"/></svg></button>
-            <button class="hb" data-tab="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.6 2.3 2.8-.5.5 2.8 2.3 1.6-1.2 2.5 1.2 2.5-2.3 1.6-.5 2.8-2.8-.5L12 21.2l-1.6-2.3-2.8.5-.5-2.8-2.3-1.6L6 12.5 4.8 10l2.3-1.6.5-2.8 2.8.5z"/></svg></button>
+            
           </div></div>
         <button class="hero-now" id="heroNow" aria-label="Current weather, tap to refresh"></button>
         <div class="hero-chips" id="heroChips"></div>
@@ -1070,7 +1080,6 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 
     <section id="view-locations" hidden>
       <div class="page-title"><h2>Locations</h2><p id="locSub"></p></div>
-      <button class="glass all-plants" data-loc="all"><span class="ap-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/></svg></span><span class="ap-t"><b>All plants</b><small id="allCount"></small></span><span class="chev">›</span></button>
       <div class="locs" id="locList"></div>
     </section>
 
@@ -1284,12 +1293,15 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
   </div>
 </div>
 
-<nav class="tabbar" id="dial" aria-label="Menu">
-  <button class="tb" data-tab="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 11l8-6.5 8 6.5V20h-5v-5.5H9V20H4z"/></svg><span>Home</span></button>
-  <button class="tb" data-tab="locations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 21s-6.5-5.8-6.5-10.8a6.5 6.5 0 0 1 13 0C18.5 15.2 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg><span>Locations</span></button>
-  <button class="tb-add" id="addBtn" aria-label="Add plant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-  <button class="tb" data-tab="friends" id="friendsBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17" cy="9.5" r="2.5"/><path d="M16 14.2c2.9.2 5 2.3 5 5.3"/></svg><span>Community</span><i class="req-badge" id="reqBadge" hidden></i></button>
-  <button class="tb" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg><span>More</span></button>
+<nav class="navbar" id="dial" aria-label="Menu">
+  <div class="tabbar">
+    <button class="tb" data-tab="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 11l8-6.5 8 6.5V20h-5v-5.5H9V20H4z"/></svg><span>Home</span></button>
+    <button class="tb" data-tab="locations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 21s-6.5-5.8-6.5-10.8a6.5 6.5 0 0 1 13 0C18.5 15.2 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg><span>Locations</span></button>
+    <button class="tb-add" id="addBtn" aria-label="Add plant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button class="tb" data-tab="plants" data-all="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/></svg><span>Plants</span></button>
+    <button class="tb" data-tab="friends" id="friendsBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17" cy="9.5" r="2.5"/><path d="M16 14.2c2.9.2 5 2.3 5 5.3"/></svg><span>Community</span><i class="req-badge" id="reqBadge" hidden></i></button>
+  </div>
+  <button class="tb-more" data-tab="settings" aria-label="More: profile, settings and account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
 </nav>
 
 <dialog id="dlg">
@@ -2015,7 +2027,7 @@ const LOCS = () => isApt()
 function renderLocations(W){
   const el = $("#locList"); if(!el) return;
   const n = state.plants.length;
-  $("#allCount").textContent = `${n} ${n === 1 ? "plant" : "plants"}`;
+  if($("#allCount")) $("#allCount").textContent = `${n} ${n === 1 ? "plant" : "plants"}`;
   $("#locSub").textContent = isApt() ? "Two spaces, one home" : "Three spaces, one garden";
   const r0 = W && W.next.length ? dayRisks(W.next[0]) : {frost:[], heat:[]};
   el.innerHTML = LOCS().map(L => {
@@ -2239,11 +2251,18 @@ document.addEventListener("click", e => {
 
 /* ---------- The round menu ---------- */
 const dial = $("#dial");
-document.addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if(b) showTab(b.dataset.tab); });
-function showTab(tab){
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-tab]"); if(!b) return;
+  if(b.dataset.all){ idsFilter = null; plantFilter = "all"; }   // the Plants button always opens the whole list
+  showTab(b.dataset.tab, b.dataset.all ? "plants" : "");
+  if(b.dataset.all) renderPlants();
+});
+let plantsFrom = "locations";   // which bar button stays lit on the plant list: Plants, or Locations when a place was opened
+function showTab(tab, from){
   currentTab = tab;
+  if(tab === "plants"){ plantsFrom = from || "locations"; const rb = $("#view-plants .round-back"); if(rb) rb.hidden = plantsFrom === "plants"; }
   if(tab !== "plants") idsFilter = null;
-  const main = tab === "log" || tab === "profile" ? "settings" : tab === "friend" ? "friends" : tab === "plants" ? "locations" : tab;
+  const main = tab === "log" || tab === "profile" ? "settings" : tab === "friend" ? "friends" : tab === "plants" ? plantsFrom : tab;
   document.body.dataset.page = tab;
   document.querySelectorAll("#dial [data-tab]").forEach(b => { if(b.dataset.tab === main) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
   ["today","locations","plants","log","settings","profile","friends","friend"].forEach(t => $("#view-" + t).hidden = t !== tab);
