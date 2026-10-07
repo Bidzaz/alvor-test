@@ -1562,6 +1562,7 @@ body[data-page="friend"] .bg::after{background:linear-gradient(to bottom,rgba(8,
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="alerts.js"></script>
+<script src="sync.js"></script>
 <script src="species.js"></script>
 <script src="hardiness.js"></script>
 <script src="supabase.js"></script>
@@ -1785,7 +1786,27 @@ function saveLocal(){
   try{ localStorage.setItem(KEY, JSON.stringify(state)); }
   catch(e){ toast("Couldn't save. Export a backup to be safe."); }
 }
-function save(){ state.updatedAt = Date.now(); saveLocal(); queueSync(); }
+/* Sync bookkeeping (the rules are in sync.js): what changed or was deleted on this phone since the last save.
+   Kept apart from the garden, tied to the account it belongs to. */
+const META_KEY = "garden-sync-meta";
+let syncMetaCache = null;
+function syncMeta(){
+  const acct = state.account || null;
+  if(!syncMetaCache){ try{ syncMetaCache = JSON.parse(localStorage.getItem(META_KEY) || "null"); }catch(e){} }
+  if(!syncMetaCache || syncMetaCache.v !== 1 || syncMetaCache.account !== acct){
+    syncMetaCache = GS.fresh(acct, state.plants, state.settings, state.updatedAt || 0);
+    writeMeta(); saveLocal();
+  }
+  return syncMetaCache;
+}
+function writeMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(syncMetaCache)); }catch(e){} }
+/* After the app tidies its own data (on start, after a download): that isn't a change to send. */
+function rebaseSync(){ GS.rebase(syncMeta(), state.plants, state.settings); writeMeta(); }
+function save(){
+  state.updatedAt = Date.now();
+  GS.stamp(syncMeta(), state.plants, state.settings, Date.now()); writeMeta();
+  saveLocal(); queueSync();
+}
 function toast(msg){
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2200);
@@ -3158,8 +3179,8 @@ $("#importFile").addEventListener("change", async e => {
   e.target.value = "";
 });
 $("#resetBtn").addEventListener("click", () => {
-  if(!confirm("Delete all plants and history on this device? Export a backup first if you might want them back.")) return;
-  const s = state.settings; state = defaults(); state.settings = s; save();
+  if(!confirm(token ? "Delete all plants and history, on this phone and in your account? Export a backup first if you might want them back." : "Delete all plants and history on this device? Export a backup first if you might want them back.")) return;
+  const s = state.settings, acct = state.account; state = defaults(); state.settings = s; if(acct) state.account = acct; save();
   idb.clear().catch(() => {}); photos = {};
   render(); toast("Everything deleted");
 });
@@ -3582,12 +3603,14 @@ const sharedRow = p => ({id:p.id, owner_id:me.id, name:String(p.name || "").trim
   species:p.species ? String(p.species).slice(0, 120) : null, area:p.area ? String(p.area).slice(0, 40) : null,
   visibility:["friends","everyone","vault"].includes(p.visibility) ? p.visibility : "vault"});
 
-function applyServer(d){
-  const base = defaults(), {updatedAt, ...settings} = d.settings || {};
-  state.plants = d.plants || []; state.log = d.log || []; state.updatedAt = d.updatedAt || 0;
-  state.settings = {...base.settings, ...settings};
+/* Puts a merged garden on this phone (see syncGarden). */
+function applyMerged(m){
+  const base = defaults();
+  state.plants = m.plants.map(p => ({...p})); state.log = m.log;
+  state.settings = {...base.settings, ...m.settings};
   state.account = me && me.id;
   normalizePlants(); normalizeLocation(); useActiveLocation();
+  rebaseSync();
   saveLocal(); applyLook(); render(); if(currentTab === "settings") fillSettings();
 }
 function sessionExpired(){
@@ -3597,69 +3620,81 @@ function sessionExpired(){
 async function serverGarden(){
   return must(await sb.from("garden_private").select("settings,log").eq("owner_id", me.id).maybeSingle());
 }
-async function downloadGarden(gp){
+async function serverPlants(){
   const [priv, rows] = await Promise.all([
     sb.from("plant_private").select("plant_id,data").eq("owner_id", me.id).then(must),
     sb.from("plants").select("id,visibility").eq("owner_id", me.id).then(must)
   ]);
   const vis = Object.fromEntries(rows.map(r => [r.id, r.visibility]));
-  const plants = priv.filter(r => vis[r.plant_id])
+  return priv.filter(r => vis[r.plant_id])
     .map(r => ({...r.data, id:r.plant_id, visibility:vis[r.plant_id]}))
     .sort((a, b) => (a._i ?? 0) - (b._i ?? 0))
     .map(({_i, ...p}) => p);
-  applyServer({plants, log:gp.log || [], settings:gp.settings || {}, updatedAt:+(gp.settings || {}).updatedAt || 0});
 }
-async function uploadGarden(){
-  const ids = state.plants.map(p => p.id);
-  if(state.plants.length){
-    must(await sb.from("plants").upsert(state.plants.map(sharedRow)));
-    must(await sb.from("plant_private").upsert(state.plants.map((p, i) => ({plant_id:p.id, owner_id:me.id, data:{...p, _i:i}}))));
+/* Sends what the merge says the account is missing. Plants are only deleted when this or another
+   phone marked them as deleted, never because a phone simply doesn't have them. */
+async function uploadMerged(m){
+  const order = new Map(m.plants.map((p, i) => [p.id, i]));
+  if(m.upsert.length){
+    must(await sb.from("plants").upsert(m.upsert.map(sharedRow)));
+    must(await sb.from("plant_private").upsert(m.upsert.map(p => ({plant_id:p.id, owner_id:me.id, data:{...p, _i:order.get(p.id)}}))));
   }
-  let gone = sb.from("photos").select("id").eq("owner_id", me.id);   // plants deleted on this phone: their photo files
-  if(ids.length) gone = gone.not("plant_id", "in", `(${ids.join(",")})`);
-  const goneIds = must(await gone).map(r => r.id);
-  if(goneIds.length) must(await sb.storage.from("photos").remove(goneIds.flatMap(id => [phPath(id, "l"), phPath(id, "s")])));
-  let del = sb.from("plants").delete().eq("owner_id", me.id);   // ...and the plants themselves
-  if(ids.length) del = del.not("id", "in", `(${ids.join(",")})`);
-  must(await del);
+  const gone = m.removeFromServer.filter(id => UUID_RE.test(String(id)));
+  if(gone.length){
+    const rows = must(await sb.from("photos").select("id").eq("owner_id", me.id).in("plant_id", gone));
+    if(rows.length) must(await sb.storage.from("photos").remove(rows.flatMap(r => [phPath(r.id, "l"), phPath(r.id, "s")])));
+    must(await sb.from("plants").delete().eq("owner_id", me.id).in("id", gone));
+  }
   must(await sb.from("gardens").upsert({owner_id:me.id, home:state.settings.home === "apartment" ? "apartment" : "house",
     town:String(state.settings.place || "").slice(0, 60) || null}));
   // The backdrop friends see. A separate write, so a missing column (part 9 not run) can't stop the sync.
   try{ await sb.from("gardens").update({theme:publicLook()}).eq("owner_id", me.id); }catch(e){}
-  // Saved last: its timestamp says the whole garden is up to date.
-  must(await sb.from("garden_private").upsert({owner_id:me.id, settings:{...state.settings, updatedAt:state.updatedAt || 0},
-    log:state.log.slice(0, 1000)}));
+  // Saved last: its updatedAt is the account's revision, so other phones know something changed.
+  const rev = Date.now();
+  must(await sb.from("garden_private").upsert({owner_id:me.id,
+    settings:{...m.settings, updatedAt:rev, _sAt:m.sAt, _gone:m.gone}, log:m.log.slice(0, GS.LOG_SERVER)}));
+  return rev;
 }
-async function push(){
-  if(!token || !me) return false;
-  if(syncing) return syncing.then(push);
+/* Merges this phone and the account plant by plant (rules in sync.js), then updates whichever side needs it.
+   Cheap when nothing changed: one small read. */
+let syncAgain = false;
+function syncGarden(){
+  if(!token || !me) return Promise.resolve(false);
+  if(syncing){ syncAgain = true; return syncing; }
   syncing = (async () => {
     try{
-      const gp = await serverGarden();
-      const serverAt = gp ? +(gp.settings || {}).updatedAt || 0 : 0;
-      if(serverAt > (state.updatedAt || 0)) await downloadGarden(gp);   // another phone saved something newer
-      else await uploadGarden();
+      for(let round = 0; round < 3; round++){
+        const M = syncMeta(), n0 = M.n || 0;
+        const gp = await serverGarden();
+        const st = gp ? gp.settings || {} : null, rev = st ? +st.updatedAt || 0 : null;
+        if(gp && !M.dirty && rev === M.seenAt) break;   // nothing new on either side
+        const plants = gp ? await serverPlants() : [];
+        if(syncMeta() !== M || (M.n || 0) !== n0) continue;   // saved something meanwhile: start again
+        const legacy = rev || 0;   // rows saved before per-plant times existed
+        plants.forEach(p => { if(p._m == null) p._m = legacy; });
+        const S = gp ? {plants, gone:st._gone || {}, settings:st, sAt:st._sAt != null ? +st._sAt : legacy, log:gp.log || []} : null;
+        const m = GS.merge({plants:state.plants, gone:M.gone, settings:state.settings, sAt:M.sAt, log:state.log}, S, Date.now());
+        M.gone = m.gone; M.sAt = m.sAt; writeMeta();
+        if(m.localChanged) applyMerged(m);
+        const newRev = m.serverChanged ? await uploadMerged(m) : rev;
+        M.seenAt = newRev;
+        if((M.n || 0) === n0) M.dirty = false;
+        writeMeta();
+        break;
+      }
       setSync(`Saved to your account at ${hhmm()}.`); queuePhotoSync(); return true;
     }catch(e){
       if(isAuthErr(e)){ sessionExpired(); return false; }
       setSync(OFFLINE_MSG); return false;
-    }finally{ syncing = null; }
+    }finally{
+      syncing = null;
+      if(syncAgain){ syncAgain = false; queueSync(); }
+    }
   })();
   return syncing;
 }
-async function pull(){
-  if(!token || !me) return false;
-  try{
-    const gp = await serverGarden();
-    const serverAt = gp ? +(gp.settings || {}).updatedAt || 0 : 0;
-    if(gp && serverAt > (state.updatedAt || 0)) await downloadGarden(gp);
-    else if(!gp || (state.updatedAt || 0) > serverAt) return push();
-    setSync(`Saved to your account at ${hhmm()}.`); queuePhotoSync(); return true;
-  }catch(e){
-    if(isAuthErr(e)){ sessionExpired(); return false; }
-    setSync(OFFLINE_MSG); return false;
-  }
-}
+function push(){ return syncGarden(); }
+function pull(){ return syncGarden(); }
 function queueSync(){ if(!token) return; clearTimeout(syncTimer); syncTimer = setTimeout(push, 1500); }
 
 /* ---------- Photo sync ----------
@@ -3855,8 +3890,8 @@ async function signedIn(session){
   const otherAccount = state.account && !mine && !oldGarden;
   if(otherAccount){ try{ await idb.clear(); }catch(e){} photos = {}; writeDels([]); }
   if(gp){
-    if(!mine){ state = defaults(); state.account = me.id; }
-    await downloadGarden(gp);
+    if(!mine){ state = defaults(); state.account = me.id; saveLocal(); }
+    await syncGarden();   // merges: changes on this phone not yet sent are kept
   }else if(state.plants.length && (mine || oldGarden || !state.account)
       && confirm(`This phone has ${state.plants.length} ${state.plants.length === 1 ? "plant" : "plants"}. Move ${state.plants.length === 1 ? "it" : "them"} into this account?`)){
     state.account = me.id; state.updatedAt = Date.now(); saveLocal();
@@ -5354,6 +5389,7 @@ normalizeLocation(); useActiveLocation();
 try{ const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; if(tz && state.settings.tz !== tz){ state.settings.tz = tz; saveLocal(); } }catch(e){}
 if("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 const startIds = upgradeIds();
+rebaseSync();
 applyLook();
 render();
 upgradePhotoIds(startIds).then(loadPhotos);
