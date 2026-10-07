@@ -1,0 +1,63 @@
+/* Alvor · Themes: accent colours, backdrops and the Appearance card. */
+/* ===================== Themes: accent colours, backdrops, Appearance card ===================== */
+/* Accents never use blue, teal or orange: those mean cold, water and heat. */
+:root[data-accent="moss"]{--fern:#5C6B2A;--fern-soft:#ECEFD9}
+:root[data-accent="plum"]{--fern:#7A3D6A;--fern-soft:#F3E4EF}
+:root[data-accent="rose"]{--fern:#AD4A74;--fern-soft:#F8E3EC}
+:root[data-accent="graphite"]{--fern:#3E4A52;--fern-soft:#E4E8EB}
+@media (prefers-color-scheme: dark){
+  :root[data-accent="moss"]:not([data-theme="light"]){--fern:#B3C077;--fern-soft:#2A2F1B}
+  :root[data-accent="plum"]:not([data-theme="light"]){--fern:#D7A0C8;--fern-soft:#35212F}
+  :root[data-accent="rose"]:not([data-theme="light"]){--fern:#F0A3C2;--fern-soft:#3A2130}
+  :root[data-accent="graphite"]:not([data-theme="light"]){--fern:#C3CDD5;--fern-soft:#263038}
+}
+:root[data-accent="moss"][data-theme="dark"]{--fern:#B3C077;--fern-soft:#2A2F1B}
+:root[data-accent="plum"][data-theme="dark"]{--fern:#D7A0C8;--fern-soft:#35212F}
+:root[data-accent="rose"][data-theme="dark"]{--fern:#F0A3C2;--fern-soft:#3A2130}
+:root[data-accent="graphite"][data-theme="dark"]{--fern:#C3CDD5;--fern-soft:#263038}
+/* The glass panels take a faint tint of the accent */
+:root[data-accent]{--glass:color-mix(in srgb,var(--fern) 6%,rgba(255,255,255,.76))}
+@media (prefers-color-scheme: dark){:root[data-accent]:not([data-theme="light"]){--glass:color-mix(in srgb,var(--fern) 7%,rgba(20,24,24,.76))}}
+:root[data-accent][data-theme="dark"]{--glass:color-mix(in srgb,var(--fern) 7%,rgba(20,24,24,.76))}
+
+/* The + button keeps a deep shade of the accent in light and dark */
+:root[data-accent="moss"] .tb-add{background:radial-gradient(circle at 35% 30%,#7E8F3E,#46521F);box-shadow:0 8px 20px rgba(70,82,31,.45)}
+:root[data-accent="plum"] .tb-add{background:radial-gradient(circle at 35% 30%,#9A5689,#5A2B4E);box-shadow:0 8px 20px rgba(90,43,78,.45)}
+:root[data-accent="rose"] .tb-add{background:radial-gradient(circle at 35% 30%,#C9668F,#86344F);box-shadow:0 8px 20px rgba(134,52,79,.45)}
+:root[data-accent="graphite"] .tb-add{background:radial-gradient(circle at 35% 30%,#5E6B74,#2C353B);box-shadow:0 8px 20px rgba(44,53,59,.45)}
+/* A friend's garden lets their backdrop through behind the header and tiles */
+body[data-page="friend"] .bg::after{background:linear-gradient(to bottom,rgba(8,20,12,.30) 0,rgba(8,20,12,.04) 160px,color-mix(in srgb,var(--page) 70%,transparent) 400px,var(--page) 560px)}
+
+/* Appearance card */
+.look-row{display:flex;gap:10px;overflow-x:auto;padding:6px 6px 8px;margin:6px -6px 0;scrollbar-width:none}
+.look-row::-webkit-scrollbar{display:none}
+.bgt{flex:0 0 auto;width:74px;border:0;background:none;padding:0;color:var(--ink);font:inherit;text-align:center}
+.bgt .im{display:block;width:74px;height:112px;border-radius:16px;background:var(--fern-soft) center/cover no-repeat;position:relative;
+  outline:2px solid transparent;outline-offset:2px;transition:outline-color .2s}
+.bgt[aria-pressed="true"] .im{outline-color:var(--fern)}
+.bgt[aria-pressed="true"] .im::after{content:"";position:absolute;right:6px;top:6px;width:20px;height:20px;border-radius:50%;
+  background:var(--fern) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/13px no-repeat;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.bgt small{display:block;margin-top:6px;font-size:12px;font-weight:600;color:var(--muted)}
+.bgt[aria-pressed="true"] small{color:var(--ink)}
+.bgt.add .im{display:flex;align-items:center;justify-content:center;border:1.5px dashed color-mix(in srgb,var(--ink) 28%,transparent);background:transparent;color:var(--muted)}
+.bgt.add .im svg{width:24px;height:24px}
+.acc-row{display:flex;gap:14px;margin:12px 0 4px;flex-wrap:wrap}
+.acc{width:34px;height:34px;border-radius:50%;border:0;padding:0;background:var(--c);position:relative;outline:2px solid transparent;outline-offset:3px}
+.acc[aria-pressed="true"]{outline-color:var(--c)}
+.acc span{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:7px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.acc-row{padding-bottom:18px}
+.look-own{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.look-h{font-size:14px;font-weight:700;margin:18px 0 0}
+.look-h:first-of-type{margin-top:6px}
+
+/* Own photo: pick from plants, then tap where the light is */
+#bgPickDlg .bp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#bgPickDlg .bp-grid button{border:0;padding:0;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--fern-soft)}
+#bgPickDlg .bp-grid img{width:100%;height:100%;object-fit:cover;display:block}
+.bge-wrap{text-align:center}
+.bge-stage{position:relative;display:inline-block;vertical-align:top;max-width:100%;border-radius:18px;overflow:hidden;background:#0d1410;touch-action:manipulation;cursor:crosshair;user-select:none}
+.bge-stage img{display:block;max-width:100%;max-height:56vh;width:auto;height:auto;pointer-events:none}
+.bge-dot{position:absolute;width:120px;height:120px;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,244,200,.85),rgba(255,214,140,.32) 45%,transparent 72%);mix-blend-mode:screen;animation:sunbreath 8s ease-in-out infinite}
+.bge-dot::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.bge-dot[hidden]{display:none}

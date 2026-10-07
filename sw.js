@@ -29,7 +29,8 @@ self.addEventListener("notificationclick", e => {
   })());
 });
 
-/* Network first, so updates show up right away; falls back to the last copy when offline. */
+/* Network first, so updates show up right away; falls back to the last copy when offline.
+   Files asked for with ?v= keep only their newest copy. */
 const CACHE = "garden-v1";
 self.addEventListener("fetch", e => {
   const req = e.request;
@@ -37,7 +38,12 @@ self.addEventListener("fetch", e => {
   e.respondWith((async () => {
     try{
       const res = await fetch(req);
-      if(res.ok){ const c = await caches.open(CACHE); c.put(req, res.clone()); }
+      if(res.ok){
+        const c = await caches.open(CACHE), u = new URL(req.url);
+        await c.put(req, res.clone());
+        if(u.searchParams.has("v"))   // a newer version of a file: forget the older copies
+          for(const k of await c.keys()){ const o = new URL(k.url); if(o.pathname === u.pathname && o.search !== u.search) c.delete(k); }
+      }
       return res;
     }catch(err){
       const hit = await caches.match(req);
