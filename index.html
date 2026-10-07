@@ -1035,6 +1035,17 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 /* --img is the chosen style's picture; if that file is missing, Classic's (--img0) shows through underneath */
 .loc:not(.has-img),.fl-tile:not(.has-img){background:var(--img,none) center/cover,var(--img0,none) center/cover,linear-gradient(135deg,var(--c1),var(--c2))}
 .loc:not(.has-img)::before{background:linear-gradient(100deg,rgba(8,18,12,.55),rgba(8,18,12,.12) 72%)}
+/* Your own picture of a location: the small round button on the card's corner */
+.loc-pic{position:absolute;top:10px;right:10px;z-index:1;width:32px;height:32px;padding:0;border-radius:50%;border:1px solid rgba(255,255,255,.4);color:#fff;
+  display:flex;align-items:center;justify-content:center;background:rgba(14,28,20,.38);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.loc-pic svg{width:17px;height:17px}
+.loc-pic.on svg{width:15px;height:15px}
+.loc .chev{margin-top:20px}
+.lp-prev{position:relative;aspect-ratio:2;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,var(--c1),var(--c2)) center/cover}
+.lp-prev img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.lp-btns{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.lp-btns .btn{padding:11px 16px}
+.lp-btns .btn[hidden]{display:none}
 
 
 /* Plants: small tiles, four a row */
@@ -1506,6 +1517,20 @@ body[data-page="friend"] .bg::after{background:linear-gradient(to bottom,rgba(8,
   <div class="dlg-f"><button class="btn" id="bgeCancel">Cancel</button><button class="btn primary" id="bgeSave">Use this photo</button></div>
 </dialog>
 
+<dialog id="locPicDlg">
+  <div class="dlg-h"><h2 id="lpTitle">Your photo</h2><button class="btn small" id="lpClose">Close</button></div>
+  <div class="dlg-b">
+    <div class="lp-prev" id="lpPrev"></div>
+    <div class="lp-btns">
+      <button class="btn primary" id="lpPhone">From the phone</button>
+      <button class="btn" id="lpPlants">From my plant photos</button>
+      <button class="btn danger" id="lpReset">Back to the style picture</button>
+    </div>
+    <input type="file" id="lpFile" accept="image/*" hidden>
+    <p class="status" id="lpNote"></p>
+  </div>
+</dialog>
+
 <dialog id="delDlg">
   <div class="dlg-h"><h2>Delete your account?</h2><button class="btn small" id="delClose">Close</button></div>
   <div class="dlg-b">
@@ -1567,6 +1592,7 @@ const ICON = {
   clock:SV('<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4.2h4.2"/><path d="M12 7.5V12l3 2"/>'),
   gear:SV('<circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.6 2.3 2.8-.5.5 2.8 2.3 1.6-1.2 2.5 1.2 2.5-2.3 1.6-.5 2.8-2.8-.5L12 21.2l-1.6-2.3-2.8.5-.5-2.8-2.3-1.6L6 12.5 4.8 10l2.3-1.6.5-2.8 2.8.5z"/>'),
   plus:SV('<path d="M12 5v14M5 12h14"/>'),
+  camera:SV('<path d="M4 8.5h3.2L9 6h6l1.8 2.5H20V19H4z"/><circle cx="12" cy="13.3" r="3.4"/>'),
   drop:SV('<path d="M12 3.5s6 6.4 6 10.6a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5z"/>'),
   snow:SV('<path d="M12 2.5v19M3.8 7.2l16.4 9.6M3.8 16.8l16.4-9.6"/><path d="M9.5 3.8 12 6l2.5-2.2M9.5 20.2 12 18l2.5 2.2"/>'),
   heat:SV('<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a3.5 3.5 0 1 0 4 0z"/><path d="M12 8v8"/><path d="M18 5.5h2.5M18 9h2.5"/>'),
@@ -2195,8 +2221,10 @@ function renderLocations(W){
     });
     if(L.k === "greenhouse"){ const g = list.filter(p => p.pattern === "greenhouse").length; if(g) spots.push({f:"greenhouse", icon:"snow", label:"Wintering guests", c:g}); }
     const status = risk ? `<span class="lchip frost">${ICON.snow}${risk} at risk tonight</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${thirsty} need water</span>` : "";
-    return `<div class="loc loc-${L.k} ${list.length ? "" : "empty"}" style="${locStyle(look().style, L.k)}">
-      <span class="loc-art">${ICON[L.icon]}</span>
+    const mine = locPicSrc(L.k), canPic = online && !!me && !!token;
+    return `<div class="loc loc-${L.k} ${list.length ? "" : "empty"} ${mine ? "has-img" : ""}" style="${mine ? "" : locStyle(look().style, L.k)}">
+      ${mine ? `<img class="loc-img" src="${mine}" alt="">` : `<span class="loc-art">${ICON[L.icon]}</span>`}
+      ${canPic ? `<button class="loc-pic ${look().locs && look().locs[L.k] ? "on" : ""}" data-locpic="${L.k}" aria-label="${look().locs && look().locs[L.k] ? "Change" : "Add"} your own ${L.label.toLowerCase()} photo">${look().locs && look().locs[L.k] ? ICON.camera : ICON.plus}</button>` : ""}
       <button class="loc-main" data-loc="${L.k === "garden" ? "garden" : L.areas[0]}" aria-label="${L.label}: ${list.length} plants">
         <span class="loc-ic">${ICON[L.icon]}</span>
         <span class="loc-t"><b>${L.label}</b><small>${L.sub} · ${list.length ? `${list.length} ${list.length === 1 ? "plant" : "plants"}` : "no plants yet"}</small></span>
@@ -2210,6 +2238,7 @@ function renderLocations(W){
 const LOC_TITLE = {all:"All plants", garden:"Garden", house:"House", greenhouse:"Greenhouse", balcony:"Balcony", porch:"Porch", outside:"Open garden", vault:"Only me"};
 const plantsTitle = () => idsFilter ? "Selected plants" : LOC_TITLE[plantFilter] || (ZONES[plantFilter] ? ZONES[plantFilter].label : "Plants");
 $("#view-locations").addEventListener("click", e => {
+  const pic = e.target.closest("[data-locpic]"); if(pic){ openLocPic(pic.dataset.locpic); return; }
   const b = e.target.closest("[data-loc]"); if(!b) return;
   idsFilter = null; plantFilter = b.dataset.loc;
   showTab("plants"); renderPlants();
@@ -4211,7 +4240,7 @@ async function openFriend(id){
   if(!online || !token || !me || !id) return;
   visit = {id, loading:true, filter:"all", prof:findPerson(id)};
   showTab("friend");
-  friendLook(id).then(F => { if(visit && visit.id === id){ visit.bgSpec = F.spec; visit.style = F.style; if(currentTab === "friend"){ applyLook(); renderFriend(); } } }).catch(() => {});
+  friendLook(id).then(F => { if(visit && visit.id === id){ visit.bgSpec = F.spec; visit.style = F.style; visit.locUrls = F.locs || {}; if(currentTab === "friend"){ applyLook(); renderFriend(); } } }).catch(() => {});
   try{
     await loadCircle();
     const [prof, garden, plants, phs] = await Promise.all([
@@ -4247,7 +4276,8 @@ function friendScene(V, home){
   return `<div class="fl-tiles">${tiles.map(a => {
     const list = V.plants.filter(x => x.area === a);
     const k = a === "outside" ? "garden" : a, label = a === "outside" ? "Garden" : fAreaLabel(a, home);
-    return `<button class="fl-tile loc-${k}" data-gact="area" data-a="${a}" aria-pressed="${V.filter === a}" aria-label="${esc(label)}: ${plantsWord(list.length)}" style="${locStyle(V.style || "classic", k)}">
+    const own = V.locUrls && V.locUrls[k];
+    return `<button class="fl-tile loc-${k} ${own ? "has-img" : ""}" data-gact="area" data-a="${a}" aria-pressed="${V.filter === a}" aria-label="${esc(label)}: ${plantsWord(list.length)}" style="${own ? "" : locStyle(V.style || "classic", k)}">${own ? `<img src="${esc(own)}" alt="">` : ""}
       <span class="fl-art">${ICON[a]}</span>
       <span class="fl-t"><span class="fl-ic">${ICON[a]}</span><b>${esc(label)}</b><small>${plantsWord(list.length)}</small></span></button>`;
   }).join("")}</div>`;
@@ -5082,19 +5112,28 @@ async function applyLook(){
 }
 /* Sent to gardens.theme with each save: only the backdrop. */
 const publicLook = () => { const L = look(), style = STYLES.some(x => x.k === L.style) ? L.style : "classic";
-  return L.bg === "own" && L.own ? {style, bg:"own", path:L.own.path, x:L.own.x, y:L.own.y, sun:!!L.own.sun} : {style, bg:"style"}; };
+  const locs = L.locs && Object.keys(L.locs).length ? {locs:L.locs} : {};
+  return L.bg === "own" && L.own ? {style, bg:"own", path:L.own.path, x:L.own.x, y:L.own.y, sun:!!L.own.sun, ...locs} : {style, bg:"style", ...locs}; };
 /* A friend's look: {style, spec}. Their location tiles follow their style too. */
 async function friendLook(id){
   const r = await sb.from("gardens").select("theme").eq("owner_id", id).maybeSingle();
   const t = r && !r.error && r.data && r.data.theme;
-  if(!t) return {style:"classic", spec:null};
+  if(!t) return {style:"classic", spec:null, locs:{}};
+  const locs = {};   // their own location photos, as short-lived links
+  const lk = t.locs && typeof t.locs === "object" ? Object.keys(t.locs).filter(k => typeof t.locs[k] === "string") : [];
+  if(lk.length){
+    try{
+      const u = await sb.storage.from("backdrops").createSignedUrls(lk.map(k => t.locs[k]), 3600);
+      (u && u.data || []).forEach((x, i) => { if(x && x.signedUrl) locs[lk[i]] = x.signedUrl; });
+    }catch(e){}
+  }
   let style = STYLES.some(x => x.k === t.style) ? t.style : "classic";
   if(style !== "classic"){ try{ await imgSize(styleOf(style).bg); }catch(e){ style = "classic"; } }   // not on this version of the app
   if(t.bg === "own" && t.path){
     const u = await sb.storage.from("backdrops").createSignedUrl(t.path, 3600);
-    if(u && u.data && u.data.signedUrl) return {style, spec:ownSpec(t, u.data.signedUrl)};
+    if(u && u.data && u.data.signedUrl) return {style, spec:ownSpec(t, u.data.signedUrl), locs};
   }
-  return {style, spec:style === "classic" ? null : styleSpec(style)};
+  return {style, spec:style === "classic" ? null : styleSpec(style), locs};
 }
 function setLook(patch){
   state.settings.look = {...look(), ...patch};
@@ -5197,16 +5236,19 @@ $("#ownFile").addEventListener("change", async e => {
   catch(err){ toast("Couldn't use that photo"); }
   finally{ URL.revokeObjectURL(url); }
 });
-$("#ownFromPlants").addEventListener("click", () => {
+$("#ownFromPlants").addEventListener("click", () => { locPicFor = null; openPlantPicker(); });
+function openPlantPicker(){
   const list = Object.values(photos).flat().filter(ph => ph && ph.data).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 90);
   $("#bpGrid").innerHTML = list.map(ph => `<button data-bp="${esc(ph.id)}" aria-label="Use this photo"><img src="${ph.data}" alt="" loading="lazy"></button>`).join("");
   bgPickDlg.showModal();
-});
+}
 $("#bgPickClose").addEventListener("click", () => bgPickDlg.close());
+bgPickDlg.addEventListener("close", () => { if(!locPicDlg.open) locPicFor = null; });
 $("#bpGrid").addEventListener("click", async e => {
   const b = e.target.closest("[data-bp]"); if(!b) return;
   const ph = Object.values(photos).flat().find(x => x && x.id === b.dataset.bp); if(!ph) return;
   const plant = state.plants.find(p => p.id === ph.plantId);
+  if(locPicFor){ const k = locPicFor; bgPickDlg.close(); toast("Saving photo…"); saveLocPic(k, ph.data); return; }
   try{
     const data = await shrinkForBackdrop(ph.data);
     bgPickDlg.close();
@@ -5223,6 +5265,88 @@ $("#ownRemove").addEventListener("click", () => {
   if(sb && token && o.path) sb.storage.from("backdrops").remove([o.path]).catch(() => {});
   keepOwnCache(null); ownOpen = false;
   setLook({bg:"style", own:null});
+});
+
+/* ---------- Your own location pictures ----------
+   look().locs = {house:"<user id>/loc-house-<time>.jpg", ...}: saved with the settings (same on every phone),
+   files in the "backdrops" bucket, and friends see them on your location tiles. No entry = the style's picture. */
+const LOC_PIC_KEY = "alvor-locpics";   // this phone's copies: {path: data}
+let locPicCache = (() => { try{ return JSON.parse(localStorage.getItem(LOC_PIC_KEY) || "{}") || {}; }catch(e){ return {}; } })();
+const locPicLoading = new Set();
+function keepLocPics(){
+  const keep = new Set(Object.values(look().locs || {}));
+  Object.keys(locPicCache).forEach(p => { if(!keep.has(p)) delete locPicCache[p]; });
+  try{ localStorage.setItem(LOC_PIC_KEY, JSON.stringify(locPicCache)); }catch(e){ /* too big: fetched again next time */ }
+}
+/* The picture to show, or null (and fetch it from the account if this phone doesn't have it yet). */
+function locPicSrc(k){
+  const path = look().locs && look().locs[k]; if(!path) return null;
+  if(locPicCache[path]) return locPicCache[path];
+  if(sb && token && !locPicLoading.has(path)){
+    locPicLoading.add(path);
+    sb.storage.from("backdrops").download(path).then(r => must(r)).then(blobToData).then(data => {
+      locPicCache[path] = data; keepLocPics(); if(currentTab === "locations") render();
+    }).catch(() => {}).finally(() => locPicLoading.delete(path));
+  }
+  return null;
+}
+const locPicDlg = $("#locPicDlg");
+let locPicFor = null, locPicBusy = false;
+const locLabel = k => (LOCS().find(L => L.k === k) || {label:"Location"}).label;
+function openLocPic(k){
+  locPicFor = k;
+  const has = !!(look().locs && look().locs[k]), src = locPicSrc(k), st = styleOf(look().style);
+  $("#lpTitle").textContent = `${locLabel(k)} photo`;
+  const prev = $("#lpPrev");
+  prev.className = `lp-prev loc-${k}`;
+  prev.style.cssText = src ? "" : locStyle(look().style, k).replace("--img:", "background-image:");
+  prev.innerHTML = src ? `<img src="${src}" alt="">` : "";
+  $("#lpPhone").textContent = has ? "Change: from the phone" : "From the phone";
+  $("#lpPlants").textContent = has ? "Change: my plant photos" : "From my plant photos";
+  $("#lpPlants").hidden = !Object.values(photos).some(l => l.length);
+  $("#lpReset").hidden = !has;
+  $("#lpReset").textContent = `Back to the ${st.label} picture`;
+  $("#lpNote").textContent = `Friends see this photo on your ${locLabel(k)} tile when they visit your garden.`;
+  [$("#lpPhone"), $("#lpPlants"), $("#lpReset")].forEach(b => b.disabled = false);
+  locPicDlg.showModal();
+}
+async function saveLocPic(k, src){
+  if(!k || !me || !token || locPicBusy) return;
+  locPicBusy = true;
+  [$("#lpPhone"), $("#lpPlants"), $("#lpReset")].forEach(b => b.disabled = true);
+  $("#lpNote").textContent = "Saving…";
+  try{
+    const data = (await drawJpeg(src, 1400, 0.82)).toDataURL("image/jpeg", 0.82);
+    const path = `${me.id}/loc-${k}-${Date.now()}.jpg`;
+    must(await sb.storage.from("backdrops").upload(path, await dataToBlob(data), {contentType:"image/jpeg", upsert:false}));
+    const old = look().locs && look().locs[k];
+    if(old) sb.storage.from("backdrops").remove([old]).catch(() => {});
+    locPicCache[path] = data;
+    setLook({locs:{...(look().locs || {}), [k]:path}}); keepLocPics();
+    locPicDlg.close(); render(); toast(`${locLabel(k)} photo saved`);
+  }catch(err){
+    if(isAuthErr(err)){ locPicDlg.close(); sessionExpired(); return; }
+    toast("Couldn't save the photo. Check your connection and try again.");
+    $("#lpNote").textContent = "";
+    [$("#lpPhone"), $("#lpPlants"), $("#lpReset")].forEach(b => b.disabled = false);
+  }finally{ locPicBusy = false; }
+}
+$("#lpClose").addEventListener("click", () => locPicDlg.close());
+locPicDlg.addEventListener("close", () => { if(!bgPickDlg.open) locPicFor = null; });
+$("#lpPhone").addEventListener("click", () => $("#lpFile").click());
+$("#lpFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = ""; if(!f || !locPicFor) return;
+  const url = URL.createObjectURL(f);
+  try{ await saveLocPic(locPicFor, url); }
+  finally{ URL.revokeObjectURL(url); }
+});
+$("#lpPlants").addEventListener("click", () => { const k = locPicFor; locPicDlg.close(); locPicFor = k; openPlantPicker(); });
+$("#lpReset").addEventListener("click", () => {
+  const k = locPicFor, path = look().locs && look().locs[k]; if(!path) return;
+  if(sb && token) sb.storage.from("backdrops").remove([path]).catch(() => {});
+  const locs = {...look().locs}; delete locs[k];
+  setLook({locs}); keepLocPics();
+  locPicDlg.close(); render();
 });
 
 /* ---------- Start ---------- */
