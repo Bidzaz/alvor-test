@@ -1,4 +1,6 @@
-/* Garden alert engine. Shared by the app (browser) and the daily check (server). */
+/* Garden alert engine. Shared by the app (browser) and the daily check (server).
+   Its texts are in English in the code and in Spanish in ES below (the server has no other tables);
+   the app sets the language with setLang, the server passes ctx.lang for each person. */
 (function(root, factory){
   const lib = factory();
   if(typeof module === "object" && module.exports) module.exports = lib;
@@ -33,6 +35,40 @@ const PRESETS = [
   {s:"Monstera deliciosa",min:12,pat:"indoor",ws:7,ww:14,note:""},
   {s:"Ficus lyrata",min:12,pat:"indoor",ws:7,ww:14,note:""}
 ];
+/* Spanish (Spain, "tú"). Another language: add a table like this one and list it in TABLES. */
+const ES = {
+  "today":"hoy", "tomorrow":"mañana", "tonight":"esta noche",
+  "Bring inside":"Meter dentro", "Cold is coming that these can't take outside.":"Llega un frío que estas plantas no aguantan fuera.",
+  "Move to the greenhouse":"Pasar al invernadero",
+  "Protect in the greenhouse":"Proteger en el invernadero", "The greenhouse could drop to about {t}. Add fleece or turn on a heater.":"El invernadero podría bajar a unos {t}. Pon manta térmica o enciende un calefactor.",
+  "Shelter the pots":"Resguardar las macetas", "Move them against a house wall, lift them off the ground and wrap the pots.":"Ponlas contra una pared de la casa, sepáralas del suelo y envuelve las macetas.",
+  "Protect plants in the ground":"Proteger las plantas en tierra", "Fleece and mulch. Check each plant's note.":"Manta térmica y acolchado. Mira la nota de cada planta.",
+  "{t} {when}, takes {min}":"{t} {when}, aguanta {min}",
+  "Get ready to move soon":"Prepárate para moverlas pronto", "Nights are getting close to their limit later this week.":"Las noches se acercan a su límite a finales de semana.",
+  "Safe to move outside":"Ya pueden salir fuera", "No night this week drops below {t}.":"Ninguna noche de esta semana baja de {t}.", "takes {t}":"aguanta {t}",
+  "Hot spell":"Ola de calor", "{t} {when}. Water these early in the morning and give them shade where you can.":"{t} {when}. Riégalas temprano por la mañana y dales sombra donde puedas.",
+  "pot in partial sun":"maceta a semisombra", "pot in the sun":"maceta al sol",
+  "Open the greenhouse":"Abre el invernadero", "Outside will reach {t}; the greenhouse gets much hotter. Open vents or the door.":"Fuera llegará a {t}; el invernadero se calienta mucho más. Abre las ventanas o la puerta.",
+  "in the greenhouse":"en el invernadero",
+  "Strong gusts":"Rachas fuertes", "Up to {n} km/h {when}. Secure pots, stake tall plants, close the greenhouse.":"Hasta {n} km/h {when}. Sujeta las macetas, entutora las plantas altas y cierra el invernadero.",
+  "pot":"maceta", "in the ground":"en tierra",
+  "not logged yet":"sin registrar aún", "{n} days, every {iv}":"{n} días, cada {iv}",
+  "Skip these, rain is coming":"No las riegues, viene lluvia", "About {n} mm expected over the next two days.":"Se esperan unos {n} mm en los próximos dos días.",
+  "Needs water":"Necesita agua",
+  "{list} and {n} more":"{list} y {n} más",
+  "Cold tonight: down to {t}":"Frío esta noche: hasta {t}",
+  "{lo} to {hi}, {rain} mm rain":"De {lo} a {hi}, {rain} mm de lluvia", "{lo} to {hi}, dry":"De {lo} a {hi}, sin lluvia",
+  "Nothing to do in the garden today":"Hoy no hay nada que hacer en el jardín",
+  "Frost warning: down to {t}":"Aviso de helada: hasta {t}", "Low temperature warning: down to {t}":"Aviso de frío: hasta {t}",
+  "1 thing to do in the garden":"1 cosa que hacer en el jardín", "{n} things to do in the garden":"{n} cosas que hacer en el jardín"
+};
+const TABLES = {es:ES}, LOCALES = {en:"en-GB", es:"es-ES"};
+let lang = "en";
+function setLang(l){ lang = TABLES[l] ? l : "en"; }
+function T(s, v){
+  const r = (TABLES[lang] && TABLES[lang][s]) || s;
+  return v ? r.replace(/\{(\w+)\}/g, (m, k) => k in v ? v[k] : m) : r;
+}
 const LOC = {inside:"Inside", outside:"Outside", greenhouse:"Greenhouse"};
 const ALLOWED = {indoor:["inside"], outdoor:["outside"], mover:["outside","inside"], greenhouse:["outside","greenhouse"]};
 
@@ -42,9 +78,9 @@ const daysBetween = (a, b) => Math.round((utc(b) - utc(a)) / 86400000);
 const presetFor = s => PRESETS.find(p => p.s.toLowerCase() === String(s || "").trim().toLowerCase());
 function when(date, today){
   const n = daysBetween(today, date);
-  if(n === 0) return "today";
-  if(n === 1) return "tomorrow";
-  return new Date(utc(date)).toLocaleDateString("en-GB", {weekday:"long", timeZone:"UTC"});
+  if(n === 0) return T("today");
+  if(n === 1) return T("tomorrow");
+  return new Date(utc(date)).toLocaleDateString(LOCALES[lang] || "en-GB", {weekday:"long", timeZone:"UTC"});
 }
 
 function splitWeather(daily, today){
@@ -92,6 +128,7 @@ const RANK = {danger:0, warn:1, heat:2, wind:3, water:4, info:5};
 
 /* ctx: {settings, daily, today:"YYYY-MM-DD", month:1-12, mode:"full"|"evening"} */
 function compute(plants, ctx){
+  if(ctx.lang) setLang(ctx.lang);
   const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today), groups = {};
   const evening = ctx.mode === "evening";
   const add = (key, base, item) => {
@@ -113,17 +150,17 @@ function compute(plants, ctx){
       const level = worst.t < +p.minTemp ? "danger" : "warn";
       let key, base;
       if(p.current === "outside" && p.planting === "pot" && (p.pattern === "mover" || p.pattern === "indoor"))
-        {key = "bringIn"; base = {title:"Bring inside", text:"Cold is coming that these can't take outside.", move:"inside"};}
+        {key = "bringIn"; base = {title:T("Bring inside"), text:T("Cold is coming that these can't take outside."), move:"inside"};}
       else if(p.current === "outside" && p.planting === "pot" && p.pattern === "greenhouse")
-        {key = "toGh"; base = {title:"Move to the greenhouse", text:"Cold is coming that these can't take outside.", move:"greenhouse"};}
+        {key = "toGh"; base = {title:T("Move to the greenhouse"), text:T("Cold is coming that these can't take outside."), move:"greenhouse"};}
       else if(p.current === "greenhouse")
-        {key = "ghProtect"; base = {title:"Protect in the greenhouse", text:`The greenhouse could drop to about ${deg(worst.t)}. Add fleece or turn on a heater.`};}
+        {key = "ghProtect"; base = {title:T("Protect in the greenhouse"), text:T("The greenhouse could drop to about {t}. Add fleece or turn on a heater.", {t:deg(worst.t)})};}
       else if(p.planting === "pot")
-        {key = "potProtect"; base = {title:"Shelter the pots", text:"Move them against a house wall, lift them off the ground and wrap the pots."};}
+        {key = "potProtect"; base = {title:T("Shelter the pots"), text:T("Move them against a house wall, lift them off the ground and wrap the pots.")};}
       else
-        {key = "groundProtect"; base = {title:"Protect plants in the ground", text:"Fleece and mulch. Check each plant's note."};}
-      const whenTxt = evening ? "tonight" : when(worst.date, ctx.today);
-      add(key, {...base, level}, {p, t:worst.t, why:`${deg(worst.t)} ${whenTxt}, takes ${deg(p.minTemp)}`});
+        {key = "groundProtect"; base = {title:T("Protect plants in the ground"), text:T("Fleece and mulch. Check each plant's note.")};}
+      const whenTxt = evening ? T("tonight") : when(worst.date, ctx.today);
+      add(key, {...base, level}, {p, t:worst.t, why:T("{t} {when}, takes {min}", {t:deg(worst.t), when:whenTxt, min:deg(p.minTemp)})});
     }
 
     if(!evening){
@@ -132,15 +169,15 @@ function compute(plants, ctx){
         const movable = p.pattern === "mover" || p.pattern === "greenhouse";
         if(p.current === "outside" && p.planting === "pot" && movable && ctx.month >= 8 && ctx.month <= 11){
           const hit = W.next.slice(3).find(d => d.min < coldLimit(p, s) + 2);
-          if(hit) add("plan", {level:"info", title:"Get ready to move soon", text:"Nights are getting close to their limit later this week."},
+          if(hit) add("plan", {level:"info", title:T("Get ready to move soon"), text:T("Nights are getting close to their limit later this week.")},
             {p, why:`${deg(hit.min)} ${when(hit.date, ctx.today)}`});
         }
         const sheltered = (p.current === "inside" && p.pattern === "mover") || (p.current === "greenhouse" && p.pattern === "greenhouse");
         if(sheltered && ctx.month >= 3 && ctx.month <= 6 && W.next.length){
           const lowest = Math.min(...W.next.map(d => d.min));
           if(lowest >= +p.minTemp + +s.margin + 3)
-            add("goOut", {level:"info", title:"Safe to move outside", text:`No night this week drops below ${deg(lowest)}.`, move:"outside"},
-              {p, why:`takes ${deg(p.minTemp)}`});
+            add("goOut", {level:"info", title:T("Safe to move outside"), text:T("No night this week drops below {t}.", {t:deg(lowest)}), move:"outside"},
+              {p, why:T("takes {t}", {t:deg(p.minTemp)})});
         }
       }
 
@@ -148,17 +185,17 @@ function compute(plants, ctx){
       if(hottest && hottest.max >= +s.heat){
         plants.filter(p => p.current === "outside" && p.planting === "pot" &&
           (p.sun === "full" || p.sun === true || p.sun === undefined || (p.sun === "partial" && hottest.max >= +s.heat + 3))).forEach(p =>
-          add("heat", {level:"heat", title:"Hot spell", text:`${deg(hottest.max)} ${when(hottest.date, ctx.today)}. Water these early in the morning and give them shade where you can.`}, {p, why:p.sun === "partial" ? "pot in partial sun" : "pot in the sun"}));
+          add("heat", {level:"heat", title:T("Hot spell"), text:T("{t} {when}. Water these early in the morning and give them shade where you can.", {t:deg(hottest.max), when:when(hottest.date, ctx.today)})}, {p, why:p.sun === "partial" ? T("pot in partial sun") : T("pot in the sun")}));
       }
       if(hottest && hottest.max + 8 >= 35){
         plants.filter(p => p.current === "greenhouse").forEach(p =>
-          add("vent", {level:"heat", title:"Open the greenhouse", text:`Outside will reach ${deg(hottest.max)}; the greenhouse gets much hotter. Open vents or the door.`}, {p, why:"in the greenhouse"}));
+          add("vent", {level:"heat", title:T("Open the greenhouse"), text:T("Outside will reach {t}; the greenhouse gets much hotter. Open vents or the door.", {t:deg(hottest.max)})}, {p, why:T("in the greenhouse")}));
       }
       const windy = look.reduce((a, d) => !a || d.gust > a.gust ? d : a, null);
       if(windy && windy.gust >= +s.wind){
         plants.filter(p => p.current === "outside").forEach(p =>
-          add("wind", {level:"wind", title:"Strong gusts", text:`Up to ${Math.round(windy.gust)} km/h ${when(windy.date, ctx.today)}. Secure pots, stake tall plants, close the greenhouse.`},
-            {p, why:p.planting === "pot" ? "pot" : "in the ground"}));
+          add("wind", {level:"wind", title:T("Strong gusts"), text:T("Up to {n} km/h {when}. Secure pots, stake tall plants, close the greenhouse.", {n:Math.round(windy.gust), when:when(windy.date, ctx.today)})},
+            {p, why:p.planting === "pot" ? T("pot") : T("in the ground")}));
       }
     }
   }
@@ -168,11 +205,11 @@ function compute(plants, ctx){
     for(const p of plants){
       const st = waterStatus(p, W, ctx);
       if(!st.due) continue;
-      const why = st.days === null ? "not logged yet" : `${st.days} days, every ${st.iv}`;
+      const why = st.days === null ? T("not logged yet") : T("{n} days, every {iv}", {n:st.days, iv:st.iv});
       if(exposedToRain(p) && soon >= +s.rain)
-        add("rainWill", {level:"info", title:"Skip these, rain is coming", text:`About ${Math.round(soon)} mm expected over the next two days.`}, {p, why});
+        add("rainWill", {level:"info", title:T("Skip these, rain is coming"), text:T("About {n} mm expected over the next two days.", {n:Math.round(soon)})}, {p, why});
       else
-        add("water", {level:"water", title:"Needs water", text:"", waterAll:true}, {p, why});
+        add("water", {level:"water", title:T("Needs water"), text:"", waterAll:true}, {p, why});
     }
   }
 
@@ -182,26 +219,27 @@ function compute(plants, ctx){
 
 /* Short text for a phone notification. Returns null when there is nothing worth sending. */
 function summarize(groups, ctx){
+  if(ctx.lang) setLang(ctx.lang);
   const W = splitWeather(ctx.daily, ctx.today);
   const evening = ctx.mode === "evening";
   const lines = groups.map(g => {
     const names = g.items.map(i => i.p.name);
-    const list = names.length > 4 ? names.slice(0, 4).join(", ") + ` and ${names.length - 4} more` : names.join(", ");
+    const list = names.length > 4 ? T("{list} and {n} more", {list:names.slice(0, 4).join(", "), n:names.length - 4}) : names.join(", ");
     return `${g.title}: ${list}`;
   });
   const cold = groups.filter(g => COLD_KEYS.includes(g.key));
   const lowest = cold.length ? Math.min(...cold.flatMap(g => g.items.map(i => i.t))) : null;
   if(evening){
     if(!cold.length) return null;
-    return {title:`Cold tonight: down to ${deg(lowest)}`, body:lines.join("\n"), tag:"garden-evening"};
+    return {title:T("Cold tonight: down to {t}", {t:deg(lowest)}), body:lines.join("\n"), tag:"garden-evening"};
   }
   const t = W && W.next[0];
-  const wLine = t ? `${deg(t.min)} to ${deg(t.max)}, ${t.rain >= 0.5 ? Math.round(t.rain) + " mm rain" : "dry"}` : "";
-  if(!groups.length) return {title:"Nothing to do in the garden today", body:wLine, tag:"garden-morning"};
-  const title = cold.length ? `${lowest <= 0 ? "Frost warning" : "Low temperature warning"}: down to ${deg(lowest)}`
-    : `${groups.length} ${groups.length === 1 ? "thing" : "things"} to do in the garden`;
+  const wLine = t ? (t.rain >= 0.5 ? T("{lo} to {hi}, {rain} mm rain", {lo:deg(t.min), hi:deg(t.max), rain:Math.round(t.rain)}) : T("{lo} to {hi}, dry", {lo:deg(t.min), hi:deg(t.max)})) : "";
+  if(!groups.length) return {title:T("Nothing to do in the garden today"), body:wLine, tag:"garden-morning"};
+  const title = cold.length ? T(lowest <= 0 ? "Frost warning: down to {t}" : "Low temperature warning: down to {t}", {t:deg(lowest)})
+    : groups.length === 1 ? T("1 thing to do in the garden") : T("{n} things to do in the garden", {n:groups.length});
   return {title, body:[...lines, wLine].filter(Boolean).join("\n"), tag:"garden-morning"};
 }
 
-return {PRESETS, LOC, ALLOWED, deg, daysBetween, presetFor, splitWeather, interval, waterStatus, effMin, coldLimit, coldOn, compute, summarize, COLD_KEYS};
+return {setLang, ES, PRESETS, LOC, ALLOWED, deg, daysBetween, presetFor, splitWeather, interval, waterStatus, effMin, coldLimit, coldOn, compute, summarize, COLD_KEYS};
 });

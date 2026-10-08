@@ -93,6 +93,39 @@ h1,h2{font-weight:800;line-height:1.15;margin:0;letter-spacing:-.01em}
 </main>
 
 <script>
+/* Languages: English in the page, Spanish in ES below. Follows the choice made in Alvor on this phone, or the phone's language. */
+const ES = {
+  "Install Alvor":"Instala Alvor", "Get Alvor":"Consigue Alvor",
+  "The app for your plants: frost and heat warnings, watering reminders, plant identification, and a small circle of friends who see each other's gardens.":"La app para tus plantas: avisos de helada y de calor, recordatorios de riego, identificación de plantas y un pequeño círculo de amigos que ven los jardines de los demás.",
+  "Alvor isn't in the Play Store yet, so it comes as a file you install yourself.":"Alvor aún no está en Play Store, así que viene como un archivo que instalas tú.",
+  "Download Alvor for Android":"Descargar Alvor para Android",
+  "Open the file when it has downloaded. Android will warn you about apps from outside the Play Store and ask to allow installs from your browser: allow it, then tap Install.":"Abre el archivo cuando se haya descargado. Android te avisará de las apps de fuera de Play Store y te pedirá permitir instalaciones desde el navegador: permítelo y toca Instalar.",
+  "Already have Alvor? Skip to step 2.":"¿Ya tienes Alvor? Pasa al paso 2.", "Open Alvor":"Abrir Alvor",
+  "Open Alvor and tap Create account. You'll need the invite code you were sent.":"Abre Alvor y toca Crear cuenta. Necesitarás el código de invitación que te mandaron.",
+  "Open Alvor with my invitation":"Abrir Alvor con mi invitación", "If Alvor opens without your invitation,":"Si Alvor se abre sin tu invitación,", "copy it":"cópiala",
+  "and paste it into \"Invite code or link\".":"y pégala en «Código o enlace de invitación».", "Use Alvor in your browser":"Usa Alvor en el navegador",
+  "The Alvor app is for Android for now. On this device you can use Alvor in the browser, with the same account.":"De momento la app de Alvor es para Android. En este dispositivo puedes usar Alvor en el navegador, con la misma cuenta.",
+  "Tip: in Safari, tap Share and then Add to Home Screen to keep Alvor like an app.":"Consejo: en Safari, toca Compartir y luego Añadir a pantalla de inicio para tener Alvor como una app.",
+  "Or":"O", "use Alvor in the browser":"usa Alvor en el navegador", "instead.":"", "Privacy policy":"Política de privacidad",
+  "Download coming soon":"Descarga disponible pronto", "Open Alvor and join":"Abre Alvor y únete",
+  "Come back to this page once Alvor is installed and tap the button. Alvor opens with your invitation filled in: choose an email, a password and a @username, and you're in.":"Vuelve a esta página cuando Alvor esté instalada y toca el botón. Alvor se abre con tu invitación ya puesta: elige un correo, una contraseña y un @usuario, y listo.",
+  "copied":"copiada", "Copy this:":"Copia esto:", "You're invited to Alvor":"Te han invitado a Alvor", "This link has expired":"Este enlace ha caducado",
+  "Whoever sent it has made a new one. Ask them for the new link. You can still install Alvor below.":"Quien te lo mandó ha creado uno nuevo. Pídele el enlace nuevo. Aun así puedes instalar Alvor aquí abajo.",
+  "A friend":"Un amigo", "{name} invited you to Alvor":"{name} te ha invitado a Alvor",
+  "Alvor is the app {name} uses for their plants. Join, and you'll see each other's gardens straight away.":"Alvor es la app que usa {name} para sus plantas. Únete y veréis vuestros jardines al momento."
+};
+const LANG = (() => { let c = null; try{ c = localStorage.getItem("alvor-lang"); }catch(e){}
+  if(c === "en" || c === "es") return c;
+  return (navigator.languages || [navigator.language || "en"]).map(l => String(l).slice(0, 2).toLowerCase()).find(l => l === "en" || l === "es") || "en"; })();
+const T = (s, v) => { const r = LANG === "es" && ES[s] != null ? ES[s] : s; return v ? r.replace(/\{(\w+)\}/g, (m, k) => v[k]) : r; };
+if(LANG !== "en"){
+  document.documentElement.lang = LANG;
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes = [];
+  while(w.nextNode()) nodes.push(w.currentNode);
+  nodes.forEach(n => { const k = n.nodeValue.trim(); if(k && ES[k] != null) n.nodeValue = n.nodeValue.replace(k, ES[k]); });
+  document.title = T(document.title);
+}
+
 /* Settings. APK_URL: where the Android app file is. Left empty on GitHub Pages, it becomes the
    newest Release of this same repository, with the file named Alvor.apk. */
 const APK_URL = "";
@@ -121,14 +154,14 @@ if(android){
   $("#android").hidden = false; $("#webRow").hidden = false;
   const apk = apkUrl();
   if(apk) $("#apkBtn").href = apk;
-  else { $("#apkBtn").removeAttribute("href"); $("#apkBtn").textContent = "Download coming soon"; $("#apkBtn").classList.remove("primary"); }
+  else { $("#apkBtn").removeAttribute("href"); $("#apkBtn").textContent = T("Download coming soon"); $("#apkBtn").classList.remove("primary"); }
   if(token){
     // Opens the installed app on the invitation; without the app, falls back to Alvor in the browser.
     const path = location.pathname.replace(/[^/]*$/, "");
     $("#openApp").href = `intent://${location.host}${path}?join=${token}#Intent;scheme=https;package=${PACKAGE};S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
     $("#openApp").hidden = false; $("#copyRow").hidden = false;
-    $("#step2Title").textContent = "Open Alvor and join";
-    $("#step2Text").textContent = "Come back to this page once Alvor is installed and tap the button. Alvor opens with your invitation filled in: choose an email, a password and a @username, and you're in.";
+    $("#step2Title").textContent = T("Open Alvor and join");
+    $("#step2Text").textContent = T("Come back to this page once Alvor is installed and tap the button. Alvor opens with your invitation filled in: choose an email, a password and a @username, and you're in.");
   }
 }else{
   $("#other").hidden = false;
@@ -136,13 +169,13 @@ if(android){
 }
 $("#copyBtn").addEventListener("click", async () => {
   const t = base + "join.html#join=" + token;
-  try{ await navigator.clipboard.writeText(t); $("#copyBtn").textContent = "copied"; }catch(e){ prompt("Copy this:", t); }
+  try{ await navigator.clipboard.writeText(t); $("#copyBtn").textContent = T("copied"); }catch(e){ prompt(T("Copy this:"), t); }
 });
 
 /* Who sent the link: their name and photo, as friends see them. */
 async function preview(){
   if(!token) return;
-  $("#title").textContent = "You're invited to Alvor";
+  $("#title").textContent = T("You're invited to Alvor");
   try{
     const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/link_preview`, {method:"POST",
       headers:{"Content-Type":"application/json", "apikey":SUPABASE_KEY, "Authorization":"Bearer " + SUPABASE_KEY},
@@ -150,15 +183,15 @@ async function preview(){
     if(!r.ok) return;
     const rows = await r.json(), p = rows && rows[0];
     if(!p){
-      $("#title").textContent = "This link has expired";
-      $("#lead").textContent = "Whoever sent it has made a new one. Ask them for the new link. You can still install Alvor below.";
+      $("#title").textContent = T("This link has expired");
+      $("#lead").textContent = T("Whoever sent it has made a new one. Ask them for the new link. You can still install Alvor below.");
       $("#openApp").hidden = true; $("#copyRow").hidden = true;
       $("#webBtn").href = base; $("#webLink").href = base;
       return;
     }
-    const name = p.display_name || "A friend";
-    $("#title").textContent = `${name} invited you to Alvor`;
-    $("#lead").textContent = `Alvor is the app ${name} uses for their plants. Join, and you'll see each other's gardens straight away.`;
+    const name = p.display_name || T("A friend");
+    $("#title").textContent = T("{name} invited you to Alvor", {name});
+    $("#lead").textContent = T("Alvor is the app {name} uses for their plants. Join, and you'll see each other's gardens straight away.", {name});
     const av = $("#av"); av.hidden = false;
     av.innerHTML = p.avatar_path
       ? `<img alt="" src="${SUPABASE_URL}/storage/v1/object/public/avatars/${p.avatar_path.split("/").map(encodeURIComponent).join("/")}">`

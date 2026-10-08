@@ -104,33 +104,67 @@ a{color:var(--fern);font-weight:700}
 const SUPABASE_URL = "https://ihufhwnwzmzuhfxiwbal.supabase.co";
 const SUPABASE_KEY = "sb_publishable_v82YQhQIPQ31xuOArsKzGg_6LZ7e1US";
 /* The email for privacy questions (same as in privacy.html). */
-const CONTACT_EMAIL = "alvor.garden@gmail.com";
+const CONTACT_EMAIL = "";
 
+/* English or Spanish: the choice made in Alvor on this phone, or the phone's language (?lang=es or ?lang=en also works). */
+const ES = {
+  "Delete your Alvor account":"Borra tu cuenta de Alvor", "Alvor · Delete your account":"Alvor · Borrar tu cuenta",
+  "You can delete your account here or in the app, under Settings → Delete my account. Both do the same.":"Puedes borrar tu cuenta aquí o en la app, en Ajustes → Borrar mi cuenta. Las dos hacen lo mismo.",
+  "What gets deleted":"Qué se borra", "your plants, notes, watering and activity history":"tus plantas, notas, riegos e historial de actividad",
+  "all your photos and your profile photo":"todas tus fotos y tu foto de perfil", "your profile, friends, friend requests and friend link":"tu perfil, amigos, solicitudes de amistad y enlace de amistad",
+  "reactions and comments you wrote, and the ones on your garden":"las reacciones y comentarios que escribiste, y los de tu jardín", "your notification settings and your sign-in":"tus ajustes de avisos y tu inicio de sesión",
+  "Everything goes straight away, from every phone, and can't be undone. Your friends aren't told; you simply disappear from their list. Want a copy first? In the app, tap Settings → Download my data.":"Todo se borra en el momento, de todos los móviles, y no se puede deshacer. A tus amigos no se les avisa; simplemente desapareces de su lista. ¿Quieres una copia antes? En la app, toca Ajustes → Descargar mis datos.",
+  "Confirm it's you":"Confirma que eres tú", "Email":"Correo", "Password":"Contraseña",
+  "I understand my account and everything in it will be deleted for good.":"Entiendo que mi cuenta y todo lo que contiene se borrarán para siempre.", "Delete my account":"Borrar mi cuenta",
+  "Forgot your password? Open Alvor, tap \"Forgot your password?\" to set a new one, then come back.":"¿Has olvidado la contraseña? Abre Alvor, toca «¿Has olvidado la contraseña?» para poner una nueva y vuelve aquí.",
+  "Or write to":"O escribe a", "from your account's email.":"desde el correo de tu cuenta.", "Your account has been deleted":"Tu cuenta se ha borrado",
+  "Everything in it is gone. If Alvor is installed on a phone, you can uninstall it. Thank you for growing with Alvor.":"Todo lo que contenía ya no está. Si tienes Alvor instalada en un móvil, puedes desinstalarla. Gracias por crecer con Alvor.",
+  "Privacy policy":"Política de privacidad", "Open Alvor":"Abrir Alvor", "Delete my Alvor account":"Borrar mi cuenta de Alvor",
+  "Enter your email and password.":"Escribe tu correo y tu contraseña.", "That email and password don't match an Alvor account.":"Ese correo y esa contraseña no corresponden a ninguna cuenta de Alvor.",
+  "Couldn't delete the account. Try again in a minute.":"No se ha podido borrar la cuenta. Vuelve a intentarlo en un minuto.",
+  "Couldn't reach Alvor. Check your connection and try again.":"No se ha podido conectar con Alvor. Revisa la conexión y vuelve a intentarlo.",
+  "That password isn't right.":"Esa contraseña no es correcta.",
+  "This is the owner's account, which runs Alvor's invitations and reports. It can only be removed from the Supabase dashboard.":"Esta es la cuenta del dueño, que gestiona las invitaciones y denuncias de Alvor. Solo se puede borrar desde el panel de Supabase.",
+  "Couldn't remove your photos. Nothing was deleted; try again in a minute.":"No se han podido quitar tus fotos. No se ha borrado nada; vuelve a intentarlo en un minuto.",
+  "Your photos were removed, but the account couldn't be deleted. Try again in a minute.":"Tus fotos se han quitado, pero no se ha podido borrar la cuenta. Vuelve a intentarlo en un minuto.",
+  "Please sign in again.":"Vuelve a iniciar sesión."
+};
+const LANG = (() => { const q = (location.search.match(/[?&]lang=(en|es)\b/) || [])[1]; if(q) return q;
+  let c = null; try{ c = localStorage.getItem("alvor-lang"); }catch(e){}
+  if(c === "en" || c === "es") return c;
+  return (navigator.languages || [navigator.language || "en"]).map(l => String(l).slice(0, 2).toLowerCase()).find(l => l === "en" || l === "es") || "en"; })();
+const T = s => LANG === "es" && ES[s] != null ? ES[s] : s;
+if(LANG !== "en"){
+  document.documentElement.lang = LANG; document.title = T(document.title);
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes = [];
+  while(w.nextNode()) nodes.push(w.currentNode);
+  nodes.forEach(n => { const k = n.nodeValue.trim(); if(k && ES[k] != null) n.nodeValue = n.nodeValue.replace(k, ES[k]); });
+}
 const $ = s => document.querySelector(s);
-if(CONTACT_EMAIL){ $("#mail").href = "mailto:" + CONTACT_EMAIL + "?subject=" + encodeURIComponent("Delete my Alvor account"); $("#mail").textContent = CONTACT_EMAIL; $("#mailRow").hidden = false; }
+if(CONTACT_EMAIL){ $("#mail").href = "mailto:" + CONTACT_EMAIL + "?subject=" + encodeURIComponent(T("Delete my Alvor account")); $("#mail").textContent = CONTACT_EMAIL; $("#mailRow").hidden = false; }
 $("#sure").addEventListener("change", () => { $("#go").disabled = !$("#sure").checked; });
 $("#f").addEventListener("submit", async e => {
   e.preventDefault();
   const email = $("#email").value.trim().toLowerCase(), password = $("#pass").value;
   const say = m => { $("#msg").textContent = m; };
-  if(!email || !password){ say("Enter your email and password."); return; }
+  if(!email || !password){ say(T("Enter your email and password.")); return; }
   $("#go").disabled = true; say("");
   try{
     // 1. Sign in, to prove it's you.
     const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {method:"POST",
       headers:{"Content-Type":"application/json", "apikey":SUPABASE_KEY}, body:JSON.stringify({email, password})});
     const s = await r.json().catch(() => ({}));
-    if(!r.ok || !s.access_token){ say("That email and password don't match an Alvor account."); $("#go").disabled = false; return; }
+    if(!r.ok || !s.access_token){ say(T("That email and password don't match an Alvor account.")); $("#go").disabled = false; return; }
     // 2. Delete everything.
     const d = await fetch(`${SUPABASE_URL}/functions/v1/account`, {method:"POST",
       headers:{"Content-Type":"application/json", "apikey":SUPABASE_KEY, "Authorization":"Bearer " + s.access_token},
       body:JSON.stringify({action:"delete", password})});
     const j = await d.json().catch(() => ({}));
-    if(!d.ok){ say(j.error || "Couldn't delete the account. Try again in a minute."); $("#go").disabled = false; return; }
+    if(!d.ok){ say(T(j.error || "Couldn't delete the account. Try again in a minute.")); $("#go").disabled = false; return; }
     $("#pass").value = "";
     $("#form").hidden = true; $("#info").hidden = true; $("#done").hidden = false;
     $("#done").scrollIntoView({block:"start"});
-  }catch(err){ say("Couldn't reach Alvor. Check your connection and try again."); $("#go").disabled = false; }
+  }catch(err){ say(T("Couldn't reach Alvor. Check your connection and try again.")); $("#go").disabled = false; }
 });
 </script>
 </body>
