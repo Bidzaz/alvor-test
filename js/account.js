@@ -11,7 +11,6 @@ const sb = window.supabase && location.protocol === "https:"
   : null;
 const online = !!sb;
 const IDENTIFY_READY = true, PUSH_READY = true;
-const MOVING_MSG = "isn't available right now.";
 const OLD_TOKEN_KEY = "garden-token", USER_KEY = "garden-user";
 const hadOldAccount = (() => { try{ return !!localStorage.getItem(OLD_TOKEN_KEY); }catch(e){ return false; } })();
 let token = "";   // current session's access token ("" when signed out)
@@ -29,7 +28,7 @@ async function callFn(name, body){
     headers:{"Content-Type":"application/json", "apikey":SUPABASE_KEY, "Authorization":"Bearer " + t}, body:JSON.stringify(body || {})});
   return {r, j:await r.json().catch(() => ({}))};
 }
-const OFFLINE_MSG = "Couldn't reach Alvor. Changes stay on this phone and are saved next time.";
+const OFFLINE_MSG = tr("Couldn't reach Alvor. Changes stay on this phone and are saved next time.");
 const isAuthErr = e => e && (e.status === 401 || e.code === "PGRST301" || /jwt|refresh token/i.test(e.message || ""));
 const must = r => { if(r.error) throw r.error; return r.data; };
 
@@ -41,7 +40,7 @@ async function loadMe(session){
       sb.from("profiles").select("username,display_name,avatar_path").eq("id", id).maybeSingle().then(must),
       sb.from("accounts").select("is_owner,default_visibility,findable,migrated_at,disabled").eq("id", id).maybeSingle().then(must)
     ]);
-    me = {id, email:session.user.email, user:prof ? prof.username : session.user.email, name:prof ? prof.display_name : "",
+    me = {id, email:session.user.email, metaLang:(session.user.user_metadata || {}).lang || null, user:prof ? prof.username : session.user.email, name:prof ? prof.display_name : "",
       avatar:(prof && prof.avatar_path) || null, findable:!!(acct && acct.findable),
       owner:!!(acct && acct.is_owner), activitySeen:me && me.id === id ? me.activitySeen || null : null, defaultVisibility:(acct && acct.default_visibility) || "vault", migrated:!!(acct && acct.migrated_at), disabled:!!(acct && acct.disabled)};
   }catch(e){
@@ -76,10 +75,11 @@ function applyMerged(m){
   normalizePlants(); normalizeLocation(); useActiveLocation();
   rebaseSync();
   saveLocal(); applyLook(); render(); if(currentTab === "settings") fillSettings();
+  followAccountLang();   // the language was changed on another phone: reload in it
 }
 function sessionExpired(){
   token = "";
-  showAuth("Please sign in again.");
+  showAuth(tr("Please sign in again."));
 }
 async function serverGarden(){
   return must(await sb.from("garden_private").select("settings,log").eq("owner_id", me.id).maybeSingle());
@@ -146,7 +146,7 @@ function syncGarden(){
         writeMeta();
         break;
       }
-      setSync(`Saved to your account at ${hhmm()}.`); queuePhotoSync(); return true;
+      setSync(tr("Saved to your account at {time}.", {time:hhmm()})); queuePhotoSync(); return true;
     }catch(e){
       if(isAuthErr(e)){ sessionExpired(); return false; }
       setSync(OFFLINE_MSG); return false;
@@ -194,7 +194,7 @@ async function syncPhotos(){
       for(const ph of local){
         if(ph.synced || !plantIds.has(ph.plantId) || !UUID_RE.test(String(ph.id))) continue;
         if(!server.has(ph.id)){
-          setSync("Saving photos…");
+          setSync(tr("Saving photos…"));
           must(await store.upload(phPath(ph.id, "l"), await dataToBlob(ph.data), {upsert:true, contentType:"image/jpeg"}));
           must(await store.upload(phPath(ph.id, "s"), await smallJpeg(ph.data), {upsert:true, contentType:"image/jpeg"}));
           must(await sb.from("photos").upsert({id:ph.id, plant_id:ph.plantId, owner_id:me.id, hidden:!!ph.hidden,
@@ -219,15 +219,15 @@ async function syncPhotos(){
       // 4. Photos added on another phone come down
       for(const r of rows){
         if(localIds.has(r.id) || pendingDel.has(r.id) || !plantIds.has(r.plant_id)) continue;
-        setSync("Getting photos…");
+        setSync(tr("Getting photos…"));
         const blob = must(await store.download(r.path_large));
         const at = new Date(r.taken_at || Date.now());
         await idb.put({id:r.id, plantId:r.plant_id, date:ymd(at), ts:at.getTime(), data:await blobToData(blob), synced:true, hidden:!!r.hidden});
         changed = true;
       }
-      if(uploaded.size || changed) setSync(`Saved to your account at ${hhmm()}.`);
+      if(uploaded.size || changed) setSync(tr("Saved to your account at {time}.", {time:hhmm()}));
     }catch(e){
-      if(isAuthErr(e)) sessionExpired(); else setSync("Some photos aren't saved to your account yet. Alvor tries again next time.");
+      if(isAuthErr(e)) sessionExpired(); else setSync(tr("Some photos aren't saved to your account yet. Alvor tries again next time."));
     }finally{
       photoSyncing = null;
       if(changed) await loadPhotos();
@@ -251,17 +251,17 @@ function setAuthMode(m){
   $("#passField").hidden = m === "reset";
   $("#aEmail").closest(".field").hidden = m === "code";
   $("#passHint").hidden = !newPass;
-  $("#passLabel").textContent = m === "code" ? "New password" : "Password";
+  $("#passLabel").textContent = m === "code" ? tr("New password") : tr("Password");
   $("#aPass").setAttribute("autocomplete", newPass ? "new-password" : "current-password");
-  $("#authGo").textContent = {signup:"Create account", reset:"Send me a code", code:"Save new password"}[m] || "Sign in";
+  $("#authGo").textContent = {signup:tr("Create account"), reset:tr("Send me a code"), code:tr("Save new password")}[m] || tr("Sign in");
   $("#authLead").textContent = {
-    signup:"Create your own garden. You need an invite code or a friend's link.",
-    reset:"Enter the email of your account. We'll send you a code to set a new password.",
-    code:`If ${resetEmail} has an Alvor account, a code is on its way. It works for an hour. Check the spam folder too.`
-  }[m] || "Sign in to see your garden.";
+    signup:tr("Create your own garden. You need an invite code or a friend's link."),
+    reset:tr("Enter the email of your account. We'll send you a code to set a new password."),
+    code:tr("If {email} has an Alvor account, a code is on its way. It works for an hour. Check the spam folder too.", {email:resetEmail})
+  }[m] || tr("Sign in to see your garden.");
   $("#authLegal").innerHTML = m === "signup"
-    ? `By creating an account you agree to how Alvor looks after your data, described in the <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a>.`
-    : `<a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>`;
+    ? tr("By creating an account you agree to how Alvor looks after your data, described in the {link}privacy policy{end}.", {link:`<a href="privacy.html" target="_blank" rel="noopener">`, end:"</a>"})
+    : `<a href="privacy.html" target="_blank" rel="noopener">${tr("Privacy policy")}</a>`;
   $("#forgotBtn").hidden = m !== "login";
   $("#resendBtn").hidden = m !== "code";
   $("#backBtn").hidden = !reset;
@@ -278,22 +278,22 @@ $("#authGo").addEventListener("click", async () => {
   if(authMode === "code") return saveResetPassword();
   const email = $("#aEmail").value.trim().toLowerCase(), password = $("#aPass").value;
   const msg = $("#authMsg");
-  if(!email || !password){ msg.textContent = "Fill in your email and password."; return; }
-  if(!sb){ msg.textContent = "Couldn't reach Alvor. Check your connection."; return; }
-  const btn = $("#authGo"); btn.disabled = true; msg.textContent = "One moment…";
+  if(!email || !password){ msg.textContent = tr("Fill in your email and password."); return; }
+  if(!sb){ msg.textContent = tr("Couldn't reach Alvor. Check your connection."); return; }
+  const btn = $("#authGo"); btn.disabled = true; msg.textContent = tr("One moment…");
   try{
     if(authMode === "signup"){
       const username = $("#aUser").value.trim().toLowerCase().replace(/^@/, "");
       const r = await fetch(`${SUPABASE_URL}/functions/v1/signup`, {method:"POST",
         headers:{"Content-Type":"application/json", "apikey":SUPABASE_KEY},
-        body:JSON.stringify({email, password, username, invite:$("#aInvite").value.trim()})});
+        body:JSON.stringify({email, password, username, invite:$("#aInvite").value.trim(), lang:LANG})});
       const j = await r.json().catch(() => ({}));
-      if(!r.ok){ msg.textContent = j.error || "Something went wrong. Try again."; return; }
+      if(!r.ok){ msg.textContent = tr(j.error || "Something went wrong. Try again."); return; }
     }
     const {data, error} = await sb.auth.signInWithPassword({email, password});
-    if(error){ msg.textContent = /invalid/i.test(error.message) ? "Wrong email or password." : "Couldn't sign in. Try again."; return; }
+    if(error){ msg.textContent = /invalid/i.test(error.message) ? tr("Wrong email or password.") : tr("Couldn't sign in. Try again."); return; }
     await signedIn(data.session);
-  }catch(e){ msg.textContent = "Couldn't reach Alvor. Check your connection."; }
+  }catch(e){ msg.textContent = tr("Couldn't reach Alvor. Check your connection."); }
   finally{ btn.disabled = false; }
 });
 $("#aPass").addEventListener("keydown", e => { if(e.key === "Enter") $("#authGo").click(); });
@@ -305,43 +305,43 @@ $("#backBtn").addEventListener("click", () => { $("#aCode").value = ""; $("#aPas
 $("#resendBtn").addEventListener("click", () => sendResetCode(true));
 async function sendResetCode(again){
   const msg = $("#authMsg"), email = again ? resetEmail : $("#aEmail").value.trim().toLowerCase();
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.textContent = "Enter the email of your account."; return; }
-  if(!sb){ msg.textContent = "Couldn't reach Alvor. Check your connection."; return; }
-  const btn = again ? $("#resendBtn") : $("#authGo"); btn.disabled = true; msg.textContent = "One moment…";
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.textContent = tr("Enter the email of your account."); return; }
+  if(!sb){ msg.textContent = tr("Couldn't reach Alvor. Check your connection."); return; }
+  const btn = again ? $("#resendBtn") : $("#authGo"); btn.disabled = true; msg.textContent = tr("One moment…");
   try{
     const {error} = await sb.auth.resetPasswordForEmail(email);
     if(error){
       msg.textContent = error.status === 429 || /security purposes|rate limit/i.test(error.message)
-        ? "A code was sent a moment ago. Wait a minute before asking for another one."
-        : "Couldn't send the code. Try again in a while.";
+        ? tr("A code was sent a moment ago. Wait a minute before asking for another one.")
+        : tr("Couldn't send the code. Try again in a while.");
       return;
     }
     resetEmail = email;
-    if(again){ msg.textContent = "A new code is on its way. Only the newest code works."; return; }
+    if(again){ msg.textContent = tr("A new code is on its way. Only the newest code works."); return; }
     setAuthMode("code"); $("#aCode").focus();
-  }catch(e){ msg.textContent = "Couldn't reach Alvor. Check your connection."; }
+  }catch(e){ msg.textContent = tr("Couldn't reach Alvor. Check your connection."); }
   finally{ btn.disabled = false; }
 }
 async function saveResetPassword(){
   const msg = $("#authMsg"), code = $("#aCode").value.replace(/\D/g, ""), password = $("#aPass").value;
-  if(code.length < 6){ msg.textContent = "Enter the code from the email."; return; }
-  if(password.length < 8){ msg.textContent = "The new password needs at least 8 characters."; return; }
-  const btn = $("#authGo"); btn.disabled = true; msg.textContent = "One moment…";
+  if(code.length < 6){ msg.textContent = tr("Enter the code from the email."); return; }
+  if(password.length < 8){ msg.textContent = tr("The new password needs at least 8 characters."); return; }
+  const btn = $("#authGo"); btn.disabled = true; msg.textContent = tr("One moment…");
   try{
     const v = await sb.auth.verifyOtp({email:resetEmail, token:code, type:"recovery"});
-    if(v.error || !v.data.session){ msg.textContent = "That code doesn't work. Check it, or send a new one."; return; }
+    if(v.error || !v.data.session){ msg.textContent = tr("That code doesn't work. Check it, or send a new one."); return; }
     const {error} = await sb.auth.updateUser({password});
     if(error){
-      msg.textContent = /same/i.test(error.message) ? "That's the password you already have. You can just sign in with it."
-        : /weak|short|least/i.test(error.message) ? "Choose a longer or less common password." : "Couldn't save the new password. Try again.";
+      msg.textContent = /same/i.test(error.message) ? tr("That's the password you already have. You can just sign in with it.")
+        : /weak|short|least/i.test(error.message) ? tr("Choose a longer or less common password.") : tr("Couldn't save the new password. Try again.");
       return;
     }
     try{ await sb.auth.signOut({scope:"others"}); }catch(e){}
     const {data} = await sb.auth.getSession();
     $("#aCode").value = ""; $("#aEmail").value = resetEmail; authMode = "login";
     await signedIn(data.session || v.data.session);
-    toast("New password saved. Other phones will need to sign in again.");
-  }catch(e){ msg.textContent = "Couldn't reach Alvor. Check your connection."; }
+    toast(tr("New password saved. Other phones will need to sign in again."));
+  }catch(e){ msg.textContent = tr("Couldn't reach Alvor. Check your connection."); }
   finally{ btn.disabled = false; }
 }
 
@@ -357,7 +357,7 @@ async function signedIn(session){
     if(!mine){ state = defaults(); state.account = me.id; saveLocal(); }
     await syncGarden();   // merges: changes on this phone not yet sent are kept
   }else if(state.plants.length && (mine || oldGarden || !state.account)
-      && confirm(`This phone has ${state.plants.length} ${state.plants.length === 1 ? "plant" : "plants"}. Move ${state.plants.length === 1 ? "it" : "them"} into this account?`)){
+      && confirm(trn(state.plants.length, "This phone has {n} plant. Move it into this account?", "This phone has {n} plants. Move them into this account?"))){
     state.account = me.id; state.updatedAt = Date.now(); saveLocal();
     await push();
     if(oldGarden || !me.migrated){ try{ await sb.from("accounts").update({migrated_at:new Date().toISOString()}).eq("id", me.id); }catch(e){} }
@@ -371,7 +371,8 @@ async function signedIn(session){
   $("#auth").hidden = true; $("#aPass").value = ""; $("#aInvite").value = "";
   fillAccount();
   fetchWeather(true);
-  if(state.settings.onboarded || state.plants.length) toast(`Welcome, ${me.name || me.user}`);
+  if(state.settings.onboarded || state.plants.length) toast(tr("Welcome, {name}", {name:me.name || me.user}));
+  syncLang();
   loadCircle(true);
   loadAdmin(true);
   await joinFromLink();
@@ -395,9 +396,9 @@ async function signOut(){
   if(currentTab === "friends" || currentTab === "friend") showTab("today");
   try{ localStorage.removeItem(USER_KEY); }catch(e){}
   const keep = state.settings; state = defaults(); state.settings = keep; saveLocal(); render();
-  authMode = "login"; showAuth("You're signed out.");
+  authMode = "login"; showAuth(tr("You're signed out."));
 }
-$("#signOutBtn").addEventListener("click", () => { if(confirm("Sign out on this phone? Your garden stays saved in your account.")) signOut(); });
+$("#signOutBtn").addEventListener("click", () => { if(confirm(tr("Sign out on this phone? Your garden stays saved in your account."))) signOut(); });
 
 /* Friend links: opening one connects you at once; without an account it becomes your invite. */
 const linkToken = () => { const m = (location.hash + " " + location.search).match(/join=([0-9a-f]{32})/); return m ? m[1] : null; };
@@ -407,24 +408,24 @@ async function joinFromLink(){
   try{
     const f = must(await sb.rpc("accept_friend_link", {p_token:t}));
     const p = f && f[0];
-    toast(`You and ${p ? personName(p) : "your friend"} are friends`);
+    toast(p ? tr("You and {name} are friends", {name:personName(p)}) : tr("You and your friend are friends"));
     await loadCircle(true);
     if(p && state.settings.onboarded && !ONB) openFriend(p.id);   // straight to their garden
-  }catch(e){ toast(e && e.code === "P0001" && e.message ? e.message : "Couldn't use that link. Check your connection and open it again."); }
+  }catch(e){ toast(e && e.code === "P0001" && e.message ? tr(e.message) : tr("Couldn't use that link. Check your connection and open it again.")); }
 }
 window.addEventListener("hashchange", () => { if(linkToken() && token) joinFromLink(); });
 
 /* Account card */
 function fillAccount(){
-  if(!online){ $("#acctLine").textContent = "Accounts work once the app is opened from your site."; $("#accountCard").querySelectorAll("button").forEach(b => b.hidden = true); return; }
-  $("#acctLine").textContent = me ? `Signed in as @${me.user}${me.email ? " (" + me.email + ")" : ""}${me.owner ? ", owner of Alvor" : ""}.` : "Not signed in.";
+  if(!online){ $("#acctLine").textContent = tr("Accounts work once the app is opened from your site."); $("#accountCard").querySelectorAll("button").forEach(b => b.hidden = true); return; }
+  $("#acctLine").textContent = me ? tr("Signed in as {who}.", {who:`@${me.user}${me.email ? " (" + me.email + ")" : ""}${me.owner ? tr(", owner of Alvor") : ""}`}) : tr("Not signed in.");
   $("#inviteBtn").hidden = !(me && me.owner);
   $("#friendsBtn").hidden = !(me && token);
   $("#heroAcct").hidden = !(me && token);
   let off = $("#acctOff");
   if(me && me.disabled){
     if(!off){ off = document.createElement("p"); off.id = "acctOff"; off.className = "acct-off"; $("#acctLine").after(off); }
-    off.textContent = "Your account has been switched off by the owner of Alvor. Your garden still works for you, but nobody else can see it, find you or add you.";
+    off.textContent = tr("Your account has been switched off by the owner of Alvor. Your garden still works for you, but nobody else can see it, find you or add you.");
   }else if(off) off.remove();
   $("#dataCard").hidden = !(me && token);
   $("#adminCard").hidden = !(me && me.owner && token);
@@ -434,29 +435,29 @@ $("#inviteBtn").addEventListener("click", async () => {
   try{
     const rows = must(await sb.rpc("create_invite"));
     const j = rows && rows[0]; if(!j) throw new Error();
-    const until = new Date(j.expires_at).toLocaleDateString("en-GB", {day:"numeric", month:"long"});
+    const until = new Date(j.expires_at).toLocaleDateString(LOCALE, {day:"numeric", month:"long"});
     const site = location.origin + location.pathname;
-    out.innerHTML = `<div>Send this code to your friend, together with the address of Alvor:</div><div class="code">${esc(j.code)}</div>
-      <div class="status" style="margin:0">It works once, until ${until}. They tap Create account and enter it there.</div>
-      <button class="btn small" id="copyInvite" style="margin-top:8px">Copy message</button>`;
+    out.innerHTML = `<div>${tr("Send this code to your friend, together with the address of Alvor:")}</div><div class="code">${esc(j.code)}</div>
+      <div class="status" style="margin:0">${tr("It works once, until {date}. They tap Create account and enter it there.", {date:until})}</div>
+      <button class="btn small" id="copyInvite" style="margin-top:8px">${tr("Copy message")}</button>`;
     out.hidden = false;
     $("#copyInvite").addEventListener("click", async () => {
-      const msg = `Join me on Alvor, the app I use for my plants. Get it here: ${site.replace(/[^/]*$/, "")}join.html , then tap "Create account" and use this invite code: ${j.code}`;
-      try{ if(navigator.share) await navigator.share({text:msg}); else { await navigator.clipboard.writeText(msg); toast("Copied"); } }catch(e){}
+      const msg = tr("Join me on Alvor, the app I use for my plants. Get it here: {url} , then tap \"Create account\" and use this invite code: {code}", {url:`${site.replace(/[^/]*$/, "")}join.html`, code:j.code});
+      try{ if(navigator.share) await navigator.share({text:msg}); else { await navigator.clipboard.writeText(msg); toast(tr("Copied")); } }catch(e){}
     });
-  }catch(e){ out.hidden = false; out.textContent = (e && e.message) || "Couldn't create an invite. Try again."; }
+  }catch(e){ out.hidden = false; out.textContent = tr((e && e.message) || "Couldn't create an invite. Try again."); }
 });
 $("#pwBtn").addEventListener("click", () => { $("#pwBox").hidden = !$("#pwBox").hidden; });
 $("#pwSave").addEventListener("click", async () => {
   const cur = $("#pwCur").value, next = $("#pwNew").value;
-  if(next.length < 8){ toast("The new password needs at least 8 characters."); return; }
+  if(next.length < 8){ toast(tr("The new password needs at least 8 characters.")); return; }
   try{
     const chk = await sb.auth.signInWithPassword({email:me.email, password:cur});
-    if(chk.error){ toast("The current password is wrong."); return; }
+    if(chk.error){ toast(tr("The current password is wrong.")); return; }
     const {error} = await sb.auth.updateUser({password:next});
-    if(error){ toast(/same/i.test(error.message) ? "That's the password you already have." : "Couldn't change the password"); return; }
+    if(error){ toast(/same/i.test(error.message) ? tr("That's the password you already have.") : tr("Couldn't change the password")); return; }
     try{ await sb.auth.signOut({scope:"others"}); }catch(e){}
     $("#pwCur").value = ""; $("#pwNew").value = ""; $("#pwBox").hidden = true;
-    toast("Password changed. Other phones will need to sign in again.");
-  }catch(e){ toast("Couldn't reach Alvor"); }
+    toast(tr("Password changed. Other phones will need to sign in again."));
+  }catch(e){ toast(tr("Couldn't reach Alvor")); }
 });

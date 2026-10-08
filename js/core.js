@@ -42,43 +42,43 @@ const ICON = {
 };
 /* Who sees a plant. "Everyone" comes later, when Alvor opens up. */
 const VIS = {
-  friends:{label:"Friends", short:"Friends", icon:ICON.people, hint:"Friends see its name, species, spot and photos. Never your notes or watering."},
-  vault:{label:"Only me (Vault)", short:"Only me", icon:ICON.lock, hint:"Only you see it. It stays in its spot with all its alerts."},
-  everyone:{label:"Everyone", short:"Everyone", icon:ICON.people, hint:"Anyone on Alvor can see it."}
+  friends:{label:tr("Friends"), short:tr("Friends"), icon:ICON.people, hint:tr("Friends see its name, species, spot and photos. Never your notes or watering.")},
+  vault:{label:tr("Only me (Vault)"), short:tr("Only me"), icon:ICON.lock, hint:tr("Only you see it. It stays in its spot with all its alerts.")},
+  everyone:{label:tr("Everyone"), short:tr("Everyone"), icon:ICON.people, hint:tr("Anyone on Alvor can see it.")}
 };
 const visOf = p => VIS[p && p.visibility] ? p.visibility : "vault";
 const AREAS = {
-  house:{label:"House", hint:"Inside the house", zones:["house-window","house-low","house-cabinet"]},
-  porch:{label:"Porch", hint:"Covered, rain doesn't reach", zones:["porch-partial","porch-shade"]},
-  outside:{label:"Outside", hint:"In the open garden", zones:["out-sun","out-partial","out-shade"]},
-  greenhouse:{label:"Greenhouse", hint:"Sheltered, a few degrees warmer", zones:["greenhouse"]},
-  balcony:{label:"Balcony", hint:"Outside on the balcony", zones:["balc-sun","balc-partial","balc-shade"]}
+  house:{label:tr("House"), hint:tr("Inside the house"), zones:["house-window","house-low","house-cabinet"]},
+  porch:{label:tr("Porch"), hint:tr("Covered, rain doesn't reach"), zones:["porch-partial","porch-shade"]},
+  outside:{label:tr("Outside"), hint:tr("In the open garden"), zones:["out-sun","out-partial","out-shade"]},
+  greenhouse:{label:tr("Greenhouse"), hint:tr("Sheltered, a few degrees warmer"), zones:["greenhouse"]},
+  balcony:{label:tr("Balcony"), hint:tr("Outside on the balcony"), zones:["balc-sun","balc-partial","balc-shade"]}
 };
 const ALL_AREAS = ["house","balcony","porch","outside","greenhouse"];
 const isApt = () => state.settings.home === "apartment";
 const areaOrder = () => isApt() ? ["house","balcony"] : ["house","porch","outside","greenhouse"];
-const areaLabel = a => a === "house" && isApt() ? "Inside" : AREAS[a].label;
-const areaHint = a => a === "house" && isApt() ? "Inside the apartment" : AREAS[a].hint;
+const areaLabel = a => a === "house" && isApt() ? tr("Inside") : AREAS[a].label;
+const areaHint = a => a === "house" && isApt() ? tr("Inside the apartment") : AREAS[a].hint;
 function defaultZone(pattern){ return isApt() ? (pattern === "indoor" ? "house-window" : "balc-sun") : DEFAULT_ZONE[pattern]; }
 function defaultPlanting(pattern){ return isApt() ? "pot" : DEFAULT_PLANTING[pattern]; }
 function patternOptions(){
   return isApt()
-    ? `<option value="indoor">Inside all year</option><option value="outdoor">On the balcony all year</option><option value="mover">Balcony in summer, inside in winter</option>`
-    : `<option value="indoor">Inside all year</option><option value="outdoor">Outside all year</option><option value="mover">Outside in summer, inside in winter</option><option value="greenhouse">Outside in summer, greenhouse in winter</option>`;
+    ? `<option value="indoor">${tr("Inside all year")}</option><option value="outdoor">${tr("On the balcony all year")}</option><option value="mover">${tr("Balcony in summer, inside in winter")}</option>`
+    : `<option value="indoor">${tr("Inside all year")}</option><option value="outdoor">${tr("Outside all year")}</option><option value="mover">${tr("Outside in summer, inside in winter")}</option><option value="greenhouse">${tr("Outside in summer, greenhouse in winter")}</option>`;
 }
 const ZONES = {
-  "house-window": {area:"house", light:"window", icon:"window", label:"By a window", short:"Window", hint:"Inside, in good light"},
-  "house-low":    {area:"house", light:"low", icon:"low", label:"Low light", short:"Low light", hint:"Inside, away from the windows"},
-  "house-cabinet":{area:"house", light:"cabinet", icon:"cabinet", label:"Grow cabinet", short:"Grow cabinet", hint:"Under grow lights"},
-  "porch-partial":{area:"porch", light:"partial", icon:"partial", label:"Porch, partial sun", short:"Partial sun", hint:"Some direct sun during the day"},
-  "porch-shade":  {area:"porch", light:"shade", icon:"shade", label:"Porch, shade", short:"Shade", hint:"Little or no direct sun"},
-  "out-sun":      {area:"outside", light:"sun", icon:"sun", label:"Outside, sun", short:"Sun", hint:"Sun most of the day"},
-  "out-partial":  {area:"outside", light:"partial", icon:"partial", label:"Outside, partial sun", short:"Partial sun", hint:"Sun for part of the day"},
-  "out-shade":    {area:"outside", light:"shade", icon:"shade", label:"Outside, shade", short:"Shade", hint:"Mostly in shade"},
-  "greenhouse":   {area:"greenhouse", light:null, icon:"greenhouse", label:"Greenhouse", short:"Greenhouse", hint:"Sheltered, a few degrees warmer"},
-  "balc-sun":     {area:"balcony", light:"sun", icon:"sun", label:"Balcony, sun", short:"Sun", hint:"Sun most of the day"},
-  "balc-partial": {area:"balcony", light:"partial", icon:"partial", label:"Balcony, partial sun", short:"Partial sun", hint:"Sun for part of the day"},
-  "balc-shade":   {area:"balcony", light:"shade", icon:"shade", label:"Balcony, shade", short:"Shade", hint:"Mostly in shade"}
+  "house-window": {area:"house", light:"window", icon:"window", label:tr("By a window"), short:tr("Window"), hint:tr("Inside, in good light")},
+  "house-low":    {area:"house", light:"low", icon:"low", label:tr("Low light"), short:tr("Low light"), hint:tr("Inside, away from the windows")},
+  "house-cabinet":{area:"house", light:"cabinet", icon:"cabinet", label:tr("Grow cabinet"), short:tr("Grow cabinet"), hint:tr("Under grow lights")},
+  "porch-partial":{area:"porch", light:"partial", icon:"partial", label:tr("Porch, partial sun"), short:tr("Partial sun"), hint:tr("Some direct sun during the day")},
+  "porch-shade":  {area:"porch", light:"shade", icon:"shade", label:tr("Porch, shade"), short:tr("Shade"), hint:tr("Little or no direct sun")},
+  "out-sun":      {area:"outside", light:"sun", icon:"sun", label:tr("Outside, sun"), short:tr("Sun"), hint:tr("Sun most of the day")},
+  "out-partial":  {area:"outside", light:"partial", icon:"partial", label:tr("Outside, partial sun"), short:tr("Partial sun"), hint:tr("Sun for part of the day")},
+  "out-shade":    {area:"outside", light:"shade", icon:"shade", label:tr("Outside, shade"), short:tr("Shade"), hint:tr("Mostly in shade")},
+  "greenhouse":   {area:"greenhouse", light:null, icon:"greenhouse", label:tr("Greenhouse"), short:tr("Greenhouse"), hint:tr("Sheltered, a few degrees warmer")},
+  "balc-sun":     {area:"balcony", light:"sun", icon:"sun", label:tr("Balcony, sun"), short:tr("Sun"), hint:tr("Sun most of the day")},
+  "balc-partial": {area:"balcony", light:"partial", icon:"partial", label:tr("Balcony, partial sun"), short:tr("Partial sun"), hint:tr("Sun for part of the day")},
+  "balc-shade":   {area:"balcony", light:"shade", icon:"shade", label:tr("Balcony, shade"), short:tr("Shade"), hint:tr("Mostly in shade")}
 };
 const ZONE_ORDER = Object.keys(ZONES);
 const DEFAULT_ZONE = {indoor:"house-window", outdoor:"out-sun", mover:"out-sun", greenhouse:"out-sun"};
@@ -86,7 +86,7 @@ const DEFAULT_PLANTING = {indoor:"pot", outdoor:"ground", mover:"pot", greenhous
 const areaOf = z => (ZONES[z] || {}).area || z;
 const zi = z => `<span class="zi a-${areaOf(z)}">${ICON[(ZONES[z] || {}).icon || z] || ""}</span>`;
 const canGround = z => ZONES[z] && (ZONES[z].area === "outside" || ZONES[z].area === "greenhouse");
-const zoneLabel = p => ZONES[p.zone].label + (canGround(p.zone) ? (p.planting === "ground" ? ", in the ground" : ", in a pot") : "");
+const zoneLabel = p => ZONES[p.zone].label + (canGround(p.zone) ? (p.planting === "ground" ? tr(", in the ground") : tr(", in a pot")) : "");
 const OLD_ZONES = {window:"house-window", shade:"house-low", covered:"porch-partial", pots:"out-sun", potsShade:"out-shade", ground:"out-sun"};
 function zoneFromOld(p){
   if(OLD_ZONES[p.zone]) return OLD_ZONES[p.zone];
@@ -149,8 +149,8 @@ const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
 const today = () => ymd(new Date());
 const parseDay = s => new Date(s + "T12:00:00");
 const daysBetween = (a,b) => Math.round((parseDay(b) - parseDay(a)) / 86400000);
-const dayName = s => s === today() ? "Today" : parseDay(s).toLocaleDateString("en-GB",{weekday:"short"});
-const longDay = s => s === today() ? "today" : parseDay(s).toLocaleDateString("en-GB",{weekday:"long"});
+const dayName = s => s === today() ? tr("Today") : parseDay(s).toLocaleDateString(LOCALE,{weekday:"short"});
+const longDay = s => s === today() ? tr("today") : parseDay(s).toLocaleDateString(LOCALE,{weekday:"long"});
 const deg = n => `${Math.round(n)}°`;
 /* ---------- Care values for a species ---------- */
 /* hardiness.js gives the cold limit for every genus in the species list and many species.
@@ -190,8 +190,8 @@ const COLD_DEFAULT_OFF = -15;
 const coldDefault = min => !(isFinite(parseFloat(min)) && parseFloat(min) <= COLD_DEFAULT_OFF);
 const hasMin = p => p.minTemp !== null && p.minTemp !== undefined && p.minTemp !== "" && isFinite(+p.minTemp);
 function coldTag(p){
-  if(GA.coldOn(p)) return `<span class="tag">takes ${deg(p.minTemp)}</span>`;
-  return `<span class="tag off" title="Low temperature warnings are off for this plant">${hasMin(p) ? `takes ${deg(p.minTemp)}, ` : ""}no low temp alerts</span>`;
+  if(GA.coldOn(p)) return `<span class="tag">${tr("takes {t}", {t:deg(p.minTemp)})}</span>`;
+  return `<span class="tag off" title="${tr("Low temperature warnings are off for this plant")}">${hasMin(p) ? tr("takes {t}", {t:deg(p.minTemp)}) + ", " : ""}${tr("no low temp alerts")}</span>`;
 }
 
 let state = load();
@@ -216,7 +216,7 @@ function load(){
 }
 function saveLocal(){
   try{ localStorage.setItem(KEY, JSON.stringify(state)); }
-  catch(e){ toast("Couldn't save. Export a backup to be safe."); }
+  catch(e){ toast(tr("Couldn't save. Export a backup to be safe.")); }
 }
 /* Sync bookkeeping (the rules are in sync.js): what changed or was deleted on this phone since the last save.
    Kept apart from the garden, tied to the account it belongs to. */

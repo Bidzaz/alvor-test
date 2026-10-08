@@ -3,17 +3,17 @@
 "use strict";
 /* ---------- Reporting ----------
    A report goes to the owner of Alvor through report_content(), which checks you can see the thing. */
-const REP_REASONS = [["offensive", "Rude, offensive or hateful"], ["harassment", "Bullying or harassment"],
-  ["sexual", "Nudity or sexual content"], ["spam", "Spam or a fake account"], ["other", "Something else"]];
+const REP_REASONS = [["offensive", tr("Rude, offensive or hateful")], ["harassment", tr("Bullying or harassment")],
+  ["sexual", tr("Nudity or sexual content")], ["spam", tr("Spam or a fake account")], ["other", tr("Something else")]];
 let rep = null;
 const repDlg = $("#repDlg");
 function openReport(o){
   if(!online || !token) return;
   rep = o;
   const who = esc(personName(o.person));
-  $("#repTitle").textContent = o.type === "profile" ? `Report ${personName(o.person)}` : o.type === "photo" ? "Report a photo" : o.type === "comment" ? "Report a comment" : "Report a plant";
-  $("#repLead").innerHTML = (o.type === "profile" ? `What's wrong with ${who}'s profile or garden?` : `What's wrong with ${esc(o.what)}?`)
-    + ` Reports go to the owner of Alvor, who looks at each one. ${who} isn't told who sent it.`;
+  $("#repTitle").textContent = o.type === "profile" ? tr("Report {name}", {name:personName(o.person)}) : o.type === "photo" ? tr("Report a photo") : o.type === "comment" ? tr("Report a comment") : tr("Report a plant");
+  $("#repLead").innerHTML = (o.type === "profile" ? tr("What's wrong with {name}'s profile or garden?", {name:who}) : tr("What's wrong with {what}?", {what:esc(o.what)}))
+    + " " + tr("Reports go to the owner of Alvor, who looks at each one. {name} isn't told who sent it.", {name:who});
   $("#repReasons").innerHTML = REP_REASONS.map(([k, l]) => `<label><input type="radio" name="repWhy" value="${k}"> ${l}</label>`).join("");
   $("#repNote").value = "";
   const st = o.person && circleStatus(o.person.id);
@@ -34,8 +34,8 @@ $("#repSend").addEventListener("click", async () => {
     must(await sb.rpc("report_content", {p_type:o.type, p_id:o.id, p_reason:(label + (note ? ": " + note : "")).slice(0, 500)}));
     const block = $("#repBlock").checked && o.person && !$("#repBlockRow").hidden;
     repDlg.close();
-    if(block){ await personAction("block", o.person.id, true); toast(`Report sent, and ${personName(o.person)} is blocked`); }
-    else toast("Report sent. Thank you.");
+    if(block){ await personAction("block", o.person.id, true); toast(tr("Report sent, and {name} is blocked", {name:personName(o.person)})); }
+    else toast(tr("Report sent. Thank you."));
   }catch(e){ btn.disabled = false; circleErr(e); }
 });
 
@@ -70,7 +70,21 @@ function makeZip(files){
   return new Blob([...parts, ...central, e], {type:"application/zip"});
 }
 const safeName = s => String(s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w .-]+/g, "").replace(/\s+/g, " ").trim().slice(0, 50) || "Plant";
-const DATA_README = `Your data from Alvor
+const DATA_README = LANG === "es" ? `Tus datos de Alvor
+==================
+
+alvor-data.json   Todo lo que el servidor de Alvor guarda sobre ti: el correo con el
+                  que entras, tu perfil, ajustes y ubicación, cada planta con sus notas
+                  y cuidados, tu historial, amigos, solicitudes, bloqueos, invitaciones,
+                  las reacciones y comentarios que escribiste y las denuncias que enviaste.
+                  Se abre con cualquier editor de texto.
+photos/           Todas las fotos, a tamaño completo, en una carpeta por planta.
+profile-photo.jpg Tu foto de perfil, si tienes una.
+backdrop-photo.jpg Tu foto de fondo, si elegiste una.
+
+Alvor no guarda nada más sobre ti. Para borrarlo todo, usa
+Ajustes → Borrar mi cuenta en la app, o la página "Borrar tu cuenta".
+` : `Your data from Alvor
 ====================
 
 alvor-data.json   Everything Alvor's server keeps about you: your sign-in email,
@@ -91,9 +105,9 @@ async function downloadMyData(){
   dataBusy = true; $("#dataBtn").disabled = true;
   const st = m => { $("#dataStatus").textContent = m; };
   try{
-    st("Saving the latest changes…");
+    st(tr("Saving the latest changes…"));
     await push(); await syncPhotos();
-    st("Collecting your data…");
+    st(tr("Collecting your data…"));
     const data = must(await sb.rpc("export_my_data"));
     const enc = new TextEncoder(), files = [], now = new Date();
     files.push({name:"README.txt", data:enc.encode(DATA_README), date:now});
@@ -104,7 +118,7 @@ async function downloadMyData(){
     let missing = 0;
     for(let i = 0; i < list.length; i++){
       const ph = list[i];
-      st(`Adding photos: ${i + 1} of ${list.length}…`);
+      st(tr("Adding photos: {n} of {total}…", {n:i + 1, total:list.length}));
       let bytes = null;
       try{
         if(local[ph.id] && local[ph.id].data) bytes = new Uint8Array(await (await dataToBlob(local[ph.id].data)).arrayBuffer());
@@ -120,17 +134,17 @@ async function downloadMyData(){
     if(own && own.path){
       try{ const d = await ownData(own); if(d) files.push({name:"backdrop-photo.jpg", data:new Uint8Array(await (await dataToBlob(d)).arrayBuffer()), date:now}); }catch(e){}
     }
-    st("Making the file…");
+    st(tr("Making the file…"));
     const blob = makeZip(files);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = `alvor-my-data-${today()}.zip`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-    st(`Done: ${list.length - missing} ${list.length - missing === 1 ? "photo" : "photos"} and all your details, ${(blob.size / 1048576).toFixed(1)} MB.`
-      + (missing ? ` ${missing} ${missing === 1 ? "photo" : "photos"} couldn't be fetched; try again later.` : ""));
+    st(trn(list.length - missing, "Done: {n} photo and all your details, {mb} MB.", "Done: {n} photos and all your details, {mb} MB.", {mb:(blob.size / 1048576).toLocaleString(LOCALE, {minimumFractionDigits:1, maximumFractionDigits:1})})
+      + (missing ? " " + trn(missing, "{n} photo couldn't be fetched; try again later.", "{n} photos couldn't be fetched; try again later.") : ""));
   }catch(e){
     if(isAuthErr(e)) sessionExpired();
-    else st("Couldn't collect your data. Check your connection and try again.");
+    else st(tr("Couldn't collect your data. Check your connection and try again."));
   }finally{ dataBusy = false; $("#dataBtn").disabled = false; }
 }
 $("#dataBtn").addEventListener("click", downloadMyData);
@@ -146,15 +160,15 @@ $("#delAcctBtn").addEventListener("click", () => {
 [$("#delClose"), $("#delCancel")].forEach(b => b.addEventListener("click", () => delDlg.close()));
 $("#delGo").addEventListener("click", async () => {
   const pw = $("#delPass").value;
-  if(!pw){ $("#delMsg").textContent = "Type your password first."; $("#delPass").focus(); return; }
-  $("#delGo").disabled = true; $("#delMsg").textContent = "Deleting…";
+  if(!pw){ $("#delMsg").textContent = tr("Type your password first."); $("#delPass").focus(); return; }
+  $("#delGo").disabled = true; $("#delMsg").textContent = tr("Deleting…");
   try{
     const {r, j} = await callFn("account", {action:"delete", password:pw});
-    if(!r.ok){ $("#delMsg").textContent = j.error || "Couldn't delete the account. Try again."; $("#delGo").disabled = false; return; }
-  }catch(e){ $("#delMsg").textContent = "Couldn't reach Alvor. Check your connection and try again."; $("#delGo").disabled = false; return; }
+    if(!r.ok){ $("#delMsg").textContent = tr(j.error || "Couldn't delete the account. Try again."); $("#delGo").disabled = false; return; }
+  }catch(e){ $("#delMsg").textContent = tr("Couldn't reach Alvor. Check your connection and try again."); $("#delGo").disabled = false; return; }
   delDlg.close();
   await forgetEverything();
-  authMode = "login"; showAuth("Your account and everything in it have been deleted. Thank you for growing with Alvor.");
+  authMode = "login"; showAuth(tr("Your account and everything in it have been deleted. Thank you for growing with Alvor."));
 });
 /* After the account is gone: nothing of it stays on this phone. */
 async function forgetEverything(){
@@ -189,7 +203,7 @@ async function loadAdmin(quiet){
     admin = {open, off, urls};
     let seen = []; try{ seen = JSON.parse(localStorage.getItem(ADMIN_SEEN_KEY) || "[]"); }catch(e){}
     const fresh = open.filter(x => !seen.includes(x.id)).length;
-    if(quiet && fresh) toast(`${fresh} new ${fresh === 1 ? "report" : "reports"} to look at, in Settings`);
+    if(quiet && fresh) toast(trn(fresh, "{n} new report to look at, in Settings", "{n} new reports to look at, in Settings"));
     try{ localStorage.setItem(ADMIN_SEEN_KEY, JSON.stringify(open.map(x => x.id))); }catch(e){}
   }catch(e){ if(isAuthErr(e)) sessionExpired(); else if(!quiet) admin = {error:true}; }
   finally{ adminBusy = false; }
@@ -197,31 +211,31 @@ async function loadAdmin(quiet){
 }
 function renderAdmin(){
   const el = $("#adminList"), A = admin;
-  if(!A){ el.innerHTML = `<p class="f-empty">Loading…</p>`; return; }
-  if(A.error){ el.innerHTML = `<p class="f-empty">Couldn't load the reports. Check your connection.</p>`; return; }
-  $("#adminCount").textContent = A.open.length ? `${A.open.length} open` : "";
-  const at = u => u ? "@" + esc(u) : "a deleted account";
+  if(!A){ el.innerHTML = `<p class="f-empty">${tr("Loading…")}</p>`; return; }
+  if(A.error){ el.innerHTML = `<p class="f-empty">${tr("Couldn't load the reports. Check your connection.")}</p>`; return; }
+  $("#adminCount").textContent = A.open.length ? tr("{n} open", {n:A.open.length}) : "";
+  const at = u => u ? "@" + esc(u) : tr("a deleted account");
   let h = A.open.length ? A.open.map(x => `<div class="adm-item">
-      <div class="adm-top"><b>${at(x.about_username)}</b>${x.about_disabled ? ` <span class="adm-off">switched off</span>` : ""}<small>${esc(shortDate(x.created_at))}</small></div>
+      <div class="adm-top"><b>${at(x.about_username)}</b>${x.about_disabled ? ` <span class="adm-off">${tr("switched off")}</span>` : ""}<small>${esc(shortDate(x.created_at))}</small></div>
       <p class="adm-what">${esc(x.detail)}</p>
-      ${x.photo_path && A.urls[x.photo_path] ? `<img src="${esc(A.urls[x.photo_path])}" alt="The reported photo">` : ""}
-      <p class="adm-why">${esc(x.reason || "No reason given")} · reported by ${at(x.reporter_username)}${x.reports_about_them > 1 ? ` · ${x.reports_about_them} open reports about them` : ""}</p>
-      <div class="btn-row"><button class="btn small" data-adm="done" data-id="${x.id}">Mark as handled</button>
-        ${x.about_id && !x.about_disabled ? `<button class="btn small danger" data-adm="off" data-user="${x.about_id}" data-name="${esc(x.about_username || "")}">Switch off their account</button>` : ""}</div>
-    </div>`).join("") : `<p class="f-empty">No open reports.</p>`;
-  if(A.off.length) h += `<h3 class="sub-h">Switched-off accounts</h3>${A.off.map(p => `<div class="person"><div class="who"><b>${esc(p.display_name)}</b><span>@${esc(p.username)}</span></div>
-    <div class="p-acts"><button class="btn small" data-adm="on" data-user="${p.id}" data-name="${esc(p.username)}">Switch back on</button></div></div>`).join("")}`;
+      ${x.photo_path && A.urls[x.photo_path] ? `<img src="${esc(A.urls[x.photo_path])}" alt="${tr("The reported photo")}">` : ""}
+      <p class="adm-why">${esc(x.reason || tr("No reason given"))} · ${tr("reported by {who}", {who:at(x.reporter_username)})}${x.reports_about_them > 1 ? ` · ${tr("{n} open reports about them", {n:x.reports_about_them})}` : ""}</p>
+      <div class="btn-row"><button class="btn small" data-adm="done" data-id="${x.id}">${tr("Mark as handled")}</button>
+        ${x.about_id && !x.about_disabled ? `<button class="btn small danger" data-adm="off" data-user="${x.about_id}" data-name="${esc(x.about_username || "")}">${tr("Switch off their account")}</button>` : ""}</div>
+    </div>`).join("") : `<p class="f-empty">${tr("No open reports.")}</p>`;
+  if(A.off.length) h += `<h3 class="sub-h">${tr("Switched-off accounts")}</h3>${A.off.map(p => `<div class="person"><div class="who"><b>${esc(p.display_name)}</b><span>@${esc(p.username)}</span></div>
+    <div class="p-acts"><button class="btn small" data-adm="on" data-user="${p.id}" data-name="${esc(p.username)}">${tr("Switch back on")}</button></div></div>`).join("")}`;
   el.innerHTML = h;
 }
 $("#adminList").addEventListener("click", async e => {
   const b = e.target.closest("[data-adm]"); if(!b || b.disabled) return;
-  const act = b.dataset.adm, name = b.dataset.name ? "@" + b.dataset.name : "this account";
-  if(act === "off" && !confirm(`Switch off ${name}? Nobody can see their garden, profile or comments, find them or add them, until you switch it back on. Their open reports are marked as handled. They aren't told.`)) return;
+  const act = b.dataset.adm, name = b.dataset.name ? "@" + b.dataset.name : tr("this account");
+  if(act === "off" && !confirm(tr("Switch off {name}? Nobody can see their garden, profile or comments, find them or add them, until you switch it back on. Their open reports are marked as handled. They aren't told.", {name}))) return;
   b.disabled = true;
   try{
     if(act === "done") must(await sb.rpc("admin_resolve_report", {p_id:b.dataset.id}));
     else must(await sb.rpc("admin_set_disabled", {p_user:b.dataset.user, p_disabled:act === "off"}));
-    toast(act === "done" ? "Marked as handled" : act === "off" ? `${name} switched off` : `${name} switched back on`);
+    toast(act === "done" ? tr("Marked as handled") : act === "off" ? tr("{name} switched off", {name}) : tr("{name} switched back on", {name}));
   }catch(err){ circleErr(err); }
   await loadAdmin();
 });

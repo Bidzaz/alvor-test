@@ -15,13 +15,14 @@ try{ navigator.storage && navigator.storage.persist && navigator.storage.persist
 try{ localStorage.removeItem("garden-sync-key"); }catch(e){}
 initAuth().then(async () => {
   if(online && !token){
-    if(linkToken()){ authMode = "signup"; showAuth("A friend invited you. Create your account to join their circle."); $("#aInvite").value = location.href; }
-    else if(hadOldAccount) showAuth("Alvor has a new home. Create a new account with the invite you received, or sign in if you already did. The plants on this phone come with you.");
+    if(linkToken()){ authMode = "signup"; showAuth(tr("A friend invited you. Create your account to join their circle.")); $("#aInvite").value = location.href; }
+    else if(hadOldAccount) showAuth(tr("Alvor has a new home. Create a new account with the invite you received, or sign in if you already did. The plants on this phone come with you."));
     else showAuth();
     return;
   }
   fillAccount();
   await pull();
+  syncLang();
   loadCircle();
   loadAdmin(true);
   await joinFromLink();

@@ -16,7 +16,7 @@ async function fetchWeather(force){
     const j = await r.json();
     state.weather = {at:Date.now(), lat:s.lat, lon:s.lon, daily:j.daily, current:j.current};
     saveLocal();
-  }catch(e){ toast("Couldn't load the forecast"); }
+  }catch(e){ toast(tr("Couldn't load the forecast")); }
   render();
 }
 const ctx = () => ({settings:state.settings, daily:state.weather && state.weather.daily, today:today(), month:new Date().getMonth()+1, mode:"full"});

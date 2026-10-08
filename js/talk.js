@@ -4,8 +4,8 @@
 /* ---------- Life in the circle: reactions, comments and what's new ----------
    One system for plants, areas and whole gardens. Who may see or write what is enforced by the database;
    this part shows it, and keeps a small copy of each garden's reactions and comments. */
-const REACTS = [["love", "❤️", "Love it"], ["growing", "🌱", "Growing well"], ["pretty", "🌸", "So pretty"],
-  ["wow", "😮", "Impressive"], ["thirsty", "💧", "Needs water?"], ["soggy", "🌊", "Too much water?"]];
+const REACTS = [["love", "❤️", tr("Love it")], ["growing", "🌱", tr("Growing well")], ["pretty", "🌸", tr("So pretty")],
+  ["wow", "😮", tr("Impressive")], ["thirsty", "💧", tr("Needs water?")], ["soggy", "🌊", tr("Too much water?")]];
 const REACT = Object.fromEntries(REACTS.map(([k, e, l]) => [k, {e, l}]));
 const people = {};                     // names and photos seen so far, by id
 const talks = {}, gardenTalkAt = {};   // "owner|type|id" → {reactions, comments}; when each garden was loaded
@@ -13,25 +13,25 @@ let talkT = null;                      // what the talk dialog shows
 const tKey = T => `${T.owner}|${T.type}|${T.id}`;
 const notePeople = list => (list || []).forEach(p => { if(p && p.id) people[p.id] = {...(people[p.id] || {}), ...p}; });
 const meProfile = () => me ? {id:me.id, username:me.user, display_name:me.name || me.user, avatar_path:me.avatar || null} : null;
-const personById = id => me && id === me.id ? meProfile() : people[id] || (findPerson(id)) || {id, display_name:"Someone"};
+const personById = id => me && id === me.id ? meProfile() : people[id] || (findPerson(id)) || {id, display_name:tr("Someone")};
 const talkOf = T => talks[tKey(T)] || {reactions:[], comments:[]};
 const talkFor = T => talks[tKey(T)] ||= {reactions:[], comments:[]};
 const talkCount = T => { const D = talkOf(T); return {r:D.reactions.length, c:D.comments.length}; };
-/* How a spot is named in a sentence, the same words the notifications use. */
-const areaPhrase = (a, home) => a === "house" ? (home === "apartment" ? "indoor plants" : "house") : a === "outside" ? "outdoor garden" : a;
-const thingName = T => T.type === "plant" ? (T.name || "plant") : T.type === "area" ? areaPhrase(T.id, T.home) : "garden";
-const talkTitle = T => me && T.owner === me.id ? `Your ${thingName(T)}` : `${T.ownerName || "Their"}'s ${thingName(T)}`;
+/* How a spot is named in a sentence, the same words the notifications use ("your porch", "Ana's greenhouse"; i18n.js). */
+const thingKind = T => T.type === "plant" ? "plant" : T.type === "area" ? (T.id === "house" ? (T.home === "apartment" ? "indoor" : "house") : T.id === "outside" ? "outdoor" : T.id) : "garden";
+const thingSay = (T, form, who, word) => thingPhrase(thingKind(T), word != null ? word : (T.name || tr("plant")), form, who);
+const talkTitle = T => cap(me && T.owner === me.id ? thingSay(T, "your") : T.ownerName ? thingSay(T, "of", T.ownerName) : thingSay(T, "their"));
 function ago(s){
   const m = (Date.now() - new Date(s).getTime()) / 60000;
-  if(m < 1) return "now";
-  if(m < 60) return `${Math.floor(m)} min`;
-  if(m < 1440) return `${Math.floor(m / 60)} h`;
-  if(m < 10080) return `${Math.floor(m / 1440)} d`;
+  if(m < 1) return tr("now");
+  if(m < 60) return tr("{n} min", {n:Math.floor(m)});
+  if(m < 1440) return tr("{n} h", {n:Math.floor(m / 60)});
+  if(m < 10080) return tr("{n} d", {n:Math.floor(m / 1440)});
   return shortDate(s);
 }
 function talkErr(e){
   if(isAuthErr(e)){ sessionExpired(); return; }
-  if(e && e.code === "42501") toast(me && me.disabled ? "Your account is switched off." : "This isn't shared with you any more.");
+  if(e && e.code === "42501") toast(me && me.disabled ? tr("Your account is switched off.") : tr("This isn't shared with you any more."));
   else circleErr(e);
 }
 
@@ -65,35 +65,35 @@ function reactHtml(T){
   if(mine){
     const got = REACTS.filter(([k]) => counts[k]);
     h += got.length ? `<div class="rx-bar">${got.map(([k, e, l]) => `<span class="rx" title="${l}">${e}<b>${counts[k]}</b></span>`).join("")}</div>`
-      : `<p class="tk-none">No reactions yet.</p>`;
+      : `<p class="tk-none">${tr("No reactions yet.")}</p>`;
   }else{
-    h += `<div class="rx-bar" role="group" aria-label="React">${REACTS.map(([k, e, l]) => `<button class="rx" data-tk="react" data-k="${k}" aria-pressed="${my.has(k)}" title="${l}" aria-label="${l}${counts[k] ? ", " + counts[k] : ""}">${e}${counts[k] ? `<b>${counts[k]}</b>` : ""}</button>`).join("")}</div>`;
+    h += `<div class="rx-bar" role="group" aria-label="${tr("React")}">${REACTS.map(([k, e, l]) => `<button class="rx" data-tk="react" data-k="${k}" aria-pressed="${my.has(k)}" title="${l}" aria-label="${l}${counts[k] ? ", " + counts[k] : ""}">${e}${counts[k] ? `<b>${counts[k]}</b>` : ""}</button>`).join("")}</div>`;
   }
   const who = Object.entries(by);
-  if(who.length) h += `<p class="tk-who">${who.slice(0, 8).map(([id, ks]) => `<span><b>${id === me.id ? "You" : esc(personName(personById(id)))}</b> ${REACTS.filter(([k]) => ks.includes(k)).map(([, e]) => e).join("")}</span>`).join("")}${who.length > 8 ? `<span>and ${who.length - 8} more</span>` : ""}</p>`;
+  if(who.length) h += `<p class="tk-who">${who.slice(0, 8).map(([id, ks]) => `<span><b>${id === me.id ? tr("You") : esc(personName(personById(id)))}</b> ${REACTS.filter(([k]) => ks.includes(k)).map(([, e]) => e).join("")}</span>`).join("")}${who.length > 8 ? `<span>${tr("and {n} more", {n:who.length - 8})}</span>` : ""}</p>`;
   return h;
 }
 const showAllTalk = new Set();
 function commentsHtml(T){
   const D = talkOf(T), all = D.comments, key = tKey(T);
-  if(!all.length) return `<p class="tk-none">${T.owner === me.id ? "No comments yet." : "No comments yet. Say something nice."}</p>`;
+  if(!all.length) return `<p class="tk-none">${T.owner === me.id ? tr("No comments yet.") : tr("No comments yet. Say something nice.")}</p>`;
   const list = showAllTalk.has(key) ? all : all.slice(-30);
-  return (list.length < all.length ? `<button class="linkish tk-earlier" data-tk="earlier">Show ${all.length - list.length} earlier</button>` : "") +
+  return (list.length < all.length ? `<button class="linkish tk-earlier" data-tk="earlier">${tr("Show {n} earlier", {n:all.length - list.length})}</button>` : "") +
     `<div class="cms">${list.map(c => {
       const p = personById(c.user_id);
-      return `<div class="cm">${personAv(p)}<div class="cm-b"><div class="cm-h"><b>${esc(c.user_id === me.id ? "You" : personName(p))}</b><small>${esc(ago(c.created_at))}</small></div>
-        <p>${esc(c.body)}</p></div><button class="icon-more" data-tk="cmore" data-id="${esc(c.id)}" aria-label="More for this comment">${MORE}</button></div>`;
+      return `<div class="cm">${personAv(p)}<div class="cm-b"><div class="cm-h"><b>${esc(c.user_id === me.id ? tr("You") : personName(p))}</b><small>${esc(ago(c.created_at))}</small></div>
+        <p>${esc(c.body)}</p></div><button class="icon-more" data-tk="cmore" data-id="${esc(c.id)}" aria-label="${tr("More for this comment")}">${MORE}</button></div>`;
     }).join("")}</div>`;
 }
 function talkLive(T, mode){
   const n = talkOf(T).comments.length;
   return reactHtml(T) + (mode === "compact"
-    ? `<button class="btn small tk-open" data-tk="open">💬 ${n ? `${n} ${n === 1 ? "comment" : "comments"}` : "Comment"}</button>`
-    : `<h3 class="tk-h">Comments ${n ? `<small>${n}</small>` : ""}</h3>${commentsHtml(T)}`);
+    ? `<button class="btn small tk-open" data-tk="open">💬 ${n ? trn(n, "{n} comment", "{n} comments") : tr("Comment")}</button>`
+    : `<h3 class="tk-h">${tr("Comments")} ${n ? `<small>${n}</small>` : ""}</h3>${commentsHtml(T)}`);
 }
 function talkHtml(T, mode){
   return `<div class="talk ${mode}" ${talkAttrs(T)} data-mode="${mode}"><div class="tk-live">${talkLive(T, mode)}</div>${mode === "full"
-    ? `<div class="tk-write"><textarea data-tk-input rows="1" maxlength="1000" placeholder="Write a comment…" aria-label="Write a comment"></textarea><button class="btn small primary" data-tk="send">Send</button></div>` : ""}</div>`;
+    ? `<div class="tk-write"><textarea data-tk-input rows="1" maxlength="1000" placeholder="${tr("Write a comment…")}" aria-label="${tr("Write a comment")}"></textarea><button class="btn small primary" data-tk="send">${tr("Send")}</button></div>` : ""}</div>`;
 }
 /* Redraw every box showing this thing (the writing box keeps what's typed), plus the counts around it. */
 function redrawTalk(T){
@@ -156,18 +156,18 @@ async function commentMenu(T, cid){
   const D = talkFor(T), c = D.comments.find(x => x.id === cid); if(!c) return;
   const p = personById(c.user_id), mineC = c.user_id === me.id, myGarden = T.owner === me.id;
   const acts = [];
-  if(mineC) acts.push(["delete", "Delete my comment", "danger"]);
+  if(mineC) acts.push(["delete", tr("Delete my comment"), "danger"]);
   else{
-    if(myGarden) acts.push(["delete", "Remove from my garden", "danger"]);
-    acts.push(["report", "Report this comment…", "danger"]);
+    if(myGarden) acts.push(["delete", tr("Remove from my garden"), "danger"]);
+    acts.push(["report", tr("Report this comment…"), "danger"]);
   }
   const k = await sheet(p, acts); if(!k) return;
-  if(k === "report") return openReport({type:"comment", id:cid, person:p, what:"this comment"});
+  if(k === "report") return openReport({type:"comment", id:cid, person:p, what:tr("this comment")});
   if(k === "delete"){
-    if(!confirm(mineC ? "Delete your comment?" : `Remove ${personName(p)}'s comment from your garden? They aren't told.`)) return;
+    if(!confirm(mineC ? tr("Delete your comment?") : tr("Remove {name}'s comment from your garden? They aren't told.", {name:personName(p)}))) return;
     try{
       must(await sb.from("comments").delete().eq("id", cid));
-      D.comments = D.comments.filter(x => x.id !== cid); redrawTalk(T); toast("Comment deleted");
+      D.comments = D.comments.filter(x => x.id !== cid); redrawTalk(T); toast(tr("Comment deleted"));
     }catch(e){ talkErr(e); }
   }
 }
@@ -197,7 +197,7 @@ async function openTalk(T){
   if(!online || !token || !me || !T || !T.owner) return;
   talkT = {...T};
   $("#talkTitle").textContent = T.name || T.ownerName ? talkTitle(T) : "…";
-  $("#talkBody").innerHTML = `<p class="f-empty">Loading…</p>`;
+  $("#talkBody").innerHTML = `<p class="f-empty">${tr("Loading…")}</p>`;
   if(!talkDlg.open) talkDlg.showModal();
   try{
     const mine = T.owner === me.id;
@@ -205,7 +205,7 @@ async function openTalk(T){
       loadGardenTalk(T.owner, true),
       (async () => {
         if(mine){
-          talkT.ownerName = "You"; talkT.home = state.settings.home === "apartment" ? "apartment" : "house";
+          talkT.ownerName = tr("You"); talkT.home = state.settings.home === "apartment" ? "apartment" : "house";
           if(T.type === "plant"){
             let p = state.plants.find(x => x.id === T.id);
             if(!p) p = await sb.from("plants").select("name").eq("id", T.id).eq("owner_id", me.id).maybeSingle().then(must);   // not on this phone yet
@@ -218,7 +218,7 @@ async function openTalk(T){
             T.type === "plant" ? sb.from("plants").select("name").eq("id", T.id).maybeSingle().then(must) : null
           ]);
           if(prof) notePeople([prof]);
-          talkT.ownerName = prof ? personName(prof) : "Someone";
+          talkT.ownerName = prof ? personName(prof) : tr("Someone");
           talkT.home = g && g.home === "apartment" ? "apartment" : "house";
           if(T.type === "plant"){ talkT.name = pl ? pl.name : null; talkT.gone = !pl; }
           talkT.gone = talkT.gone || !g;
@@ -227,7 +227,7 @@ async function openTalk(T){
     ]);
   }catch(e){
     if(isAuthErr(e)){ talkDlg.close(); sessionExpired(); return; }
-    if(talkT && talkT.owner === T.owner) $("#talkBody").innerHTML = fgMsg("Couldn't open this", "Check your connection and try again.");
+    if(talkT && talkT.owner === T.owner) $("#talkBody").innerHTML = fgMsg(tr("Couldn't open this"), tr("Check your connection and try again."));
     return;
   }
   if(!talkT || tKey(talkT) !== tKey(T) || !talkDlg.open) return;
@@ -235,11 +235,11 @@ async function openTalk(T){
 }
 function drawTalkDlg(){
   const T = talkT; if(!T) return;
-  $("#talkTitle").textContent = T.gone ? "Not shared any more" : talkTitle(T);
-  if(T.gone){ $("#talkBody").innerHTML = fgMsg("This isn't shared any more", T.type === "plant" ? "The plant was deleted, or moved back to its owner's Vault." : "You're no longer friends with the owner of this garden."); return; }
+  $("#talkTitle").textContent = T.gone ? tr("Not shared any more") : talkTitle(T);
+  if(T.gone){ $("#talkBody").innerHTML = fgMsg(tr("This isn't shared any more"), T.type === "plant" ? tr("The plant was deleted, or moved back to its owner's Vault.") : tr("You're no longer friends with the owner of this garden.")); return; }
   const mine = T.owner === me.id;
-  const link = mine ? (T.type === "plant" ? `<button class="linkish" data-tlk="plant">Open the plant</button>` : "")
-    : `<button class="linkish" data-tlk="visit">Visit ${esc(T.ownerName)}'s garden</button>`;
+  const link = mine ? (T.type === "plant" ? `<button class="linkish" data-tlk="plant">${tr("Open the plant")}</button>` : "")
+    : `<button class="linkish" data-tlk="visit">${tr("Visit {name}'s garden", {name:esc(T.ownerName)})}</button>`;
   const body = $("#talkBody");
   body.innerHTML = `<div class="tk-dlg"></div>${link ? `<p class="tk-link">${link}</p>` : ""}`;
   mountTalk(body.querySelector(".tk-dlg"), T, "full");
@@ -310,30 +310,31 @@ async function markFeedSeen(){
   try{ must(await sb.from("accounts").update({activity_seen_at:newest}).eq("id", me.id)); }catch(e){}
 }
 function feedLine(f){
-  const actor = `<b>${esc(f.actor_name || "Someone")}</b>`;
+  const actor = `<b>${esc(f.actor_name || tr("Someone"))}</b>`;
   const plant = f.target_type === "plant", T = {type:f.target_type, id:f.target_id, name:f.target_name, home:f.owner_home};
-  const thing = plant ? `<b>${esc(f.target_name || "a plant")}</b>` : esc(thingName(T));
-  if(f.kind === "photo") return `${actor} added ${f.n === 1 ? "a photo" : f.n + " photos"} of ${thing}`;
-  if(f.kind === "reaction") return `${actor} reacted ${(f.detail || "").split(",").map(k => REACT[k] ? REACT[k].e : "").join("")} to your ${thing}`;
-  if(f.kind === "comment") return `${actor} commented on your ${thing}`;
-  return f.actor_id === f.garden_owner ? `${actor} replied on their ${thing}` : `${actor} also commented on ${esc(f.owner_name || "a friend")}'s ${thing}`;
+  const word = plant ? `<b>${esc(f.target_name || tr("a plant"))}</b>` : null, say = (form, who) => thingSay(T, form, who, word);
+  if(f.kind === "photo") return trn(f.n, "{actor} added a photo of {thing}", "{actor} added {n} photos of {thing}", {actor, thing:say("plain")});
+  if(f.kind === "reaction") return tr("{actor} reacted {emoji} to {thing}", {actor, emoji:(f.detail || "").split(",").map(k => REACT[k] ? REACT[k].e : "").join(""), thing:say("your")});
+  if(f.kind === "comment") return tr("{actor} commented on {thing}", {actor, thing:say("your")});
+  return f.actor_id === f.garden_owner ? tr("{actor} replied on {thing}", {actor, thing:say("their")})
+    : tr("{actor} also commented on {thing}", {actor, thing:say("of", esc(f.owner_name || tr("a friend")))});
 }
 function feedRow(f, i){
   const fresh = counts4Badge(f) && feedFreshAfter !== null && new Date(f.happened_at).getTime() > feedFreshAfter;
   const p = {id:f.actor_id, username:f.actor_username, display_name:f.actor_name, avatar_path:f.actor_avatar};
   const quote = f.kind === "comment" || f.kind === "reply" ? `<span class="fd-q">“${esc(f.detail || "")}”</span>` : "";
-  return `<button class="fd ${fresh ? "fresh" : ""}" data-fact="feed" data-i="${i}">${personAv(p)}<span class="fd-t"><span>${feedLine(f)}</span>${quote}<small>${esc(ago(f.happened_at))}${fresh ? " · new" : ""}</small></span></button>`;
+  return `<button class="fd ${fresh ? "fresh" : ""}" data-fact="feed" data-i="${i}">${personAv(p)}<span class="fd-t"><span>${feedLine(f)}</span>${quote}<small>${esc(ago(f.happened_at))}${fresh ? " · " + tr("new") : ""}</small></span></button>`;
 }
 function feedHtml(){
-  if(!feed) return `<p class="f-empty">Loading…</p>`;
-  if(!feed.length) return `<p class="f-empty">Nothing yet. Reactions and comments on your plants, replies to your comments and friends' new photos show up here.</p>`;
+  if(!feed) return `<p class="f-empty">${tr("Loading…")}</p>`;
+  if(!feed.length) return `<p class="f-empty">${tr("Nothing yet. Reactions and comments on your plants, replies to your comments and friends' new photos show up here.")}</p>`;
   const list = feedMore ? feed : feed.slice(0, 6);
-  return `<div class="feed">${list.map(feedRow).join("")}</div>${feed.length > list.length ? `<button class="linkish" data-fact="feedMore">Show more</button>` : ""}`;
+  return `<div class="feed">${list.map(feedRow).join("")}</div>${feed.length > list.length ? `<button class="linkish" data-fact="feedMore">${tr("Show more")}</button>` : ""}`;
 }
 function drawFeed(){ const el = $("#feedBox"); if(el) el.innerHTML = feedHtml(); }
 async function openFeedItem(i){
   const f = feed && feed[i]; if(!f) return;
-  const ownerName = f.garden_owner === me.id ? "You" : f.owner_name;
+  const ownerName = f.garden_owner === me.id ? tr("You") : f.owner_name;
   if(f.kind === "photo"){
     await openFriend(f.garden_owner);
     if(visit && visit.plants && visit.plants.some(x => x.id === f.target_id)) openFriendPlant(f.target_id, 0);
@@ -346,12 +347,12 @@ const friendAreaTalkHtml = V => V.filter && V.filter !== "all" ? `<div class="ca
 function mountFriendTalk(V, home){
   const ownerName = personName(V.prof || {}), g = $("#fgTalkGarden"), a = $("#fgTalkArea");
   if(g){
-    g.innerHTML = `<h3 class="tk-card-h">${esc(ownerName)}'s garden</h3><div></div>`;
+    g.innerHTML = `<h3 class="tk-card-h">${esc(cap(thingPhrase("garden", null, "of", ownerName)))}</h3><div></div>`;
     mountTalk(g.lastElementChild, {owner:V.id, type:"garden", id:"garden", ownerName, home}, "compact");
   }
   if(a){
     const T = {owner:V.id, type:"area", id:V.filter, ownerName, home};
-    a.innerHTML = `<h3 class="tk-card-h">${zi(V.filter)} ${esc(ownerName)}'s ${esc(thingName(T))}</h3><div></div>`;
+    a.innerHTML = `<h3 class="tk-card-h">${zi(V.filter)} ${esc(cap(thingSay(T, "of", ownerName)))}</h3><div></div>`;
     mountTalk(a.lastElementChild, T, "compact");
   }
 }

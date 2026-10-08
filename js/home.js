@@ -3,17 +3,17 @@
 "use strict";
 /* ---------- Render ---------- */
 function render(){
-  $("#placeName").textContent = state.settings.place || "Garden";
+  $("#placeName").textContent = state.settings.place || tr("Garden");
   const w = state.weather, W = wx();
   const cur = w && w.current;
   if(cur && W && W.next.length){
     const t = W.next[0];
-    $("#nowWx").innerHTML = `${wIcon(cur.weather_code, cur.is_day !== 0)}<div><b>${deg(cur.temperature_2m)}</b><small><span class="hi">H ${deg(t.max)}</span>  <span class="lo">L ${deg(t.min)}</span></small></div>`;
+    $("#nowWx").innerHTML = `${wIcon(cur.weather_code, cur.is_day !== 0)}<div><b>${deg(cur.temperature_2m)}</b><small><span class="hi">${tr("H {t}", {t:deg(t.max)})}</span>  <span class="lo">${tr("L {t}", {t:deg(t.min)})}</span></small></div>`;
     const at = new Date(w.at);
-    $("#nowLine").textContent = `Updated ${pad(at.getHours())}:${pad(at.getMinutes())}`;
+    $("#nowLine").textContent = tr("Updated {time}", {time:`${pad(at.getHours())}:${pad(at.getMinutes())}`});
   }else{
     $("#nowWx").innerHTML = "";
-    $("#nowLine").textContent = w ? "Tap the weather to refresh" : "Loading forecast…";
+    $("#nowLine").textContent = w ? tr("Tap the weather to refresh") : tr("Loading forecast…");
   }
   const groups = state.plants.length ? buildAlerts() : [];
   plantFlags = flagsFrom(groups);
@@ -37,25 +37,25 @@ function dayRisks(d){
 }
 function renderForecast(W){
   const el = $("#forecast");
-  if(!W || !W.next.length){ el.innerHTML = `<p class="fc-empty">No forecast yet. Tap the weather at the top to try again.</p>`; $("#fcDetail").hidden = true; return; }
+  if(!W || !W.next.length){ el.innerHTML = `<p class="fc-empty">${tr("No forecast yet. Tap the weather at the top to try again.")}</p>`; $("#fcDetail").hidden = true; return; }
   const codes = state.weather.daily.weather_code || [];
   const idx0 = state.weather.daily.time.indexOf(W.next[0].date);
   el.innerHTML = W.next.map((d, i) => {
     const r = dayRisks(d);
     const cls = r.frost.length ? "frost" : r.heat.length ? "heat" : "";
     const badge = r.frost.length ? `<span class="fc-badge frost">${ICON.snow}</span>` : r.heat.length ? `<span class="fc-badge heat">${ICON.heat}</span>` : "";
-    return `<button class="fc-day ${cls} ${fcOpen === d.date ? "open" : ""}" data-fc="${d.date}" aria-label="${longDay(d.date)}, ${deg(d.max)} to ${deg(d.min)}${cls ? ", warning" : ""}">
-      ${badge}<span class="fc-dn">${i === 0 ? "Today" : parseDay(d.date).toLocaleDateString("en-GB", {weekday:"short"})}</span>
+    return `<button class="fc-day ${cls} ${fcOpen === d.date ? "open" : ""}" data-fc="${d.date}" aria-label="${tr("{day}, {hi} to {lo}", {day:longDay(d.date), hi:deg(d.max), lo:deg(d.min)})}${cls ? tr(", warning") : ""}">
+      ${badge}<span class="fc-dn">${i === 0 ? tr("Today") : parseDay(d.date).toLocaleDateString(LOCALE, {weekday:"short"})}</span>
       ${wIcon(codes[idx0 + i], true)}<b class="hi">${deg(d.max)}</b><small class="lo">${deg(d.min)}</small><small class="rn ${d.rain >= 0.1 ? "" : "dry"}">${d.rain >= 0.1 ? (d.rain < 10 ? (Math.round(d.rain * 10) / 10) : Math.round(d.rain)) : "–"}</small></button>`;
   }).join("");
-  el.insertAdjacentHTML("afterbegin", `<div class="fc-lab" aria-hidden="true"><span class="fc-dn">&nbsp;</span><span class="fc-sp"></span><b class="hi">High</b><small class="lo">Low</small><small class="rn">Rain mm</small></div>`);
+  el.insertAdjacentHTML("afterbegin", `<div class="fc-lab" aria-hidden="true"><span class="fc-dn">&nbsp;</span><span class="fc-sp"></span><b class="hi">${tr("High")}</b><small class="lo">${tr("Low")}</small><small class="rn">${tr("Rain mm")}</small></div>`);
   const det = $("#fcDetail");
   const d = fcOpen && W.next.find(x => x.date === fcOpen);
   if(!d){ det.hidden = true; return; }
   const r = dayRisks(d), names = a => a.map(p => esc(p.name)).join(", ");
   det.innerHTML = `<b>${longDay(d.date).replace(/^./, c => c.toUpperCase())}</b>` +
-    (r.frost.length ? `<p><span class="dot frost">${ICON.snow}</span>Down to ${deg(d.min)}, too cold for ${names(r.frost)}.</p>` : "") +
-    (r.heat.length ? `<p><span class="dot heat">${ICON.heat}</span>Up to ${deg(d.max)}, too hot for ${names(r.heat)}.</p>` : "");
+    (r.frost.length ? `<p><span class="dot frost">${ICON.snow}</span>${tr("Down to {t}, too cold for {names}.", {t:deg(d.min), names:names(r.frost)})}</p>` : "") +
+    (r.heat.length ? `<p><span class="dot heat">${ICON.heat}</span>${tr("Up to {t}, too hot for {names}.", {t:deg(d.max), names:names(r.heat)})}</p>` : "");
   det.hidden = false;
 }
 $("#forecast").addEventListener("click", e => {
@@ -70,32 +70,32 @@ $("#nowWx").addEventListener("click", () => fetchWeather(true));
 /* ---------- Alert cards ---------- */
 const COLD = ["bringIn","toGh","ghProtect","potProtect","groundProtect"];
 function alertLook(g){
-  const n = g.items.length, plural = n === 1 ? "plant" : "plants";
+  const n = g.items.length;
   if(COLD.includes(g.key)){
     const worst = g.items.reduce((a, i) => i.t < a.t ? i : a, g.items[0]);
     const when = (worst.why || "").split(",")[0];
-    const lead = {bringIn:`Bring ${n} ${plural} inside:`, toGh:`Move ${n} ${plural} to the greenhouse:`, ghProtect:g.text,
-      potProtect:`Shelter ${n === 1 ? "this pot" : `these ${n} pots`}:`, groundProtect:`Protect ${n} ${plural} in the ground:`}[g.key];
+    const lead = {bringIn:trn(n, "Bring {n} plant inside:", "Bring {n} plants inside:"), toGh:trn(n, "Move {n} plant to the greenhouse:", "Move {n} plants to the greenhouse:"), ghProtect:g.text,
+      potProtect:trn(n, "Shelter this pot:", "Shelter these {n} pots:"), groundProtect:trn(n, "Protect {n} plant in the ground:", "Protect {n} plants in the ground:")}[g.key];
     const frosty = worst.t <= 0;   /* "frost" only when it really freezes; plants can be hurt well above 0 °C */
-    return {type:"frost", icon:"snow", label:g.level === "danger" ? (frosty ? "Frost alert" : "Low temperature alert") : "Low temperature watch",
-      title:g.level === "danger" ? (frosty ? "Frost is coming" : "Too cold for these plants") : "A cold night ahead", chip:when, lead, tip:g.key === "potProtect" || g.key === "groundProtect" ? g.text : ""};
+    return {type:"frost", icon:"snow", label:g.level === "danger" ? (frosty ? tr("Frost alert") : tr("Low temperature alert")) : tr("Low temperature watch"),
+      title:g.level === "danger" ? (frosty ? tr("Frost is coming") : tr("Too cold for these plants")) : tr("A cold night ahead"), chip:when, lead, tip:g.key === "potProtect" || g.key === "groundProtect" ? g.text : ""};
   }
-  if(g.key === "heat" || g.key === "vent") return {type:"heat", icon:"heat", label:"Heat alert", title:g.key === "vent" ? "Open the greenhouse" : "A hot spell", lead:g.text};
-  if(g.key === "wind") return {type:"wind", icon:"wind", label:"Wind alert", title:"Strong gusts", lead:g.text};
-  if(g.key === "water") return {type:"water", icon:"drop", label:"Watering", title:`${n} ${plural} need${n === 1 ? "s" : ""} water`, lead:""};
-  if(g.key === "rainWill") return {type:"water", icon:"drop", label:"Watering", title:"Skip these, rain is coming", lead:g.text};
-  if(g.key === "goOut") return {type:"info", icon:"move", label:"Good news", title:"Safe to move outside", lead:g.text};
-  return {type:"info", icon:"move", label:"Heads-up", title:g.title, lead:g.text};
+  if(g.key === "heat" || g.key === "vent") return {type:"heat", icon:"heat", label:tr("Heat alert"), title:g.key === "vent" ? tr("Open the greenhouse") : tr("A hot spell"), lead:g.text};
+  if(g.key === "wind") return {type:"wind", icon:"wind", label:tr("Wind alert"), title:tr("Strong gusts"), lead:g.text};
+  if(g.key === "water") return {type:"water", icon:"drop", label:tr("Watering"), title:trn(n, "{n} plant needs water", "{n} plants need water"), lead:""};
+  if(g.key === "rainWill") return {type:"water", icon:"drop", label:tr("Watering"), title:tr("Skip these, rain is coming"), lead:g.text};
+  if(g.key === "goOut") return {type:"info", icon:"move", label:tr("Good news"), title:tr("Safe to move outside"), lead:g.text};
+  return {type:"info", icon:"move", label:tr("Heads-up"), title:g.title, lead:g.text};
 }
 const alertsOpen = new Set();   // kinds of alert opened on this visit
 function renderAlerts(groups){
   const el = $("#alerts");
   if(!state.plants.length){
-    el.innerHTML = `<div class="acard t-info"><div class="a-ic">${ICON.sprout}</div><div class="a-main"><h3>Start with your plants</h3><p class="a-lead">Add each plant once. Alerts and watering reminders then appear here every day.</p></div><div class="a-act"><button class="btn primary" data-act="add">Add plant</button></div></div>`;
+    el.innerHTML = `<div class="acard t-info"><div class="a-ic">${ICON.sprout}</div><div class="a-main"><h3>${tr("Start with your plants")}</h3><p class="a-lead">${tr("Add each plant once. Alerts and watering reminders then appear here every day.")}</p></div><div class="a-act"><button class="btn primary" data-act="add">${tr("Add plant")}</button></div></div>`;
     return;
   }
   if(!groups.length){
-    el.innerHTML = `<div class="acard t-calm"><div class="a-ic">${ICON.leaf}</div><div class="a-main"><span class="a-lab">All good</span><h3>Nothing to do today</h3><p class="a-lead">No plant needs water, and the next three days stay within what your plants can take.</p></div></div>`;
+    el.innerHTML = `<div class="acard t-calm"><div class="a-ic">${ICON.leaf}</div><div class="a-main"><span class="a-lab">${tr("All good")}</span><h3>${tr("Nothing to do today")}</h3><p class="a-lead">${tr("No plant needs water, and the next three days stay within what your plants can take.")}</p></div></div>`;
     return;
   }
   // One card per kind of alert (frost, heat, wind, watering…), closed by default: the count first, the plants on a tap.
@@ -114,9 +114,9 @@ function renderAlerts(groups){
     const title = k.type === "water" && k.parts.some(x => x.g.key === "water") ? k.parts.find(x => x.g.key === "water").L.title : head.title;
     const parts = k.parts.map(({g, L}) => {
       const ids = g.items.map(i => i.p.id).join(",");
-      const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}">Mark as moved</button>`
-        : g.waterAll ? `<button class="btn primary" data-act="waterAll" data-ids="${ids}">Mark all watered</button>`
-        : `<button class="btn primary" data-act="seePlants" data-ids="${ids}">See plants</button>`;
+      const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}">${tr("Mark as moved")}</button>`
+        : g.waterAll ? `<button class="btn primary" data-act="waterAll" data-ids="${ids}">${tr("Mark all watered")}</button>`
+        : `<button class="btn primary" data-act="seePlants" data-ids="${ids}">${tr("See plants")}</button>`;
       return `<div class="a-sub">
         ${many && L.title !== title ? `<h4>${esc(L.title)}</h4>` : ""}
         ${L.lead ? `<p class="a-lead">${esc(L.lead)}</p>` : ""}
@@ -130,7 +130,7 @@ function renderAlerts(groups){
       <button class="a-head" data-atype="${k.type}" aria-expanded="${open}">
         <span class="a-top"><span class="a-lab">${esc(head.label)}</span>${chip ? `<span class="a-chip">${esc(chip)}</span>` : ""}</span>
         <h3>${esc(title)}</h3>
-        ${/^\d/.test(title) ? "" : `<span class="a-count">${n} ${n === 1 ? "plant" : "plants"}</span>`}
+        ${/^\d/.test(title) ? "" : `<span class="a-count">${trn(n, "{n} plant", "{n} plants")}</span>`}
         <svg class="a-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="a-body" ${open ? "" : "hidden"}>${parts}</div>
@@ -158,7 +158,7 @@ function flagsFrom(groups){
   }));
   return f;
 }
-const FLAG_INFO = {frost:["snow","Too cold"], heat:["heat","Too hot"], wind:["wind","Strong wind"], water:["drop","Needs water"], move:["move","Time to move"]};
+const FLAG_INFO = {frost:["snow",tr("Too cold")], heat:["heat",tr("Too hot")], wind:["wind",tr("Strong wind")], water:["drop",tr("Needs water")], move:["move",tr("Time to move")]};
 const flagIcons = id => [...(plantFlags[id] || [])].sort().map(k => `<span class="flag f-${k}" title="${FLAG_INFO[k][1]}" aria-label="${FLAG_INFO[k][1]}">${ICON[FLAG_INFO[k][0]]}</span>`).join("");
 
 /* ---------- The illustrated scene ---------- */
@@ -166,7 +166,7 @@ const flagIcons = id => [...(plantFlags[id] || [])].sort().map(k => `<span class
 /* Positions are % of the square picture. */
 const SCENES = {
   house:{
-    img:["scene-day.webp","scene-night.webp"], alt:"Your house and garden",
+    img:["scene-day.webp","scene-night.webp"], alt:tr("Your house and garden"),
     hot:`<button class="hot" data-go="house" style="left:22%;top:6%;width:44%;height:46%" aria-label="House"></button>
       <button class="hot" data-go="porch" style="left:1%;top:38%;width:36%;height:38%" aria-label="Porch"></button>
       <button class="hot" data-go="greenhouse" style="left:72%;top:43%;width:27%;height:32%" aria-label="Greenhouse"></button>
@@ -177,10 +177,10 @@ const SCENES = {
       porch:{s:2.1, cx:25, cy:55, pills:[{z:"porch-partial", at:[25,70]}, {z:"porch-shade", at:[13,50]}]},
       house:{s:1, cx:50, cy:50, interior:true, pills:[{z:"house-window", at:[74,63]}, {z:"house-low", at:[23,62]}, {z:"house-cabinet", at:[45,27]}]}
     },
-    title:{overview:"", outside:"Outside", porch:"The porch", house:"Inside the house"}
+    title:{overview:"", outside:tr("Outside"), porch:tr("The porch"), house:tr("Inside the house")}
   },
   apartment:{
-    img:["apt-day.webp","apt-night.webp"], alt:"Your apartment and balcony",
+    img:["apt-day.webp","apt-night.webp"], alt:tr("Your apartment and balcony"),
     hot:`<button class="hot" data-go="house" style="left:20%;top:4%;width:62%;height:44%" aria-label="Inside"></button>
       <button class="hot base" data-go="balcony" style="left:3%;top:44%;width:94%;height:54%" aria-label="Balcony"></button>`,
     views:{
@@ -188,11 +188,11 @@ const SCENES = {
       balcony:{s:1.2, cx:50, cy:58, pills:[{z:"balc-sun", at:[25,64]}, {z:"balc-partial", at:[66,58]}, {z:"balc-shade", at:[77,43]}]},
       house:{s:1, cx:50, cy:50, interior:true, pills:[{z:"house-window", at:[74,63]}, {z:"house-low", at:[23,62]}, {z:"house-cabinet", at:[45,27]}]}
     },
-    title:{overview:"", balcony:"The balcony", house:"Inside"}
+    title:{overview:"", balcony:tr("The balcony"), house:tr("Inside")}
   }
 };
 const sceneSet = () => SCENES[isApt() ? "apartment" : "house"];
-const SCENE_HINT = {overview:"Tap an area to look closer."};
+const SCENE_HINT = {overview:tr("Tap an area to look closer.")};
 let sceneMode = "overview";
 function ensureScene(){
   const el = $("#places");
@@ -200,12 +200,12 @@ function ensureScene(){
   if(el.querySelector(".orb") && el.dataset.home === home) return;
   el.dataset.home = home; sceneMode = "overview";
   const SS = SCENES[home];
-  el.innerHTML = `<div class="scene-top"><button class="round-back" data-act="sceneBack" aria-label="Back to the whole garden">${ICON.back}</button><h2 id="sceneTitle"></h2></div>
+  el.innerHTML = `<div class="scene-top"><button class="round-back" data-act="sceneBack" aria-label="${tr("Back to the whole garden")}">${ICON.back}</button><h2 id="sceneTitle"></h2></div>
     <div class="orb" id="orb">
       <div class="stage" id="stage">
         <img class="img-day" src="${SS.img[0]}" alt="${SS.alt}" draggable="false">
         <img class="img-night" src="${SS.img[1]}" alt="" draggable="false">
-        <img class="img-in" src="interior.webp" alt="Inside the house" draggable="false">
+        <img class="img-in" src="interior.webp" alt="${tr("Inside the house")}" draggable="false">
         <div class="glow-cab"></div>
         ${SS.hot}
       </div>
@@ -236,7 +236,7 @@ function renderPlaces(W){
   orb.classList.toggle("zoomed", sceneMode !== "overview");
   $("#places .scene-top").classList.toggle("show", sceneMode !== "overview");
   $("#sceneTitle").textContent = SS.title[sceneMode] || "";
-  $("#sceneHint").textContent = SCENE_HINT[sceneMode] || "Tap a spot to see its plants.";
+  $("#sceneHint").textContent = SCENE_HINT[sceneMode] || tr("Tap a spot to see its plants.");
   $("#pills").innerHTML = S.pills.map(pl => {
     const list = state.plants.filter(p => pl.k ? p.area === pl.k : p.zone === pl.z);
     const atRisk = list.some(risk);
@@ -244,7 +244,7 @@ function renderPlaces(W){
     const label = pl.k ? areaLabel(pl.k) : ZONES[pl.z].short;
     const attrs = pl.k ? `data-go="${pl.k}"` : `data-pz="${pl.z}"`;
     const sx = 50 + S.s * (pl.at[0] - 50 + tx), sy = 50 + S.s * (pl.at[1] - 50 + ty);
-    return `<button class="pill ${pl.k ? "area" : "spot"} ${atRisk ? "risk" : ""} ${list.length ? "" : "empty"}" ${attrs} style="left:${sx.toFixed(2)}%;top:${sy.toFixed(2)}%" aria-label="${esc(label)}: ${list.length} plants">
+    return `<button class="pill ${pl.k ? "area" : "spot"} ${atRisk ? "risk" : ""} ${list.length ? "" : "empty"}" ${attrs} style="left:${sx.toFixed(2)}%;top:${sy.toFixed(2)}%" aria-label="${esc(label)}: ${trn(list.length, "{n} plant", "{n} plants")}">
       ${ICON[icon]}${pl.k ? "" : `<span>${esc(label)}</span>`}<b>${list.length}</b></button>`;
   }).join("");
   applySky();
@@ -322,23 +322,23 @@ setInterval(() => { if(!document.hidden && currentTab === "today") applySky(); }
 
 
 /* ---------- Home hero, photo backdrop, locations ---------- */
-const SKY_WORD = {clear:"Clear", partly:"Partly cloudy", cloudy:"Cloudy", fog:"Fog", rain:"Rain", snow:"Snow", storm:"Thunderstorm"};
+const SKY_WORD = {clear:tr("Clear"), partly:tr("Partly cloudy"), cloudy:tr("Cloudy"), fog:tr("Fog"), rain:tr("Rain"), snow:tr("Snow"), storm:tr("Thunderstorm")};
 function renderHero(W){
-  $("#heroPlace").textContent = state.settings.place || "Your garden";
+  $("#heroPlace").textContent = state.settings.place || tr("Your garden");
   const w = state.weather, cur = w && w.current;
   if(!(cur && W && W.next.length)){
-    $("#heroNow").innerHTML = `<span class="hn-wait">${w ? "Tap to refresh the weather" : "Loading forecast…"}</span>`;
+    $("#heroNow").innerHTML = `<span class="hn-wait">${w ? tr("Tap to refresh the weather") : tr("Loading forecast…")}</span>`;
     $("#heroChips").innerHTML = ""; $("#heroUpd").textContent = ""; return;
   }
   const t = W.next[0], at = new Date(w.at);
-  $("#heroNow").innerHTML = `<span class="hn-ic">${wIcon(cur.weather_code, cur.is_day !== 0)}</span><b class="hn-t">${deg(cur.temperature_2m)}</b><span class="hn-s"><span>${SKY_WORD[sky(cur.weather_code)] || ""}</span><small>H ${deg(t.max)} · L ${deg(t.min)}</small></span>`;
-  $("#heroUpd").textContent = `Updated ${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  $("#heroNow").innerHTML = `<span class="hn-ic">${wIcon(cur.weather_code, cur.is_day !== 0)}</span><b class="hn-t">${deg(cur.temperature_2m)}</b><span class="hn-s"><span>${SKY_WORD[sky(cur.weather_code)] || ""}</span><small>${tr("H {t}", {t:deg(t.max)})} · ${tr("L {t}", {t:deg(t.min)})}</small></span>`;
+  $("#heroUpd").textContent = tr("Updated {time}", {time:`${pad(at.getHours())}:${pad(at.getMinutes())}`});
   const r = dayRisks(t), chips = [];
-  if(r.frost.length) chips.push(`<button class="hchip frost" data-act="seePlants" data-ids="${r.frost.map(p => p.id).join(",")}">${ICON.snow}<span>${t.min <= 0 ? "Frost risk" : "Cold night"} · ${r.frost.length} ${r.frost.length === 1 ? "plant" : "plants"}</span></button>`);
-  if(r.heat.length) chips.push(`<button class="hchip heat" data-act="seePlants" data-ids="${r.heat.map(p => p.id).join(",")}">${ICON.heat}<span>Heat · ${r.heat.length} ${r.heat.length === 1 ? "plant" : "plants"}</span></button>`);
+  if(r.frost.length) chips.push(`<button class="hchip frost" data-act="seePlants" data-ids="${r.frost.map(p => p.id).join(",")}">${ICON.snow}<span>${t.min <= 0 ? tr("Frost risk") : tr("Cold night")} · ${trn(r.frost.length, "{n} plant", "{n} plants")}</span></button>`);
+  if(r.heat.length) chips.push(`<button class="hchip heat" data-act="seePlants" data-ids="${r.heat.map(p => p.id).join(",")}">${ICON.heat}<span>${tr("Heat")} · ${trn(r.heat.length, "{n} plant", "{n} plants")}</span></button>`);
   const thirsty = state.plants.filter(p => (plantFlags[p.id] || new Set()).has("water"));
-  if(thirsty.length) chips.push(`<button class="hchip water" data-act="seePlants" data-ids="${thirsty.map(p => p.id).join(",")}">${ICON.drop}<span>${thirsty.length} need water</span></button>`);
-  if(!chips.length && state.plants.length) chips.push(`<span class="hchip calm">${ICON.leaf}<span>All calm today</span></span>`);
+  if(thirsty.length) chips.push(`<button class="hchip water" data-act="seePlants" data-ids="${thirsty.map(p => p.id).join(",")}">${ICON.drop}<span>${trn(thirsty.length, "{n} needs water", "{n} need water")}</span></button>`);
+  if(!chips.length && state.plants.length) chips.push(`<span class="hchip calm">${ICON.leaf}<span>${tr("All calm today")}</span></span>`);
   $("#heroChips").innerHTML = chips.join("");
 }
 $("#heroNow").addEventListener("click", () => fetchWeather(true));
@@ -353,16 +353,16 @@ function applyBackdrop(){
 }
 
 const LOCS = () => isApt()
-  ? [{k:"house", label:"House", sub:"Indoors", areas:["house"], icon:"house"},
-     {k:"balcony", label:"Balcony", sub:"Outdoors", areas:["balcony"], icon:"balcony"}]
-  : [{k:"house", label:"House", sub:"Indoors", areas:["house"], icon:"house"},
-     {k:"garden", label:"Garden", sub:"Outdoors", areas:["outside","porch"], icon:"leaf"},
-     {k:"greenhouse", label:"Greenhouse", sub:"Sheltered", areas:["greenhouse"], icon:"greenhouse"}];
+  ? [{k:"house", label:tr("House"), sub:tr("Indoors"), areas:["house"], icon:"house"},
+     {k:"balcony", label:tr("Balcony"), sub:tr("Outdoors"), areas:["balcony"], icon:"balcony"}]
+  : [{k:"house", label:tr("House"), sub:tr("Indoors"), areas:["house"], icon:"house"},
+     {k:"garden", label:tr("Garden"), sub:tr("Outdoors"), areas:["outside","porch"], icon:"leaf"},
+     {k:"greenhouse", label:tr("Greenhouse"), sub:tr("Sheltered"), areas:["greenhouse"], icon:"greenhouse"}];
 function renderLocations(W){
   const el = $("#locList"); if(!el) return;
   const n = state.plants.length;
-  if($("#allCount")) $("#allCount").textContent = `${n} ${n === 1 ? "plant" : "plants"}`;
-  $("#locSub").textContent = isApt() ? "Two spaces, one home" : "Three spaces, one garden";
+  if($("#allCount")) $("#allCount").textContent = trn(n, "{n} plant", "{n} plants");
+  $("#locSub").textContent = isApt() ? tr("Two spaces, one home") : tr("Three spaces, one garden");
   const r0 = W && W.next.length ? dayRisks(W.next[0]) : {frost:[], heat:[]};
   el.innerHTML = LOCS().map(L => {
     const list = state.plants.filter(p => L.areas.includes(p.area));
@@ -370,18 +370,18 @@ function renderLocations(W){
     const thirsty = list.filter(p => (plantFlags[p.id] || new Set()).has("water")).length;
     const spots = [];
     L.areas.forEach(a => {
-      if(a === "porch"){ const c = list.filter(p => p.area === "porch").length; spots.push({f:"porch", icon:"porch", label:"Porch", c}); return; }
+      if(a === "porch"){ const c = list.filter(p => p.area === "porch").length; spots.push({f:"porch", icon:"porch", label:tr("Porch"), c}); return; }
       AREAS[a].zones.forEach(z => { if(z === "greenhouse") return; spots.push({f:z, icon:ZONES[z].icon, label:ZONES[z].short, c:list.filter(p => p.zone === z).length}); });
     });
-    if(L.k === "greenhouse"){ const g = list.filter(p => p.pattern === "greenhouse").length; if(g) spots.push({f:"greenhouse", icon:"snow", label:"Wintering guests", c:g}); }
-    const status = risk ? `<span class="lchip frost">${ICON.snow}${risk} at risk tonight</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${thirsty} need water</span>` : "";
+    if(L.k === "greenhouse"){ const g = list.filter(p => p.pattern === "greenhouse").length; if(g) spots.push({f:"greenhouse", icon:"snow", label:tr("Wintering guests"), c:g}); }
+    const status = risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk tonight", {n:risk})}</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : "";
     const mine = locPicSrc(L.k), canPic = online && !!me && !!token;
     return `<div class="loc loc-${L.k} ${list.length ? "" : "empty"} ${mine ? "has-img" : ""}" style="${mine ? "" : locStyle(look().style, L.k)}">
       ${mine ? `<img class="loc-img" src="${mine}" alt="">` : `<span class="loc-art">${ICON[L.icon]}</span>`}
-      ${canPic ? `<button class="loc-pic ${look().locs && look().locs[L.k] ? "on" : ""}" data-locpic="${L.k}" aria-label="${look().locs && look().locs[L.k] ? "Change" : "Add"} your own ${L.label.toLowerCase()} photo">${look().locs && look().locs[L.k] ? ICON.camera : ICON.plus}</button>` : ""}
-      <button class="loc-main" data-loc="${L.k === "garden" ? "garden" : L.areas[0]}" aria-label="${L.label}: ${list.length} plants">
+      ${canPic ? `<button class="loc-pic ${look().locs && look().locs[L.k] ? "on" : ""}" data-locpic="${L.k}" aria-label="${look().locs && look().locs[L.k] ? tr("Change your own {place} photo", {place:L.label.toLowerCase()}) : tr("Add your own {place} photo", {place:L.label.toLowerCase()})}">${look().locs && look().locs[L.k] ? ICON.camera : ICON.plus}</button>` : ""}
+      <button class="loc-main" data-loc="${L.k === "garden" ? "garden" : L.areas[0]}" aria-label="${L.label}: ${trn(list.length, "{n} plant", "{n} plants")}">
         <span class="loc-ic">${ICON[L.icon]}</span>
-        <span class="loc-t"><b>${L.label}</b><small>${L.sub} · ${list.length ? `${list.length} ${list.length === 1 ? "plant" : "plants"}` : "no plants yet"}</small></span>
+        <span class="loc-t"><b>${L.label}</b><small>${L.sub} · ${list.length ? trn(list.length, "{n} plant", "{n} plants") : tr("no plants yet")}</small></span>
         <span class="chev">›</span>
       </button>
       ${status ? `<div class="loc-status">${status}</div>` : ""}
@@ -389,8 +389,8 @@ function renderLocations(W){
     </div>`;
   }).join("");
 }
-const LOC_TITLE = {all:"All plants", garden:"Garden", house:"House", greenhouse:"Greenhouse", balcony:"Balcony", porch:"Porch", outside:"Open garden", vault:"Only me"};
-const plantsTitle = () => idsFilter ? "Selected plants" : LOC_TITLE[plantFilter] || (ZONES[plantFilter] ? ZONES[plantFilter].label : "Plants");
+const LOC_TITLE = {all:tr("All plants"), garden:tr("Garden"), house:tr("House"), greenhouse:tr("Greenhouse"), balcony:tr("Balcony"), porch:tr("Porch"), outside:tr("Open garden"), vault:tr("Only me")};
+const plantsTitle = () => idsFilter ? tr("Selected plants") : LOC_TITLE[plantFilter] || (ZONES[plantFilter] ? ZONES[plantFilter].label : tr("Plants"));
 $("#view-locations").addEventListener("click", e => {
   const pic = e.target.closest("[data-locpic]"); if(pic){ openLocPic(pic.dataset.locpic); return; }
   const b = e.target.closest("[data-loc]"); if(!b) return;

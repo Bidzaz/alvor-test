@@ -9,18 +9,18 @@ const LOOK_BG_KEY = "alvor-backdrop";   // this phone's copy of your own backdro
    pos: which part of the backdrop stays in view (0..1 across, 0..1 down). sun: its bright spot, or null for no glow.
    A style whose backdrop file isn't uploaded yet simply doesn't appear; a missing location picture falls back to Classic's. */
 const STYLES = [
-  {k:"classic", label:"Classic", bg:"bg-hero.webp", pos:[0, .5], sun:[.393, .36],
+  {k:"classic", label:tr("Classic"), bg:"bg-hero.webp", pos:[0, .5], sun:[.393, .36],
    loc:{house:"loc-house.jpg", garden:"loc-garden.jpg", greenhouse:"loc-greenhouse.jpg", balcony:"loc-balcony.jpg"}},
-  {k:"modern", label:"Modern", bg:"bg-modern.webp", pos:[.35, .5], sun:[.345, .298],
+  {k:"modern", label:tr("Modern"), bg:"bg-modern.webp", pos:[.35, .5], sun:[.345, .298],
    loc:{house:"loc-house-modern.jpg", garden:"loc-garden-modern.jpg", greenhouse:"loc-greenhouse-modern.jpg", balcony:"loc-balcony-modern.jpg"}},
-  {k:"future", label:"Futuristic", bg:"bg-future.webp", pos:[.3, .5], sun:[.266, .238],
+  {k:"future", label:tr("Futuristic"), bg:"bg-future.webp", pos:[.3, .5], sun:[.266, .238],
    loc:{house:"loc-house-future.jpg", garden:"loc-garden-future.jpg", greenhouse:"loc-greenhouse-future.jpg", balcony:"loc-balcony-future.jpg"}}
 ];
 const ACCENTS = [
-  {k:"fern", label:"Fern", c:"#2F6B45"}, {k:"moss", label:"Moss", c:"#5C6B2A"}, {k:"plum", label:"Plum", c:"#7A3D6A"},
-  {k:"rose", label:"Rose", c:"#AD4A74"}, {k:"graphite", label:"Graphite", c:"#3E4A52"}
+  {k:"fern", label:tr("Fern"), c:"#2F6B45"}, {k:"moss", label:tr("Moss"), c:"#5C6B2A"}, {k:"plum", label:tr("Plum"), c:"#7A3D6A"},
+  {k:"rose", label:tr("Rose"), c:"#AD4A74"}, {k:"graphite", label:tr("Graphite"), c:"#3E4A52"}
 ];
-const MODES = [["auto", "Automatic"], ["light", "Light"], ["dark", "Dark"]];
+const MODES = [["auto", tr("Automatic")], ["light", tr("Light")], ["dark", tr("Dark")]];
 /* bg is "own" (your photo) or "style" (the style's backdrop); older values mean "style". */
 const look = () => ({style:"classic", bg:"style", accent:"fern", mode:"auto", own:null, ...(state.settings.look || {})});
 const styleOf = k => STYLES.find(x => x.k === k && !bgMissing.has(x.k)) || STYLES[0];
@@ -133,16 +133,16 @@ function fillLook(){
   const cur = styleOf(L.style);
   $("#styleRow").innerHTML = STYLES.filter(st => !bgMissing.has(st.k)).map(st => tile(`data-style="${st.k}"`, st.label, st.bg, cur.k === st.k)).join("");
   let h = tile(`data-bg="style"`, cur.label, cur.bg, L.bg !== "own");
-  if(L.own) h += tile(`data-bg="own"`, "My photo", ownCache && ownCache.path === L.own.path ? ownCache.data : "", L.bg === "own");
-  else if(canOwn) h += `<button class="bgt add" data-bg="add" aria-expanded="${ownOpen}"><span class="im">${ICON.plus}</span><small>My photo</small></button>`;
+  if(L.own) h += tile(`data-bg="own"`, tr("My photo"), ownCache && ownCache.path === L.own.path ? ownCache.data : "", L.bg === "own");
+  else if(canOwn) h += `<button class="bgt add" data-bg="add" aria-expanded="${ownOpen}"><span class="im">${ICON.plus}</span><small>${tr("My photo")}</small></button>`;
   $("#bgRow").innerHTML = h;
   if(L.own && !(ownCache && ownCache.path === L.own.path)) ownData(L.own).then(d => { if(d && currentTab === "settings") fillLook(); }).catch(() => {});
-  $("#bgHint").textContent = !canOwn ? "" : L.bg === "own" ? "Friends see this photo when they visit your garden, with your style's pictures on their tiles." : "Friends see your style when they visit your garden.";
+  $("#bgHint").textContent = !canOwn ? "" : L.bg === "own" ? tr("Friends see this photo when they visit your garden, with your style's pictures on their tiles.") : tr("Friends see your style when they visit your garden.");
   $("#ownBtns").hidden = !canOwn || !(ownOpen || L.bg === "own");
   $("#ownLight").hidden = $("#ownRemove").hidden = !L.own;
   $("#ownFromPlants").hidden = !Object.values(photos).some(l => l.length);
-  $("#ownFromPlants").textContent = L.own ? "Change: my plant photos" : "From my plant photos";
-  $("#ownFromPhone").textContent = L.own ? "Change: from the phone" : "From the phone";
+  $("#ownFromPlants").textContent = L.own ? tr("Change: my plant photos") : tr("From my plant photos");
+  $("#ownFromPhone").textContent = L.own ? tr("Change: from the phone") : tr("From the phone");
   $("#accRow").innerHTML = ACCENTS.map(a => `<button class="acc" role="radio" data-acc="${a.k}" aria-pressed="${L.accent === a.k}" aria-label="${a.label}" style="--c:${a.c}"><span>${a.label}</span></button>`).join("");
   $("#modeSeg").innerHTML = MODES.map(([k, t]) => `<button role="radio" data-mode="${k}" aria-pressed="${L.mode === k}">${t}</button>`).join("");
 }
@@ -168,8 +168,8 @@ function openBgEdit(E){
   bgEdit = E;
   $("#bgeImg").src = E.data;
   $("#bgeSun").checked = !!E.sun;
-  $("#bgeNote").textContent = E.vault ? "This plant is in your Vault, but friends who visit your garden will see this photo as its backdrop." : "Friends who visit your garden will see this photo.";
-  $("#bgeSave").textContent = E.isNew ? "Use this photo" : "Save";
+  $("#bgeNote").textContent = E.vault ? tr("This plant is in your Vault, but friends who visit your garden will see this photo as its backdrop.") : tr("Friends who visit your garden will see this photo.");
+  $("#bgeSave").textContent = E.isNew ? tr("Use this photo") : tr("Save");
   $("#bgeSave").disabled = false;
   drawBgeDot();
   bgEditDlg.showModal();
@@ -190,7 +190,7 @@ $("#bgeSun").addEventListener("change", e => { if(bgEdit){ bgEdit.sun = e.target
 [$("#bgEditClose"), $("#bgeCancel")].forEach(b => b.addEventListener("click", () => { bgEditDlg.close(); bgEdit = null; }));
 $("#bgeSave").addEventListener("click", async () => {
   const E = bgEdit; if(!E || !me || !token) return;
-  const btn = $("#bgeSave"); btn.disabled = true; btn.textContent = "Saving…";
+  const btn = $("#bgeSave"); btn.disabled = true; btn.textContent = tr("Saving…");
   try{
     const old = look().own;
     let path = old && old.path;
@@ -202,11 +202,11 @@ $("#bgeSave").addEventListener("click", async () => {
     }
     bgEditDlg.close(); bgEdit = null; ownOpen = false;
     setLook({bg:"own", own:{path, x:+E.x.toFixed(4), y:+E.y.toFixed(4), sun:!!E.sun}});
-    toast(E.isNew ? "Backdrop saved" : "Saved");
+    toast(E.isNew ? tr("Backdrop saved") : tr("Saved"));
   }catch(err){
     if(isAuthErr(err)){ bgEditDlg.close(); sessionExpired(); return; }
-    toast("Couldn't save the photo. Check your connection and try again.");
-    btn.disabled = false; btn.textContent = E.isNew ? "Use this photo" : "Save";
+    toast(tr("Couldn't save the photo. Check your connection and try again."));
+    btn.disabled = false; btn.textContent = E.isNew ? tr("Use this photo") : tr("Save");
   }
 });
 $("#ownFromPhone").addEventListener("click", () => $("#ownFile").click());
@@ -214,13 +214,13 @@ $("#ownFile").addEventListener("change", async e => {
   const f = e.target.files[0]; e.target.value = ""; if(!f) return;
   const url = URL.createObjectURL(f);
   try{ openBgEdit({data:await shrinkForBackdrop(url), x:.5, y:.35, sun:false, isNew:true}); }
-  catch(err){ toast("Couldn't use that photo"); }
+  catch(err){ toast(tr("Couldn't use that photo")); }
   finally{ URL.revokeObjectURL(url); }
 });
 $("#ownFromPlants").addEventListener("click", () => { locPicFor = null; openPlantPicker(); });
 function openPlantPicker(){
   const list = Object.values(photos).flat().filter(ph => ph && ph.data).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 90);
-  $("#bpGrid").innerHTML = list.map(ph => `<button data-bp="${esc(ph.id)}" aria-label="Use this photo"><img src="${ph.data}" alt="" loading="lazy"></button>`).join("");
+  $("#bpGrid").innerHTML = list.map(ph => `<button data-bp="${esc(ph.id)}" aria-label="${tr("Use this photo")}"><img src="${ph.data}" alt="" loading="lazy"></button>`).join("");
   bgPickDlg.showModal();
 }
 $("#bgPickClose").addEventListener("click", () => bgPickDlg.close());
@@ -229,20 +229,20 @@ $("#bpGrid").addEventListener("click", async e => {
   const b = e.target.closest("[data-bp]"); if(!b) return;
   const ph = Object.values(photos).flat().find(x => x && x.id === b.dataset.bp); if(!ph) return;
   const plant = state.plants.find(p => p.id === ph.plantId);
-  if(locPicFor){ const k = locPicFor; bgPickDlg.close(); toast("Saving photo…"); saveLocPic(k, ph.data); return; }
+  if(locPicFor){ const k = locPicFor; bgPickDlg.close(); toast(tr("Saving photo…")); saveLocPic(k, ph.data); return; }
   try{
     const data = await shrinkForBackdrop(ph.data);
     bgPickDlg.close();
     openBgEdit({data, x:.5, y:.35, sun:false, isNew:true, vault:!!plant && plant.visibility === "vault"});
-  }catch(err){ toast("Couldn't use that photo"); }
+  }catch(err){ toast(tr("Couldn't use that photo")); }
 });
 $("#ownLight").addEventListener("click", async () => {
   const o = look().own; if(!o) return;
   try{ const d = await ownData(o); if(d) openBgEdit({data:d, x:+o.x || .5, y:+o.y || .35, sun:!!o.sun, isNew:false}); }
-  catch(e){ toast("Couldn't open the photo. Check your connection."); }
+  catch(e){ toast(tr("Couldn't open the photo. Check your connection.")); }
 });
 $("#ownRemove").addEventListener("click", () => {
-  const o = look().own; if(!o || !confirm("Remove your backdrop photo? The app goes back to your style's photo.")) return;
+  const o = look().own; if(!o || !confirm(tr("Remove your backdrop photo? The app goes back to your style's photo."))) return;
   if(sb && token && o.path) sb.storage.from("backdrops").remove([o.path]).catch(() => {});
   keepOwnCache(null); ownOpen = false;
   setLook({bg:"style", own:null});
@@ -273,21 +273,21 @@ function locPicSrc(k){
 }
 const locPicDlg = $("#locPicDlg");
 let locPicFor = null, locPicBusy = false;
-const locLabel = k => (LOCS().find(L => L.k === k) || {label:"Location"}).label;
+const locLabel = k => (LOCS().find(L => L.k === k) || {label:tr("Location")}).label;
 function openLocPic(k){
   locPicFor = k;
   const has = !!(look().locs && look().locs[k]), src = locPicSrc(k), st = styleOf(look().style);
-  $("#lpTitle").textContent = `${locLabel(k)} photo`;
+  $("#lpTitle").textContent = tr("{place} photo", {place:locLabel(k)});
   const prev = $("#lpPrev");
   prev.className = `lp-prev loc-${k}`;
   prev.style.cssText = src ? "" : locStyle(look().style, k).replace("--img:", "background-image:");
   prev.innerHTML = src ? `<img src="${src}" alt="">` : "";
-  $("#lpPhone").textContent = has ? "Change: from the phone" : "From the phone";
-  $("#lpPlants").textContent = has ? "Change: my plant photos" : "From my plant photos";
+  $("#lpPhone").textContent = has ? tr("Change: from the phone") : tr("From the phone");
+  $("#lpPlants").textContent = has ? tr("Change: my plant photos") : tr("From my plant photos");
   $("#lpPlants").hidden = !Object.values(photos).some(l => l.length);
   $("#lpReset").hidden = !has;
-  $("#lpReset").textContent = `Back to the ${st.label} picture`;
-  $("#lpNote").textContent = `Friends see this photo on your ${locLabel(k)} tile when they visit your garden.`;
+  $("#lpReset").textContent = tr("Back to the {style} picture", {style:st.label});
+  $("#lpNote").textContent = tr("Friends see this photo on your {place} tile when they visit your garden.", {place:locLabel(k)});
   [$("#lpPhone"), $("#lpPlants"), $("#lpReset")].forEach(b => b.disabled = false);
   locPicDlg.showModal();
 }
@@ -295,7 +295,7 @@ async function saveLocPic(k, src){
   if(!k || !me || !token || locPicBusy) return;
   locPicBusy = true;
   [$("#lpPhone"), $("#lpPlants"), $("#lpReset")].forEach(b => b.disabled = true);
-  $("#lpNote").textContent = "Saving…";
+  $("#lpNote").textContent = tr("Saving…");
   try{
     const data = (await drawJpeg(src, 1400, 0.82)).toDataURL("image/jpeg", 0.82);
     const path = `${me.id}/loc-${k}-${Date.now()}.jpg`;
@@ -304,10 +304,10 @@ async function saveLocPic(k, src){
     if(old) sb.storage.from("backdrops").remove([old]).catch(() => {});
     locPicCache[path] = data;
     setLook({locs:{...(look().locs || {}), [k]:path}}); keepLocPics();
-    locPicDlg.close(); render(); toast(`${locLabel(k)} photo saved`);
+    locPicDlg.close(); render(); toast(tr("{place} photo saved", {place:locLabel(k)}));
   }catch(err){
     if(isAuthErr(err)){ locPicDlg.close(); sessionExpired(); return; }
-    toast("Couldn't save the photo. Check your connection and try again.");
+    toast(tr("Couldn't save the photo. Check your connection and try again."));
     $("#lpNote").textContent = "";
     [$("#lpPhone"), $("#lpPlants"), $("#lpReset")].forEach(b => b.disabled = false);
   }finally{ locPicBusy = false; }
