@@ -320,3 +320,43 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .a-sub h4{margin:0 0 4px;font-size:.95rem}
 .a-sub .a-act{display:flex;justify-content:flex-end;margin-top:8px}
 @media (prefers-reduced-motion: reduce){.a-chev{transition:none}}
+
+/* ===================== Care engine: Garden today, feedback, "why", spot details ===================== */
+.gtoday h3{font-size:1.12rem;margin-bottom:6px}
+.gt-lines{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.gtoday .gt-lines li{padding:0;display:block}
+.gt-line{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;border-radius:14px;padding:9px 12px;
+  background:color-mix(in srgb,var(--ink) 5%,transparent);color:var(--ink);font:600 .92rem var(--body);cursor:pointer}
+.gt-line .chev{margin-left:auto;color:var(--muted);font-size:1.1rem}
+.gt-ic{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--fern-soft);color:var(--fern)}
+.gt-ic svg{width:16px;height:16px}
+.gt-line.k-frost .gt-ic{background:var(--frost-red-bg);color:var(--frost-red)}
+.gt-line.k-heat .gt-ic{background:#FBE6CF;color:#B4601C}
+.gt-line.k-wind .gt-ic{background:#E6E9EC;color:#4D5C66}
+.gt-line.k-water .gt-ic,.gt-line.k-rain .gt-ic,.gt-line.k-soon .gt-ic,.gt-line.k-unknown .gt-ic{background:var(--water-bg);color:var(--water)}
+.gt-line.k-soon,.gt-line.k-unknown,.gt-line.k-rain{font-weight:500}
+.gt-calm{margin:10px 0 0;color:var(--muted);font-weight:500;font-size:.9rem}
+.gt-stale{margin:6px 0 0;color:var(--muted);font-size:.8rem;font-style:italic}
+/* Feedback under each plant: what you found */
+.fb{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.fb-b{border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:transparent;color:var(--ink);border-radius:999px;padding:5px 11px;
+  font:600 .78rem var(--body);min-height:32px;cursor:pointer}
+.fb-b:active{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.acard li small .st{font-weight:700}
+.st-urgent{color:#B4601C}
+/* Water now, in the plant sheet */
+.care-now{border-radius:16px;padding:12px 14px;background:color-mix(in srgb,var(--water-bg) 70%,transparent)}
+.care-now > b{display:block;color:var(--water);font-size:1rem}
+.care-now.st-urgent > b{color:#B4601C}
+.care-now.st-ok > b,.care-now.st-soon > b{color:var(--fern)}
+.care-now ul{margin:6px 0 4px;padding-left:18px;font-size:.88rem}
+.care-now ul li{margin:1px 0}
+.care-now .status{font-size:.78rem;margin:4px 0 2px}
+/* Watering words on plant rows */
+.tag.w-consider{background:var(--water-bg);color:var(--water)}
+.tag.w-likely{background:var(--water-bg);color:var(--water);font-weight:700}
+.tag.w-urgent{background:#FBE6CF;color:#B4601C;font-weight:700}
+/* About this spot */
+.micro{display:flex;flex-wrap:wrap;gap:6px}
+.micro .chip{font-size:.84rem;padding:6px 12px}
+.warn-line{color:#B4601C;font-weight:600}
