@@ -8,6 +8,7 @@ function keyBytes(b64){
 }
 const canPush = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window && online;
 async function refreshNotifyStatus(){
+  showEngineWarn();
   if(!canPush()){ setNotify(tr("Notifications work once the app is opened from your site in Chrome.")); return; }
   try{
     const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
@@ -38,11 +39,17 @@ async function enableNotifications(quiet){
 }
 /* If this phone had notifications on (also from the old Alvor), sign it up again whenever the server key is new. */
 const PUSH_KEY = "garden-push-key";
+/* The server sends notifications with its own copy of the care rules (alerts.js). If it's older than the app's,
+   the owner is told, so a phone notification never silently disagrees with what the app shows. */
+let serverEngine = null;
+function showEngineWarn(){ const w = $("#engineWarn"); if(w) w.hidden = !(me && me.owner && serverEngine && serverEngine !== GA.VERSION); }
 async function ensurePush(){
-  if(!token || !canPush() || Notification.permission !== "granted") return;
+  if(!token) return;
   try{
-    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
     const {j} = await callFn("notify", {action:"key"});
+    if(j && j.publicKey){ serverEngine = j.engine || "old"; showEngineWarn(); }
+    if(!canPush() || Notification.permission !== "granted") return;
+    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
     if(!j.publicKey) return;
     if(!sub || localStorage.getItem(PUSH_KEY) !== j.publicKey) await enableNotifications(true);
   }catch(e){}

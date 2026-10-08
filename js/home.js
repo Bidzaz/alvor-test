@@ -18,7 +18,7 @@ function render(){
   const groups = state.plants.length ? buildAlerts() : [];
   plantFlags = flagsFrom(groups);
   renderForecast(W);
-  renderHero(W);
+  renderHero(W, groups);
   renderLocations(W);
   renderAlerts(groups);
   renderPlants();
@@ -27,14 +27,7 @@ function render(){
 
 /* ---------- Forecast with warnings on the days ---------- */
 let fcOpen = null;
-function dayRisks(d){
-  const s = state.settings;
-  const frost = state.plants.filter(p => p.current !== "inside" && GA.coldOn(p) && effMin(p, d) < coldLimit(p));
-  const heat = state.plants.filter(p => (p.current === "outside" && p.planting === "pot" &&
-      (p.sun === "full" ? d.max >= +s.heat : p.sun === "partial" ? d.max >= +s.heat + 3 : false)) ||
-    (p.current === "greenhouse" && d.max + 8 >= 35));
-  return {frost, heat};
-}
+const dayRisks = d => GA.dayRisks(state.plants, d, state.settings);   // the same rules as the alerts
 function renderForecast(W){
   const el = $("#forecast");
   if(!W || !W.next.length){ el.innerHTML = `<p class="fc-empty">${tr("No forecast yet. Tap the weather at the top to try again.")}</p>`; $("#fcDetail").hidden = true; return; }
@@ -68,24 +61,44 @@ $("#forecast").addEventListener("click", e => {
 $("#nowWx").addEventListener("click", () => fetchWeather(true));
 
 /* ---------- Alert cards ---------- */
-const COLD = ["bringIn","toGh","ghProtect","potProtect","groundProtect"];
+const COLD = GA.COLD_KEYS;
 function alertLook(g){
   const n = g.items.length;
-  if(COLD.includes(g.key)){
+  if(COLD.includes(g.key) || g.key === "frostOk"){
     const worst = g.items.reduce((a, i) => i.t < a.t ? i : a, g.items[0]);
-    const when = (worst.why || "").split(",")[0];
+    const when = (worst.why || "").split(/,| · /)[0];
     const lead = {bringIn:trn(n, "Bring {n} plant inside:", "Bring {n} plants inside:"), toGh:trn(n, "Move {n} plant to the greenhouse:", "Move {n} plants to the greenhouse:"), ghProtect:g.text,
-      potProtect:trn(n, "Shelter this pot:", "Shelter these {n} pots:"), groundProtect:trn(n, "Protect {n} plant in the ground:", "Protect {n} plants in the ground:")}[g.key];
+      potProtect:trn(n, "Shelter this pot:", "Shelter these {n} pots:"), groundProtect:trn(n, "Protect {n} plant in the ground:", "Protect {n} plants in the ground:"),
+      crownProtect:trn(n, "Protect the crown of {n} plant:", "Protect the crown of {n} plants:"), mulchRoots:trn(n, "Mulch the roots of {n} plant:", "Mulch the roots of {n} plants:"),
+      springGrowth:trn(n, "Cover the new growth of {n} plant:", "Cover the new growth of {n} plants:"), frostOk:g.text}[g.key];
+    if(g.key === "frostOk") return {type:"frost", icon:"snow", label:tr("Frost plan"), title:tr("Nothing to protect"), chip:"", lead, tip:""};
     const frosty = worst.t <= 0;   /* "frost" only when it really freezes; plants can be hurt well above 0 °C */
     return {type:"frost", icon:"snow", label:g.level === "danger" ? (frosty ? tr("Frost alert") : tr("Low temperature alert")) : tr("Low temperature watch"),
-      title:g.level === "danger" ? (frosty ? tr("Frost is coming") : tr("Too cold for these plants")) : tr("A cold night ahead"), chip:when, lead, tip:g.key === "potProtect" || g.key === "groundProtect" ? g.text : ""};
+      title:g.level === "danger" ? (frosty ? tr("Frost is coming") : tr("Too cold for these plants")) : tr("A cold night ahead"), chip:when, lead,
+      tip:["potProtect","groundProtect","crownProtect","mulchRoots","springGrowth"].includes(g.key) ? g.text : ""};
   }
   if(g.key === "heat" || g.key === "vent") return {type:"heat", icon:"heat", label:tr("Heat alert"), title:g.key === "vent" ? tr("Open the greenhouse") : tr("A hot spell"), lead:g.text};
   if(g.key === "wind") return {type:"wind", icon:"wind", label:tr("Wind alert"), title:tr("Strong gusts"), lead:g.text};
-  if(g.key === "water") return {type:"water", icon:"drop", label:tr("Watering"), title:trn(n, "{n} plant needs water", "{n} plants need water"), lead:""};
+  if(g.key === "water") return {type:"water", icon:"drop", label:tr("Watering"), title:trn(n, "{n} plant likely needs water", "{n} plants likely need water"), lead:""};
   if(g.key === "rainWill") return {type:"water", icon:"drop", label:tr("Watering"), title:tr("Skip these, rain is coming"), lead:g.text};
+  if(g.key === "waterUnknown") return {type:"water", icon:"drop", label:tr("Watering"), title:tr("Not sure about these"), lead:g.text};
   if(g.key === "goOut") return {type:"info", icon:"move", label:tr("Good news"), title:tr("Safe to move outside"), lead:g.text};
   return {type:"info", icon:"move", label:tr("Heads-up"), title:g.title, lead:g.text};
+}
+/* Feedback on a suggestion, under each plant: what the gardener actually found. */
+const FB = {water:tr("Watered"), wet:tr("Already wet"), fine:tr("Looks fine"), later:tr("Later")};
+const fbRow = (g, p) => g.feedback ? `<span class="fb" role="group" aria-label="${tr("What did you find?")}">${g.feedback.map(k => `<button class="fb-b" data-act="fb" data-kind="${k}" data-id="${p.id}">${FB[k]}</button>`).join("")}</span>` : "";
+/* Garden today: what matters now, in a few lines, then plainly "nothing else is urgent". */
+const GT_ICON = {frost:"snow", heat:"heat", wind:"wind", water:"drop", rain:"drop", soon:"drop", move:"move", unknown:"drop"};
+function gardenTodayHtml(groups){
+  const G = GA.gardenToday(groups, state.plants, ctx());
+  return `<div class="acard gtoday ${G.lines.length ? "" : "t-calm"}">
+    <div class="a-ic">${ICON.leaf}</div>
+    <div class="a-main"><span class="a-lab">${esc(G.greet)}</span><h3>${esc(G.head)}</h3>
+      ${G.lines.length ? `<ul class="gt-lines">${G.lines.map(l => `<li><button class="gt-line k-${l.kind} ${l.urgent ? "urgent" : ""}" data-act="seePlants" data-ids="${l.ids.join(",")}"><span class="gt-ic">${ICON[GT_ICON[l.kind]]}</span><span>${esc(l.text)}</span><span class="chev">›</span></button></li>`).join("")}</ul>
+      <p class="gt-calm">${esc(G.calm)}</p>` : ""}
+      ${G.stale ? `<p class="gt-stale">${esc(G.stale)}</p>` : ""}</div>
+  </div>`;
 }
 const alertsOpen = new Set();   // kinds of alert opened on this visit
 function renderAlerts(groups){
@@ -94,10 +107,8 @@ function renderAlerts(groups){
     el.innerHTML = `<div class="acard t-info"><div class="a-ic">${ICON.sprout}</div><div class="a-main"><h3>${tr("Start with your plants")}</h3><p class="a-lead">${tr("Add each plant once. Alerts and watering reminders then appear here every day.")}</p></div><div class="a-act"><button class="btn primary" data-act="add">${tr("Add plant")}</button></div></div>`;
     return;
   }
-  if(!groups.length){
-    el.innerHTML = `<div class="acard t-calm"><div class="a-ic">${ICON.leaf}</div><div class="a-main"><span class="a-lab">${tr("All good")}</span><h3>${tr("Nothing to do today")}</h3><p class="a-lead">${tr("No plant needs water, and the next three days stay within what your plants can take.")}</p></div></div>`;
-    return;
-  }
+  const today = gardenTodayHtml(groups);
+  if(!groups.length){ el.innerHTML = today; return; }
   // One card per kind of alert (frost, heat, wind, watering…), closed by default: the count first, the plants on a tap.
   const kinds = [];
   groups.forEach(g => {
@@ -106,7 +117,7 @@ function renderAlerts(groups){
     if(!k) kinds.push(k = {type:L.type, parts:[]});
     k.parts.push({g, L});
   });
-  el.innerHTML = kinds.map(k => {
+  el.innerHTML = today + kinds.map(k => {
     const head = (k.parts.find(x => x.g.level === "danger") || k.parts[0]).L;
     const n = new Set(k.parts.flatMap(x => x.g.items.map(i => i.p.id))).size;
     const open = alertsOpen.has(k.type), many = k.parts.length > 1;
@@ -116,13 +127,14 @@ function renderAlerts(groups){
       const ids = g.items.map(i => i.p.id).join(",");
       const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}">${tr("Mark as moved")}</button>`
         : g.waterAll ? `<button class="btn primary" data-act="waterAll" data-ids="${ids}">${tr("Mark all watered")}</button>`
+        : g.key === "frostOk" || g.key === "waterUnknown" ? ""
         : `<button class="btn primary" data-act="seePlants" data-ids="${ids}">${tr("See plants")}</button>`;
       return `<div class="a-sub">
         ${many && L.title !== title ? `<h4>${esc(L.title)}</h4>` : ""}
         ${L.lead ? `<p class="a-lead">${esc(L.lead)}</p>` : ""}
-        <ul>${g.items.map(i => `<li>${ICON.leaf}<span><span class="pn">${esc(i.p.name)}</span>${i.p.species && i.p.species !== i.p.name ? ` <i>(${esc(i.p.species)})</i>` : ""}<small>${esc(i.why)}</small></span></li>`).join("")}</ul>
+        <ul>${g.items.map(i => `<li>${ICON.leaf}<span><span class="pn">${esc(i.p.name)}</span>${i.p.species && i.p.species !== i.p.name ? ` <i>(${esc(i.p.species)})</i>` : ""}<small>${i.stage === "urgent" ? `<b class="st st-urgent">${STAGE_WORD.urgent}</b> · ` : ""}${esc(i.why)}</small>${fbRow(g, i.p)}</span></li>`).join("")}</ul>
         ${L.tip ? `<p class="a-tip">${esc(L.tip)}</p>` : ""}
-        <div class="a-act">${btn}</div>
+        ${btn ? `<div class="a-act">${btn}</div>` : ""}
       </div>`;
     }).join("");
     return `<div class="acard agroup t-${k.type} ${open ? "open" : ""}">
@@ -323,7 +335,7 @@ setInterval(() => { if(!document.hidden && currentTab === "today") applySky(); }
 
 /* ---------- Home hero, photo backdrop, locations ---------- */
 const SKY_WORD = {clear:tr("Clear"), partly:tr("Partly cloudy"), cloudy:tr("Cloudy"), fog:tr("Fog"), rain:tr("Rain"), snow:tr("Snow"), storm:tr("Thunderstorm")};
-function renderHero(W){
+function renderHero(W, groups){
   $("#heroPlace").textContent = state.settings.place || tr("Your garden");
   const w = state.weather, cur = w && w.current;
   if(!(cur && W && W.next.length)){
@@ -333,8 +345,11 @@ function renderHero(W){
   const t = W.next[0], at = new Date(w.at);
   $("#heroNow").innerHTML = `<span class="hn-ic">${wIcon(cur.weather_code, cur.is_day !== 0)}</span><b class="hn-t">${deg(cur.temperature_2m)}</b><span class="hn-s"><span>${SKY_WORD[sky(cur.weather_code)] || ""}</span><small>${tr("H {t}", {t:deg(t.max)})} · ${tr("L {t}", {t:deg(t.min)})}</small></span>`;
   $("#heroUpd").textContent = tr("Updated {time}", {time:`${pad(at.getHours())}:${pad(at.getMinutes())}`});
+  /* The chips count the same plants as the alerts and Garden today (the next three nights). */
   const r = dayRisks(t), chips = [];
-  if(r.frost.length) chips.push(`<button class="hchip frost" data-act="seePlants" data-ids="${r.frost.map(p => p.id).join(",")}">${ICON.snow}<span>${t.min <= 0 ? tr("Frost risk") : tr("Cold night")} · ${trn(r.frost.length, "{n} plant", "{n} plants")}</span></button>`);
+  const coldItems = (groups || []).filter(g => GA.COLD_KEYS.includes(g.key)).flatMap(g => g.items);
+  const coldIds = [...new Set(coldItems.map(i => i.p.id))], lowest = coldItems.length ? Math.min(...coldItems.map(i => i.t)) : 99;
+  if(coldIds.length) chips.push(`<button class="hchip frost" data-act="seePlants" data-ids="${coldIds.join(",")}">${ICON.snow}<span>${lowest <= 0 ? tr("Frost risk") : tr("Cold night")} · ${trn(coldIds.length, "{n} plant", "{n} plants")}</span></button>`);
   if(r.heat.length) chips.push(`<button class="hchip heat" data-act="seePlants" data-ids="${r.heat.map(p => p.id).join(",")}">${ICON.heat}<span>${tr("Heat")} · ${trn(r.heat.length, "{n} plant", "{n} plants")}</span></button>`);
   const thirsty = state.plants.filter(p => (plantFlags[p.id] || new Set()).has("water"));
   if(thirsty.length) chips.push(`<button class="hchip water" data-act="seePlants" data-ids="${thirsty.map(p => p.id).join(",")}">${ICON.drop}<span>${trn(thirsty.length, "{n} needs water", "{n} need water")}</span></button>`);
@@ -363,7 +378,7 @@ function renderLocations(W){
   const n = state.plants.length;
   if($("#allCount")) $("#allCount").textContent = trn(n, "{n} plant", "{n} plants");
   $("#locSub").textContent = isApt() ? tr("Two spaces, one home") : tr("Three spaces, one garden");
-  const r0 = W && W.next.length ? dayRisks(W.next[0]) : {frost:[], heat:[]};
+  const r0 = {frost:state.plants.filter(p => (plantFlags[p.id] || new Set()).has("frost"))};   // same plants as the alerts
   el.innerHTML = LOCS().map(L => {
     const list = state.plants.filter(p => L.areas.includes(p.area));
     const risk = r0.frost.filter(p => L.areas.includes(p.area)).length;
@@ -374,7 +389,7 @@ function renderLocations(W){
       AREAS[a].zones.forEach(z => { if(z === "greenhouse") return; spots.push({f:z, icon:ZONES[z].icon, label:ZONES[z].short, c:list.filter(p => p.zone === z).length}); });
     });
     if(L.k === "greenhouse"){ const g = list.filter(p => p.pattern === "greenhouse").length; if(g) spots.push({f:"greenhouse", icon:"snow", label:tr("Wintering guests"), c:g}); }
-    const status = risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk tonight", {n:risk})}</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : "";
+    const status = risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk from the cold", {n:risk})}</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : "";
     const mine = locPicSrc(L.k), canPic = online && !!me && !!token;
     return `<div class="loc loc-${L.k} ${list.length ? "" : "empty"} ${mine ? "has-img" : ""}" style="${mine ? "" : locStyle(look().style, L.k)}">
       ${mine ? `<img class="loc-img" src="${mine}" alt="">` : `<span class="loc-art">${ICON[L.icon]}</span>`}

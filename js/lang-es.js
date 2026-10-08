@@ -422,5 +422,22 @@ window.ALVOR_LANG.es = {
 "That's your own link.":"Es tu propio enlace.", "That's yours.":"Es tuyo.", "This link doesn't work any more. Ask for a new one.":"Este enlace ya no funciona. Pide uno nuevo.",
 "You can't switch off your own account.":"No puedes desactivar tu propia cuenta.", "You've sent a lot of reports today. Try again tomorrow.":"Hoy has mandado muchas denuncias. Vuelve a intentarlo mañana.",
 "You've written a lot of comments in the last hour. Try again a little later.":"Has escrito muchos comentarios en la última hora. Vuelve a intentarlo un poco más tarde.",
-"Couldn't create an invite. Try again.":"No se ha podido crear una invitación. Vuelve a intentarlo.", "Couldn't delete the account. Try again.":"No se ha podido borrar la cuenta. Vuelve a intentarlo."
+"Couldn't create an invite. Try again.":"No se ha podido crear una invitación. Vuelve a intentarlo.", "Couldn't delete the account. Try again.":"No se ha podido borrar la cuenta. Vuelve a intentarlo.",
+/* Care engine (Phase B) */
+"No need":"No hace falta", "Probably not yet":"Probablemente aún no", "Consider watering":"Plantéate regarla", "Likely needs water":"Seguramente necesita agua", "Needs attention":"Necesita atención", "Not sure yet":"Aún no se sabe",
+"Protect the crown of {n} plant:":"Protege la corona de {n} planta:", "Protect the crown of {n} plants:":"Protege la corona de {n} plantas:",
+"Mulch the roots of {n} plant:":"Acolcha las raíces de {n} planta:", "Mulch the roots of {n} plants:":"Acolcha las raíces de {n} plantas:",
+"Cover the new growth of {n} plant:":"Cubre los brotes nuevos de {n} planta:", "Cover the new growth of {n} plants:":"Cubre los brotes nuevos de {n} plantas:",
+"Frost plan":"Plan para la helada", "Nothing to protect":"Nada que proteger",
+"{n} plant likely needs water":"{n} planta seguramente necesita agua", "{n} plants likely need water":"{n} plantas seguramente necesitan agua",
+"Not sure about these":"No sabemos de estas", "Already wet":"Aún húmeda", "Looks fine":"Se ve bien", "What did you find?":"¿Qué has visto?",
+"checked {n}d ago":"revisada hace {n} d",
+"Got it. Alvor will expect {name} to dry more slowly.":"Entendido. Alvor contará con que {name} tarde más en secarse.",
+"Got it. Alvor will look at {name} again in a few days.":"Entendido. Alvor volverá a mirar {name} dentro de unos días.",
+"Alvor will ask again tomorrow.":"Alvor volverá a preguntar mañana.",
+"Against a wall":"Contra una pared", "Under a tree":"Bajo un árbol", "Windy spot":"Sitio con viento", "Hot afternoon sun":"Sol fuerte de tarde",
+"An estimate from the weather, the spot and what you've told Alvor. It can't see the soil, so trust your finger.":"Es una estimación a partir del tiempo, el sitio y lo que le has dicho a Alvor. No ve la tierra: fíate de tu dedo.",
+"The notify function on Supabase runs older care rules than this app. Deploy notify again so notifications and the app agree.":"La función notify de Supabase usa reglas de cuidado más antiguas que la app. Vuelve a desplegar notify para que los avisos y la app coincidan.",
+"About this spot":"Sobre este sitio", "Only what changes Alvor's advice on frost, rain, drying and wind. Leave them off if you're not sure.":"Solo lo que cambia los consejos de Alvor sobre heladas, lluvia, secado y viento. Déjalos sin marcar si no estás seguro.",
+"Water now":"Riego ahora", "{n} at risk from the cold":"{n} en riesgo por el frío"
 };

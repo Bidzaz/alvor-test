@@ -6,22 +6,18 @@ async function fetchWeather(force){
   const s = state.settings;
   const fresh = state.weather && state.weather.current && (Date.now() - state.weather.at < 30*60*1000) && state.weather.lat === s.lat && state.weather.lon === s.lon;
   if(fresh && !force){ render(); return; }
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}` +
-    `&current=temperature_2m,weather_code,is_day,cloud_cover` +
-    `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,weather_code,sunrise,sunset` +
-    `&past_days=7&forecast_days=8&timezone=auto`;
   try{
-    const r = await fetch(url);
-    if(!r.ok) throw new Error("HTTP " + r.status);
-    const j = await r.json();
-    state.weather = {at:Date.now(), lat:s.lat, lon:s.lon, daily:j.daily, current:j.current};
+    const j = await GA.fetchForecast(u => fetch(u), s.lat, s.lon, {app:true});   // one weather adapter, shared with the server
+    state.weather = {at:Date.now(), lat:s.lat, lon:s.lon, daily:j.daily, current:j.current, hourly:j.hourly || null};
     saveLocal();
   }catch(e){ toast(tr("Couldn't load the forecast")); }
   render();
 }
-const ctx = () => ({settings:state.settings, daily:state.weather && state.weather.daily, today:today(), month:new Date().getMonth()+1, mode:"full"});
-function wx(){ return state.weather ? GA.splitWeather(state.weather.daily, today()) : null; }
-const waterStatus = (p, W) => GA.waterStatus(p, W, ctx());
+/* Everything the care engine (alerts.js) needs to know about now. Works offline from the saved forecast. */
+const ctx = () => ({settings:state.settings, daily:state.weather && state.weather.daily, hourly:state.weather && state.weather.hourly,
+  today:today(), month:new Date().getMonth()+1, mode:"full", lang:LANG, hour:new Date().getHours(), weatherAt:state.weather && state.weather.at, now:Date.now()});
+function wx(){ return state.weather ? GA.splitWeather(state.weather.daily, today(), state.weather.hourly) : null; }
+const waterStatus = (p, W) => GA.waterStatus(p, W, ctx(), state.plants);
 const effMin = (p, d) => GA.effMin(p, d, state.settings);
 const coldLimit = p => GA.coldLimit(p, state.settings);
 const buildAlerts = () => GA.compute(state.plants, ctx());

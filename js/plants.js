@@ -43,8 +43,10 @@ function thumbHtml(p){
 }
 function wateredText(p, W){
   const st = waterStatus(p, W);
-  return st.days === null ? tr("never watered") : st.byRain ? tr("rain {n}d ago", {n:st.days}) : tr("watered {n}d ago", {n:st.days});
+  const when = st.days === null ? tr("never watered") : st.byRain ? tr("rain {n}d ago", {n:st.days}) : st.anchor === "check" ? tr("checked {n}d ago", {n:st.days}) : tr("watered {n}d ago", {n:st.days});
+  return ["consider","likely","urgent"].includes(st.stage) ? `${STAGE_WORD[st.stage]} · ${when}` : when;
 }
+const waterTagCls = (p, W) => "tag w-" + waterStatus(p, W).stage;
 const ownMini = p => online && me && token && typeof miniCounts === "function" ? miniCounts({owner:me.id, type:"plant", id:p.id}) : "";
 const plantBg = p => { const ph = latestPhoto(p.id); return ph ? `<img class="p-bg" src="${ph.data}" alt="" aria-hidden="true">` : ""; };
 function plantRow(p, W){
@@ -54,7 +56,7 @@ function plantRow(p, W){
       ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
       <div class="where">${zi(p.zone)}<span>${esc(zoneLabel(p))}</span></div>${ownMini(p)}</div>
     <div class="flags">${flagIcons(p.id)}</div>
-    <div class="facts">${coldTag(p)}<span class="tag">${wateredText(p, W)}</span>
+    <div class="facts">${coldTag(p)}<span class="${waterTagCls(p, W)}">${wateredText(p, W)}</span>
       <span class="acts"><button class="btn small" data-act="move" data-id="${p.id}">${tr("Move")}</button><button class="btn small primary" data-act="water" data-id="${p.id}">${tr("Watered")}</button></span></div>
   </div>`;
 }
@@ -93,10 +95,23 @@ function renderLog(){
 }
 
 /* ---------- Actions ---------- */
-function water(ids){
-  const t = today();
-  ids.forEach(id => { const p = state.plants.find(x => x.id === id); if(p){ p.lastWatered = t; addLog(id,"water","Watered"); }});
-  save(); render(); toast(ids.length > 1 ? tr("{n} plants watered", {n:ids.length}) : tr("Watered"));
+/* Watering and feedback go through the care engine, which also notes what it had estimated (for learning). */
+function water(ids, single){
+  const c = ctx(), W = wx();
+  ids.forEach(id => { const p = state.plants.find(x => x.id === id); if(!p) return;
+    const f = GA.feedback(p, "water", W, c, state.plants, {single:!!single});
+    Object.assign(p, f.patch); addLog(id, "water", "Watered", {est:f.log.est, stage:f.log.stage}); });
+  save(); render(); refreshCareBox(); toast(ids.length > 1 ? tr("{n} plants watered", {n:ids.length}) : tr("Watered"));
+}
+function careFeedback(id, kind){
+  if(kind === "water") return water([id], true);
+  const p = state.plants.find(x => x.id === id); if(!p) return;
+  const f = GA.feedback(p, kind, wx(), ctx(), state.plants);
+  Object.assign(p, f.patch);
+  addLog(id, "care", f.log.detail, {est:f.log.est, stage:f.log.stage, k:f.log.k});
+  save(); render(); refreshCareBox();
+  toast(kind === "wet" ? tr("Got it. Alvor will expect {name} to dry more slowly.", {name:p.name})
+    : kind === "fine" ? tr("Got it. Alvor will look at {name} again in a few days.", {name:p.name}) : tr("Alvor will ask again tomorrow."));
 }
 function setZone(p, z, planting){
   planting = canGround(z) ? (planting || p.planting || "pot") : "pot";
@@ -181,7 +196,8 @@ document.addEventListener("click", e => {
   const act = b.dataset.act, ids = (b.dataset.ids || "").split(",").filter(Boolean);
   if(act === "add") openWizard();
   else if(act === "edit") openDialog(b.dataset.id);
-  else if(act === "water") water([b.dataset.id]);
+  else if(act === "water") water([b.dataset.id], true);
+  else if(act === "fb") careFeedback(b.dataset.id, b.dataset.kind);
   else if(act === "waterAll") water(ids);
   else if(act === "move") openMove(b.dataset.id);
   else if(act === "moveAll") moveGroup(ids, b.dataset.to);
@@ -349,7 +365,37 @@ function onVisClick(e, st, el){
 }
 let editVis = {visibility:"vault", visOpen:false};
 $("#fVis").addEventListener("click", e => onVisClick(e, editVis, $("#fVis")));
-const drawEditPick = () => { $("#fZonePick").innerHTML = pickerHtml(editSel); };
+const drawEditPick = () => { $("#fZonePick").innerHTML = pickerHtml(editSel); drawMicro(); };
+/* About this spot: only what changes Alvor's advice (frost, rain, drying, wind). Outdoors only. */
+let editMicro = {};
+const MICRO = [["wall", tr("Against a wall")], ["tree", tr("Under a tree")], ["exposed", tr("Windy spot")], ["sheltered", tr("Sheltered")], ["pm", tr("Hot afternoon sun")]];
+const microOn = (m, k) => k === "exposed" || k === "sheltered" ? m.wind === k : !!m[k];
+function drawMicro(){
+  const z = editSel.zone && ZONES[editSel.zone], show = !!z && ["outside","porch","balcony"].includes(z.area);
+  $("#microBox").hidden = !show;
+  if(show) $("#fMicro").innerHTML = MICRO.map(([k, label]) => `<button type="button" class="chip" data-micro="${k}" aria-pressed="${microOn(editMicro, k)}">${label}</button>`).join("");
+}
+$("#fMicro").addEventListener("click", e => {
+  const b = e.target.closest("[data-micro]"); if(!b) return;
+  const k = b.dataset.micro;
+  if(k === "exposed" || k === "sheltered") editMicro.wind = editMicro.wind === k ? undefined : k;
+  else editMicro[k] = !editMicro[k];
+  drawMicro();
+});
+const cleanMicro = m => { const o = {}; ["wall","tree","pm"].forEach(k => { if(m[k]) o[k] = true; }); if(m.wind) o.wind = m.wind; return o; };
+/* Water now: Alvor's estimate for this plant, why, and what you found. */
+function careBoxHtml(p){
+  const st = waterStatus(p, wx());
+  const fb = ["water","wet","fine"].map(k => `<button type="button" class="fb-b" data-act="fb" data-kind="${k}" data-id="${p.id}">${FB[k]}</button>`).join("");
+  return `<div class="care-now st-${st.stage}"><b>${STAGE_WORD[st.stage]}</b><ul>${st.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+    <p class="status">${tr("An estimate from the weather, the spot and what you've told Alvor. It can't see the soil, so trust your finger.")}</p><span class="fb">${fb}</span></div>`;
+}
+function refreshCareBox(){
+  if(!dlg.open || !editingId) return;
+  const p = state.plants.find(x => x.id === editingId); if(!p) return;
+  $("#careNow").innerHTML = careBoxHtml(p);
+  $("#fLast").value = p.lastWatered || "";
+}
 $("#fZonePick").addEventListener("click", e => { if(pickerClick(e, editSel)) drawEditPick(); });
 attachSuggest($("#fSpecies"), it => { $("#fGenus").value = it.genus; showPresetNote(); $("#fSpecies").dispatchEvent(new Event("change")); });
 function showPresetNote(){
@@ -367,14 +413,17 @@ function openDialog(id){
   $("#fPattern").innerHTML = patternOptions();
   $("#fPattern").value = p ? (isApt() && p.pattern === "greenhouse" ? "mover" : p.pattern) : "outdoor";
   editSel = p ? {area:p.area, zone:p.zone, planting:p.planting} : {area:"outside", zone:"out-sun", planting:"ground"};
+  editMicro = {...((p && p.micro) || {})};
   drawEditPick();
+  $("#careBox").hidden = !p;
+  $("#careNow").innerHTML = p ? careBoxHtml(p) : "";
   $("#fMin").value = p && hasMin(p) ? p.minTemp : "";
   $("#fCold").checked = p ? p.coldAlert !== false : true;
   coldHintEdit();
   $("#fWs").value = p ? p.ws : 7;
   $("#fWw").value = p ? p.ww : 14;
   $("#fLast").value = p && p.lastWatered ? p.lastWatered : "";
-  $("#fNotes").value = p ? p.notes : "";
+  $("#fNotes").value = p ? p.notes || "" : "";
   showPresetNote();
   pending = [];
   renderGallery();
@@ -421,7 +470,7 @@ $("#dlgSave").addEventListener("click", async () => {
   const data = {
     name, species:$("#fSpecies").value.trim(), genus:$("#fGenus").value.trim() || ($("#fSpecies").value.trim().split(" ")[0] || ""), pattern:$("#fPattern").value, minTemp:isNaN(min) ? null : min, coldAlert,
     ws:Math.max(1, parseInt($("#fWs").value) || 7), ww:Math.max(1, parseInt($("#fWw").value) || 14),
-    lastWatered:$("#fLast").value || null, notes:$("#fNotes").value.trim(), visibility:editVis.visibility
+    lastWatered:$("#fLast").value || null, notes:$("#fNotes").value.trim(), visibility:editVis.visibility, micro:cleanMicro(editMicro)
   };
   if(editingId){
     const p = state.plants.find(x => x.id === editingId);

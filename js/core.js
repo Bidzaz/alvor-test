@@ -175,7 +175,9 @@ function findPreset(species, genus){
   const sp = speciesKey(species), g = String(genus || "").trim().toLowerCase().split(/\s+/)[0] || sp.split(" ")[0];
   if(!sp && !g) return null;
   const byGenus = g ? PRESETS.find(p => p.s.toLowerCase().split(/[ (]/)[0] === g) : null;
-  const water = byGenus ? {ws:byGenus.ws, ww:byGenus.ww} : {};
+  /* Watering: the preset's, or else from how much water the genus needs (succulents rarely, ferns often). */
+  const need = GA.intervalsFor(species, genus);
+  const water = byGenus ? {ws:byGenus.ws, ww:byGenus.ww} : need ? {ws:need.ws, ww:need.ww} : {};
   const exact = sp && PRESETS.find(p => p.s.toLowerCase() === sp);
   if(exact) return {...exact, how:"species"};
   const oneWord = !sp.includes(" ");
@@ -185,6 +187,8 @@ function findPreset(species, genus){
   return null;
 }
 const presetFor = s => findPreset(s, "");
+/* How Alvor words its watering estimate. It has no soil sensor, so it says "likely", never "needs 2 litres". */
+const STAGE_WORD = {ok:tr("No need"), soon:tr("Probably not yet"), consider:tr("Consider watering"), likely:tr("Likely needs water"), urgent:tr("Needs attention"), unknown:tr("Not sure yet")};
 /* Cold warnings start switched on, except for very hardy plants. */
 const COLD_DEFAULT_OFF = -15;
 const coldDefault = min => !(isFinite(parseFloat(min)) && parseFloat(min) <= COLD_DEFAULT_OFF);
@@ -243,7 +247,8 @@ function toast(msg){
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2200);
 }
-function addLog(plantId, type, detail){
-  state.log.unshift({t:new Date().toISOString(), plantId, type, detail});
+/* extra: what Alvor estimated at that moment (for feedback), kept so the rules can be checked against this garden later. */
+function addLog(plantId, type, detail, extra){
+  state.log.unshift({t:new Date().toISOString(), plantId, type, detail, ...(extra || {})});
   if(state.log.length > 2000) state.log.length = 2000;
 }
