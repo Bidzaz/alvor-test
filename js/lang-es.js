@@ -44,7 +44,7 @@ window.ALVOR_LANG.es = {
 
 /* ---- Home: weather and forecast ---- */
 "Next 7 days":"Próximos 7 días", "Today in your garden":"Hoy en tu jardín", "Current weather, tap to refresh":"Tiempo actual, toca para actualizar",
-"H {t}":"Máx {t}", "L {t}":"Mín {t}", "Updated {time}":"Actualizado a las {time}", "Tap the weather to refresh":"Toca el tiempo para actualizar",
+"H {t}":"Máx {t}", "L {t}":"Mín {t}", "Updated {time}":"Actualizado a las {time}", "Updated {time} · MET Norway":"Actualizado a las {time} · MET Noruega", "Tap the weather to refresh":"Toca el tiempo para actualizar",
 "Loading forecast…":"Cargando la previsión…", "No forecast yet. Tap the weather at the top to try again.":"Aún no hay previsión. Toca el tiempo arriba para volver a intentarlo.",
 "{day}, {hi} to {lo}":"{day}, de {hi} a {lo}", ", warning":", aviso", "High":"Máx", "Low":"Mín", "Rain mm":"Lluvia mm",
 "Down to {t}, too cold for {names}.":"Baja a {t}, demasiado frío para {names}.", "Up to {t}, too hot for {names}.":"Sube a {t}, demasiado calor para {names}.",

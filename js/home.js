@@ -2,6 +2,11 @@
    Plain script (no build step): loaded by index.html in a fixed order and sharing one global scope. */
 "use strict";
 /* ---------- Render ---------- */
+/* "Updated 14:02", naming MET Norway when the forecast came from it (its data asks to be credited where it's shown). */
+function updLine(w){
+  const at = new Date(w.at), time = `${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  return w.source === "met" ? tr("Updated {time} · MET Norway", {time}) : tr("Updated {time}", {time});
+}
 function render(){
   $("#placeName").textContent = state.settings.place || tr("Garden");
   const w = state.weather, W = wx();
@@ -9,8 +14,7 @@ function render(){
   if(cur && W && W.next.length){
     const t = W.next[0];
     $("#nowWx").innerHTML = `${wIcon(cur.weather_code, cur.is_day !== 0)}<div><b>${deg(cur.temperature_2m)}</b><small><span class="hi">${tr("H {t}", {t:deg(t.max)})}</span>  <span class="lo">${tr("L {t}", {t:deg(t.min)})}</span></small></div>`;
-    const at = new Date(w.at);
-    $("#nowLine").textContent = tr("Updated {time}", {time:`${pad(at.getHours())}:${pad(at.getMinutes())}`});
+    $("#nowLine").textContent = updLine(w);
   }else{
     $("#nowWx").innerHTML = "";
     $("#nowLine").textContent = w ? tr("Tap the weather to refresh") : tr("Loading forecast…");
@@ -342,9 +346,9 @@ function renderHero(W, groups){
     $("#heroNow").innerHTML = `<span class="hn-wait">${w ? tr("Tap to refresh the weather") : tr("Loading forecast…")}</span>`;
     $("#heroChips").innerHTML = ""; $("#heroUpd").textContent = ""; return;
   }
-  const t = W.next[0], at = new Date(w.at);
+  const t = W.next[0];
   $("#heroNow").innerHTML = `<span class="hn-ic">${wIcon(cur.weather_code, cur.is_day !== 0)}</span><b class="hn-t">${deg(cur.temperature_2m)}</b><span class="hn-s"><span>${SKY_WORD[sky(cur.weather_code)] || ""}</span><small>${tr("H {t}", {t:deg(t.max)})} · ${tr("L {t}", {t:deg(t.min)})}</small></span>`;
-  $("#heroUpd").textContent = tr("Updated {time}", {time:`${pad(at.getHours())}:${pad(at.getMinutes())}`});
+  $("#heroUpd").textContent = updLine(w);
   /* The chips count the same plants as the alerts and Garden today (the next three nights). */
   const r = dayRisks(t), chips = [];
   const coldItems = (groups || []).filter(g => GA.COLD_KEYS.includes(g.key)).flatMap(g => g.items);

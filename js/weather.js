@@ -1,4 +1,4 @@
-/* Alvor · Weather from Open-Meteo.
+/* Alvor · Weather from Open-Meteo, or from MET Norway when Open-Meteo doesn't answer (the adapter is in alerts.js).
    Plain script (no build step): loaded by index.html in a fixed order and sharing one global scope. */
 "use strict";
 /* ---------- Weather ---------- */
@@ -7,8 +7,10 @@ async function fetchWeather(force){
   const fresh = state.weather && state.weather.current && (Date.now() - state.weather.at < 30*60*1000) && state.weather.lat === s.lat && state.weather.lon === s.lon;
   if(fresh && !force){ render(); return; }
   try{
-    const j = await GA.fetchForecast(u => fetch(u), s.lat, s.lon, {app:true});   // one weather adapter, shared with the server
-    state.weather = {at:Date.now(), lat:s.lat, lon:s.lon, daily:j.daily, current:j.current, hourly:j.hourly || null};
+    /* One weather adapter, shared with the server. The last forecast for this place gives MET Norway its past days. */
+    const prev = state.weather && state.weather.lat === s.lat && state.weather.lon === s.lon ? state.weather : null;
+    const j = await GA.fetchForecast((u, o) => fetch(u, o), s.lat, s.lon, {app:true, tz:s.tz, prev});
+    state.weather = {at:Date.now(), lat:s.lat, lon:s.lon, daily:j.daily, current:j.current, hourly:j.hourly || null, source:j.source || "open-meteo"};
     saveLocal();
   }catch(e){ toast(tr("Couldn't load the forecast")); }
   render();
