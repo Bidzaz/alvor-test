@@ -23,7 +23,7 @@
   else root.GardenAlerts = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-09.care-2";
+const VERSION = "2026-10-09.care-3";
 
 /* What Alvor knows about each kind of plant (lowest temperature, traits, watering) lives in plant-kb.js:
    in the browser it is loaded before this file, in notify it is copied in above it, in the tests it is required. */
@@ -161,10 +161,18 @@ function interval(p, month){
 const speciesKey = KB.speciesKey, traitsFor = KB.traits, intervalsFor = KB.intervals;
 
 /* ---------- Weather (one adapter for the app and the server) ---------- */
-/* Open-Meteo today. extended asks for evapotranspiration, sunshine and hourly temperatures; if the service ever
-   refuses those, fetchForecast asks again the old way, so the forecast never breaks because of them. */
+/* Open-Meteo first. extended asks for evapotranspiration, sunshine and hourly temperatures; if the service refuses
+   those, it asks again the old way. If Open-Meteo doesn't answer at all (down, an error, or no reply within
+   WX.timeout), the forecast comes from MET Norway (Yr) instead, turned into the same shape, so nothing else in Alvor
+   needs to know which source answered (j.source says it: "open-meteo" or "met"). MET gives no past days: those come
+   from opt.prev, the last forecast Open-Meteo gave for the same place. */
 const DAILY = "temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max";
 const EXTRA = "et0_fao_evapotranspiration,sunshine_duration";
+const WX = {
+  timeout:10000,                                      // ms to wait for Open-Meteo before asking MET Norway
+  gust:1.5,                                           // gusts ≈ 1.5 × the mean wind where MET gives no gusts (outside the Nordics)
+  prob:[[1, 70], [0.3, 40], [0.05, 20]]               // rain chance from the amount where MET gives none: ≥ 1 mm counts as likely
+};
 function weatherUrl(lat, lon, opt){
   const o = opt || {};
   return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
@@ -173,11 +181,150 @@ function weatherUrl(lat, lon, opt){
     (o.basic ? "" : "&hourly=temperature_2m") +
     `&past_days=7&forecast_days=8&timezone=auto`;
 }
+/* MET Norway's terms: at most 4 decimals, and the server says who it is (browsers send no extra headers). */
+const metUrl = (lat, lon) => `https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=${(+lat).toFixed(4).replace(/\.?0+$/, "")}&lon=${(+lon).toFixed(4).replace(/\.?0+$/, "")}`;
+function late(p, ms, what){
+  let timer;
+  const stop = new Promise((_, no) => { timer = setTimeout(() => no(new Error(what + " didn't answer")), ms); });
+  return Promise.race([p, stop]).finally(() => clearTimeout(timer));
+}
 async function fetchForecast(fetchFn, lat, lon, opt){
-  let r = await fetchFn(weatherUrl(lat, lon, opt));
-  if(r.status === 400){ r = await fetchFn(weatherUrl(lat, lon, {...(opt || {}), basic:true})); }
-  if(!r.ok) throw new Error("Forecast failed: " + r.status);
-  return r.json();
+  const o = opt || {};
+  let first;
+  try{
+    let r = await late(fetchFn(weatherUrl(lat, lon, o)), o.timeout || WX.timeout, "Open-Meteo");
+    if(r.status === 400) r = await late(fetchFn(weatherUrl(lat, lon, {...o, basic:true})), o.timeout || WX.timeout, "Open-Meteo");
+    if(!r.ok) throw new Error("Open-Meteo " + r.status);
+    const j = await r.json();
+    if(!j || !j.daily || !Array.isArray(j.daily.time)) throw new Error("Open-Meteo sent no forecast");
+    j.source = "open-meteo";
+    return j;
+  }catch(e){ first = e; }
+  if(o.second === false) throw new Error("Forecast failed: " + first.message);
+  try{
+    const r = await late(fetchFn(metUrl(lat, lon), o.ua ? {headers:{"User-Agent":o.ua}} : undefined), o.timeout || WX.timeout, "MET Norway");
+    if(!r.ok) throw new Error("MET Norway " + r.status);
+    return withPast(fromMet(await r.json(), {tz:o.tz, lat, lon}), o.prev);
+  }catch(e){ throw new Error(`Forecast failed: ${first.message}; ${e.message}`); }
+}
+/* "YYYY-MM-DDTHH:MM" in the garden's time zone (Open-Meteo's timezone=auto gives the same). */
+const tzFmt = {};
+function localTime(ms, tz){
+  let f = tzFmt[tz || ""];
+  if(!f){
+    const o = {year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", hourCycle:"h23"};
+    try{ f = new Intl.DateTimeFormat("en-CA", {...o, timeZone:tz || undefined}); }catch(e){ f = new Intl.DateTimeFormat("en-CA", o); }
+    tzFmt[tz || ""] = f;
+  }
+  const p = Object.fromEntries(f.formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour === "24" ? "00" : p.hour}:${p.minute}`;
+}
+/* Sunrise and sunset (UTC ms) for a date, from the sun's position; null in polar day or night. */
+function sunTimes(date, lat, lon){
+  const rad = Math.PI / 180, n = Math.round(utc(date) / 86400000 + 2440587.5 - 2451545);
+  const Js = n - lon / 360, M = (357.5291 + 0.98560028 * Js) % 360;
+  const C = 1.9148 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+  const lam = (M + C + 180 + 102.9372) % 360;
+  const Jt = 2451545 + Js + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * lam * rad);
+  const dec = Math.asin(Math.sin(lam * rad) * Math.sin(23.4397 * rad));
+  const cw = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * Math.sin(dec)) / (Math.cos(lat * rad) * Math.cos(dec));
+  if(cw < -1 || cw > 1) return null;
+  const w = Math.acos(cw) / rad, ms = J => (J - 2440587.5) * 86400000;
+  return {rise:ms(Jt - w / 360), set:ms(Jt + w / 360)};
+}
+/* MET's weather symbols as the WMO codes Open-Meteo uses. */
+const MET_WMO = {clearsky:0, fair:1, partlycloudy:2, cloudy:3, fog:45, lightrainshowers:80, rainshowers:81, heavyrainshowers:82,
+  lightrain:61, rain:63, heavyrain:65, lightsleet:66, sleet:66, heavysleet:67, lightsleetshowers:66, sleetshowers:66, heavysleetshowers:67,
+  lightsnow:71, snow:73, heavysnow:75, lightsnowshowers:85, snowshowers:85, heavysnowshowers:86};
+function metCode(sym){
+  if(!sym) return null;
+  const s = String(sym).replace(/_(day|night|polartwilight)$/, "");
+  if(/thunder/.test(s)) return 95;
+  return MET_WMO[s] ?? null;
+}
+const r1 = x => Math.round(x * 10) / 10;
+/* A MET Norway forecast as Open-Meteo's {timezone, current, daily, hourly}. Hourly for about 2½ days, then every
+   6 hours: hourly temperatures in between are drawn straight from one to the next. */
+function fromMet(j, opt){
+  const o = opt || {}, tz = o.tz, H = 3600000;
+  const ts = ((j && j.properties && j.properties.timeseries) || []).filter(e => e && e.time && e.data && e.data.instant);
+  if(!ts.length) throw new Error("MET Norway sent no forecast");
+  const days = new Map();
+  const dayOf = date => { if(!days.has(date)) days.set(date, {lo:null, hi:null, rain:0, prob:null, gust:0, code:null, last:0}); return days.get(date); };
+  const temp = (date, t) => { if(!num(t)) return; const d = dayOf(date); d.lo = d.lo == null ? t : Math.min(d.lo, t); d.hi = d.hi == null ? t : Math.max(d.hi, t); };
+  const hourly = {time:[], temperature_2m:[]};
+  const pts = [];
+  ts.forEach((e, i) => {
+    const t = Date.parse(e.time), next = ts[i + 1] ? Date.parse(ts[i + 1].time) : t + 6 * H, step = Math.max(1, Math.round((next - t) / H));
+    const det = e.data.instant.details || {}, n1 = e.data.next_1_hours, n6 = e.data.next_6_hours;
+    const lt = localTime(t, tz), date = lt.slice(0, 10), hour = +lt.slice(11, 13), d = dayOf(date);
+    d.last = Math.max(d.last, hour);
+    temp(date, det.air_temperature);
+    if(num(det.air_temperature)) pts.push([t, +det.air_temperature]);
+    /* Rain: the hour while the forecast is hourly, then each 6-hour block on the day of its middle. */
+    const per = step <= 1 && n1 ? n1 : n6 || n1, span = per === n1 ? 1 : Math.min(step, 6);
+    const pd = per && per.details || {}, mid = localTime(t + span / 2 * H, tz).slice(0, 10);
+    if(per && num(pd.precipitation_amount)) dayOf(mid).rain += +pd.precipitation_amount * (per === n6 ? span / 6 : 1);
+    if(per === n6){ temp(mid, pd.air_temperature_max); temp(mid, pd.air_temperature_min); }
+    const pr = [n1, n6].map(x => x && x.details && x.details.probability_of_precipitation).filter(num);
+    if(pr.length) dayOf(mid).prob = Math.max(dayOf(mid).prob ?? 0, ...pr);
+    const gust = num(det.wind_speed_of_gust) ? +det.wind_speed_of_gust : num(det.wind_speed) ? +det.wind_speed * WX.gust : 0;
+    d.gust = Math.max(d.gust, gust * 3.6);
+    /* The day's sky: the worst sky between 06:00 and 18:00, as Open-Meteo picks the day's most severe code. */
+    const c = metCode(per && per.summary && per.summary.symbol_code);
+    if(c != null && hour >= 6 && hour <= 18) dayOf(mid).codes = [...(dayOf(mid).codes || []), c];
+  });
+  for(let i = 0; i + 1 < pts.length; i++){
+    const [ta, a] = pts[i], [tb, b] = pts[i + 1], n = Math.round((tb - ta) / H);
+    for(let k = 0; k < n; k++){ hourly.time.push(localTime(ta + k * H, tz).slice(0, 13) + ":00"); hourly.temperature_2m.push(r1(a + (b - a) * k / n)); }
+  }
+  if(pts.length){ const [t, a] = pts[pts.length - 1]; hourly.time.push(localTime(t, tz).slice(0, 13) + ":00"); hourly.temperature_2m.push(r1(a)); }
+  /* Whole days only, apart from today: the last day counts when the forecast reaches its evening. */
+  const dates = [...days.keys()].sort().filter((date, i, all) => days.get(date).hi != null && (i < all.length - 1 || days.get(date).last >= 18));
+  const daily = {time:dates, temperature_2m_max:[], temperature_2m_min:[], precipitation_sum:[], precipitation_probability_max:[],
+    wind_gusts_10m_max:[], weather_code:[], sunrise:[], sunset:[]};
+  for(const date of dates){
+    const d = days.get(date), rain = r1(d.rain);
+    daily.temperature_2m_max.push(r1(d.hi)); daily.temperature_2m_min.push(r1(d.lo));
+    daily.precipitation_sum.push(rain);
+    daily.precipitation_probability_max.push(d.prob != null ? d.prob : (WX.prob.find(([mm]) => rain >= mm) || [0, 0])[1]);
+    daily.wind_gusts_10m_max.push(Math.round(d.gust));
+    const codes = (d.codes || []).filter(c => rain >= 0.3 || c < 45);   // a trace of rain doesn't make a rainy day
+    daily.weather_code.push(codes.length ? Math.max(...codes) : rain >= 0.3 ? 61 : 3);
+    const s = num(o.lat) && num(o.lon) ? sunTimes(date, +o.lat, +o.lon) : null;
+    daily.sunrise.push(s ? localTime(s.rise, tz) : null); daily.sunset.push(s ? localTime(s.set, tz) : null);
+  }
+  /* Now: the first step of the forecast. */
+  const e0 = ts[0], det0 = e0.data.instant.details || {}, p0 = e0.data.next_1_hours || e0.data.next_6_hours;
+  const sym = p0 && p0.summary && p0.summary.symbol_code, t0 = Date.parse(e0.time), s0 = num(o.lat) && num(o.lon) ? sunTimes(localTime(t0, tz).slice(0, 10), +o.lat, +o.lon) : null;
+  const isDay = /_night$/.test(sym || "") ? 0 : /_(day|polartwilight)$/.test(sym || "") ? 1 : s0 ? (t0 >= s0.rise && t0 < s0.set ? 1 : 0) : 1;
+  const current = {time:localTime(t0, tz), temperature_2m:num(det0.air_temperature) ? r1(+det0.air_temperature) : null,
+    weather_code:metCode(sym) ?? 3, is_day:isDay, cloud_cover:num(det0.cloud_area_fraction) ? Math.round(+det0.cloud_area_fraction) : null};
+  return {timezone:tz || null, source:"met", current, daily, hourly};
+}
+/* Past days (and the hours of today already gone) from the last forecast for the same place, so watering still
+   knows about last week's rain and drying when today's forecast came from MET Norway. */
+function withPast(j, prev){
+  const P = prev && prev.daily, D = j.daily;
+  if(!P || !Array.isArray(P.time) || !D.time.length) return j;
+  const first = D.time[0], from = addDays(first, -7);
+  const keep = P.time.map((t, i) => i).filter(i => P.time[i] < first && P.time[i] >= from);
+  const keys = [...new Set([...Object.keys(D), ...Object.keys(P)])].filter(k => k !== "time" && (Array.isArray(D[k]) || Array.isArray(P[k])));
+  const out = {time:[...keep.map(i => P.time[i]), ...D.time]};
+  for(const k of keys) out[k] = [...keep.map(i => Array.isArray(P[k]) ? P[k][i] ?? null : null), ...(Array.isArray(D[k]) ? D[k] : D.time.map(() => null))];
+  /* Today: the earlier forecast also covered the hours before MET's starts. */
+  const a = P.time.indexOf(first), b = keep.length;
+  if(a >= 0){
+    const pick = (k, f) => { if(Array.isArray(P[k]) && num(P[k][a]) && num(out[k][b])) out[k][b] = f(+P[k][a], +out[k][b]); };
+    pick("temperature_2m_max", Math.max); pick("temperature_2m_min", Math.min); pick("precipitation_sum", Math.max);
+  }
+  const PH = prev.hourly, h = j.hourly;
+  if(PH && Array.isArray(PH.time) && Array.isArray(PH.temperature_2m) && h && h.time.length){
+    const fromH = from + "T00:00", idx = PH.time.map((t, i) => i).filter(i => PH.time[i] < h.time[0] && PH.time[i] >= fromH);
+    j.hourly = {time:[...idx.map(i => PH.time[i]), ...h.time], temperature_2m:[...idx.map(i => PH.temperature_2m[i]), ...h.temperature_2m]};
+  }
+  j.daily = out;
+  return j;
 }
 function splitWeather(daily, today, hourly){
   if(!daily || !daily.time) return null;
@@ -602,7 +749,7 @@ function summarize(groups, ctx){
 }
 
 return {VERSION, RULES, KB, setLang, ES, LOC, ALLOWED, deg, degCold, nightWord, daysBetween, addDays, speciesKey, traitsFor, intervalsFor,
-  weatherUrl, fetchForecast, splitWeather, hargreaves, nightHours, seasonMonth, interval, placeOf, rainReach, frostBonus,
+  weatherUrl, metUrl, fetchForecast, fromMet, withPast, sunTimes, localTime, WX, splitWeather, hargreaves, nightHours, seasonMonth, interval, placeOf, rainReach, frostBonus,
   waterState, waterStatus, feedback, learned, STAGES, STAGE_TEXT, effMin, coldLimit, coldOn, frostAction, dayRisks, heatHit,
   compute, gardenToday, summarize, COLD_KEYS};
 });
