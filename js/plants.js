@@ -346,7 +346,7 @@ $("#viewerDelete").addEventListener("click", async () => {
 
 /* ---------- Dialog ---------- */
 const dlg = $("#dlg");
-$("#presetList").innerHTML = PRESETS.map(p => `<option value="${esc(p.s)}"></option>`).join("");
+$("#presetList").innerHTML = KB.starting().map(s => `<option value="${esc(s)}"></option>`).join("");
 let editSel = {area:"outside", zone:"out-sun", planting:"pot"};
 /* "Visible to: Friends · Change", shared by the edit screen and the add-plant steps. */
 const defaultVis = () => (me && VIS[me.defaultVisibility] && me.defaultVisibility) || "vault";
@@ -398,10 +398,24 @@ function refreshCareBox(){
 }
 $("#fZonePick").addEventListener("click", e => { if(pickerClick(e, editSel)) drawEditPick(); });
 attachSuggest($("#fSpecies"), it => { $("#fGenus").value = it.genus; showPresetNote(); $("#fSpecies").dispatchEvent(new Event("change")); });
+/* What Alvor knows for the species typed (formKB), "About this plant", and where the cold limit and watering come from. */
+let formKB = null;
+const formFacts = () => ({species:$("#fSpecies").value, genus:$("#fGenus").value, minTemp:$("#fMin").value, ws:$("#fWs").value, ww:$("#fWw").value});
 function showPresetNote(){
-  const p = presetFor($("#fSpecies").value), n = $("#presetNote");
-  if(p && p.note){ n.textContent = tr(p.note); n.hidden = false; } else n.hidden = true;
+  const r = findPreset($("#fSpecies").value, $("#fGenus").value);
+  $("#presetNote").innerHTML = kbCardHtml(r); $("#kbAbout").hidden = !r;
+  showKbSource();
 }
+function showKbSource(){ $("#fKbSrc").innerHTML = kbSourceHtml(formFacts()); }
+["#fMin", "#fWs", "#fWw"].forEach(id => $(id).addEventListener("input", showKbSource));
+$("#fGenus").addEventListener("change", showPresetNote);
+$("#fKbSrc").addEventListener("click", e => {
+  const b = e.target.closest("[data-kb]"); if(!b) return;
+  const r = findPreset($("#fSpecies").value, $("#fGenus").value); if(!r) return;
+  if(b.dataset.kb === "min"){ $("#fMin").value = r.min; if(!$("#fCold").checked && coldDefault(r.min)){ $("#fCold").checked = true; coldHintEdit(); } }
+  else { $("#fWs").value = r.ws; $("#fWw").value = r.ww; }
+  showKbSource();
+});
 function openDialog(id){
   editingId = id;
   const p = id ? state.plants.find(x => x.id === id) : null;
@@ -424,6 +438,7 @@ function openDialog(id){
   $("#fWw").value = p ? p.ww : 14;
   $("#fLast").value = p && p.lastWatered ? p.lastWatered : "";
   $("#fNotes").value = p ? p.notes || "" : "";
+  formKB = p ? findPreset(p.species, p.genus) : null;
   showPresetNote();
   pending = [];
   renderGallery();
@@ -443,18 +458,20 @@ function openDialog(id){
 }
 
 $("#fSpecies").addEventListener("change", () => {
-  const pr = presetFor($("#fSpecies").value);
-  showPresetNote();
-  if(!pr) return;
+  const pr = presetFor($("#fSpecies").value), was = formKB;
+  formKB = pr;
+  if(!pr){ showPresetNote(); return; }
   const isNew = !editingId;
-  if(isNew || $("#fMin").value === "") $("#fMin").value = pr.min;
+  /* A value that followed Alvor for the old species follows it for the new one; a value of your own stays. */
+  const followed = (v, k) => was && was[k] != null && v !== "" && +v === was[k];
+  if(isNew || $("#fMin").value === "" || followed($("#fMin").value, "min")) $("#fMin").value = pr.min;
+  if(pr.ws != null && (isNew || (followed($("#fWs").value, "ws") && followed($("#fWw").value, "ww")))){ $("#fWs").value = pr.ws; $("#fWw").value = pr.ww; }
   if(isNew){
     $("#fPattern").value = isApt() && pr.pat === "greenhouse" ? "mover" : pr.pat;
-    if(pr.ws) $("#fWs").value = pr.ws;
-    if(pr.ww) $("#fWw").value = pr.ww;
     $("#fCold").checked = coldDefault(pr.min); coldHintEdit();
     if(!$("#fName").value.trim()) $("#fName").value = pr.s;
   }
+  showPresetNote();
 });
 const COLD_HINT_ON = tr("You're warned when the forecast gets close to the lowest temperature it takes.");
 const COLD_HINT_OFF = tr("No low temperature warnings for this plant. Heat, wind and watering reminders still come.");
@@ -476,9 +493,11 @@ $("#dlgSave").addEventListener("click", async () => {
     const p = state.plants.find(x => x.id === editingId);
     if(online && visOf(p) !== data.visibility) addLog(p.id, "share", data.visibility === "vault" ? "Moved to the Vault" : "Shared with friends");
     Object.assign(p, data);
+    p.own = KB.ownOf(p);
     if(editSel.zone) setZone(p, editSel.zone, editSel.planting);
   }else{
     const p = {id:uid(), created:new Date().toISOString(), ...data};
+    p.own = KB.ownOf(p);
     applyZone(p, editSel.zone || "out-sun", editSel.planting);
     state.plants.push(p); addLog(p.id, "add", "Added");
     if(pending.length){
@@ -502,11 +521,9 @@ const SPX = (() => {
   const genera = [], species = [];
   /* Common names in the app's language (species-es.js…); search finds the English names too. */
   const words = (a, b) => [...new Set(fold(`${a} ${b}`.toLowerCase()).split(/[\s-]+/).filter(Boolean))];
-  (window.GARDEN_SPECIES || []).forEach(([g, common, family, list]) => {
-    const cg = plantName(g, common);
-    genera.push({kind:"genus", name:g, genus:g, family, common:cg, key:g.toLowerCase(), words:words(cg, common), other:common.toLowerCase()});
-    list.forEach(([ep, c]) => { const cs = plantName(`${g} ${ep}`, c);
-      species.push({kind:"species", name:`${g} ${ep}`, genus:g, family, common:cs, key:`${g} ${ep}`.toLowerCase(), words:words(cs, c), other:c.toLowerCase()}); });
+  KB.names().forEach(x => {
+    const c = plantName(x.name, x.common);
+    (x.kind === "genus" ? genera : species).push({...x, common:c, key:x.name.toLowerCase(), words:words(c, x.common), other:x.common.toLowerCase()});
   });
   return {genera, species};
 })();

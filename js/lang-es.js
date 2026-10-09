@@ -439,5 +439,21 @@ window.ALVOR_LANG.es = {
 "An estimate from the weather, the spot and what you've told Alvor. It can't see the soil, so trust your finger.":"Es una estimación a partir del tiempo, el sitio y lo que le has dicho a Alvor. No ve la tierra: fíate de tu dedo.",
 "The notify function on Supabase runs older care rules than this app. Deploy notify again so notifications and the app agree.":"La función notify de Supabase usa reglas de cuidado más antiguas que la app. Vuelve a desplegar notify para que los avisos y la app coincidan.",
 "About this spot":"Sobre este sitio", "Only what changes Alvor's advice on frost, rain, drying and wind. Leave them off if you're not sure.":"Solo lo que cambia los consejos de Alvor sobre heladas, lluvia, secado y viento. Déjalos sin marcar si no estás seguro.",
-"Water now":"Riego ahora", "{n} at risk from the cold":"{n} en riesgo por el frío"
+"Water now":"Riego ahora", "{n} at risk from the cold":"{n} en riesgo por el frío",
+/* Plant knowledge (plant-kb.js) */
+"About this plant":"Sobre esta planta", "typical for {s}":"típico de {s}", "typical for the genus {s}":"típico del género {s}", "from its genus, {s}":"de su género, {s}",
+"rough guess: its species take {lo} to {hi}":"estimación aproximada: sus especies aguantan de {lo} a {hi}",
+"It's a rough guess: its species take {lo} to {hi}.":"Es una estimación aproximada: sus especies aguantan de {lo} a {hi}.",
+"for plants that like it dry":"para plantas de poco riego", "for plants that like it moist":"para plantas de mucho riego", "for most plants":"para la mayoría de las plantas",
+"for the genus {s}":"para el género {s}", "for {s}":"para {s}",
+"Alvor doesn't know this plant yet. What you set here is used as it is.":"Alvor aún no conoce esta planta. Lo que pongas aquí se usa tal cual.",
+"{t} is Alvor's value, {from}.":"{t} es el valor de Alvor, {from}.", "Lowest temperature: your own. Alvor says {t}, {from}.":"Temperatura mínima: la tuya. Alvor dice {t}, {from}.",
+"Use Alvor's":"Usar el de Alvor",
+"Watering: Alvor's suggestion {from}. Your answers to its watering advice still adjust it.":"Riego: la sugerencia de Alvor {from}. Tus respuestas a sus consejos de riego lo siguen ajustando.",
+"Watering: your own. Alvor suggests every {s} days in summer and {w} in winter, {from}.":"Riego: el tuyo. Alvor sugiere cada {s} días en verano y {w} en invierno, {from}.",
+"Takes about {t}":"Aguanta unos {t}", "rough guess":"estimación aproximada", "Roots survive to about {t} under a thick mulch":"Las raíces aguantan unos {t} bajo un buen acolchado",
+"Protect the growing point in hard frost":"Protege el punto de crecimiento en heladas fuertes", "New growth is damaged below {t} in spring":"Los brotes nuevos se dañan por debajo de {t} en primavera",
+"Wet cold harms it more than dry cold":"El frío húmedo le hace más daño que el frío seco", "Big leaves tear in strong wind":"Las hojas grandes se rompen con viento fuerte",
+"Likes to dry out between waterings":"Le gusta secarse entre riegos", "Likes the soil kept moist":"Le gusta la tierra siempre húmeda",
+"From Alvor's plant knowledge. What you set for your plant comes first.":"Del conocimiento de plantas de Alvor. Lo que pongas en tu planta va primero."
 };

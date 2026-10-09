@@ -3,7 +3,7 @@
 "use strict";
 const KEY = "garden-tracker-v1";
 const GA = window.GardenAlerts;
-const {PRESETS} = GA;
+const KB = window.AlvorKB;
 const SV = (inner, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" ${extra}>${inner}</svg>`;
 const ICON = {
   house:SV('<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/>'),
@@ -107,7 +107,14 @@ function normalizePlants(){
   state.plants.forEach(p => {
     if(ZONES[p.zone]) applyZone(p, p.zone, p.planting);
     else applyZone(p, zoneFromOld(p), p.zone === "ground" ? "ground" : p.planting);
+    followKB(p);
   });
+}
+/* Your plant keeps its own value only where you set one; the rest follows Alvor's knowledge (plant-kb.js).
+   A plant from before this (no p.own) is checked once: a value equal to Alvor's follows it, any other is yours. */
+function followKB(p){
+  if(!p.own || typeof p.own !== "object") p.own = KB.ownOf(p);
+  Object.assign(p, KB.apply(p));
 }
 
 const $ = s => document.querySelector(s);
@@ -153,40 +160,52 @@ const dayName = s => s === today() ? tr("Today") : parseDay(s).toLocaleDateStrin
 const longDay = s => s === today() ? tr("today") : parseDay(s).toLocaleDateString(LOCALE,{weekday:"long"});
 const deg = n => `${Math.round(n)}°`;
 /* ---------- Care values for a species ---------- */
-/* hardiness.js gives the cold limit for every genus in the species list and many species.
-   PRESETS (alerts.js) add watering and notes for the plants Alvor started with. */
-const PAT = {o:"outdoor", m:"mover", g:"greenhouse", i:"indoor"};
-const patFor = min => min <= -5 ? "outdoor" : min >= 10 ? "indoor" : "mover";
-const HARDY = (() => {
-  const m = {};
-  for(const [k, v] of Object.entries(window.HARDINESS || {})){
-    const [min, pat, note] = Array.isArray(v) ? v : [v];
-    m[k.toLowerCase()] = {s:k, min, pat:PAT[pat] || patFor(min), note:note || ""};
-  }
-  return m;
-})();
-/* "Musa basjoo 'Sakhalin'" → "musa basjoo"; "Abelia × grandiflora" → "abelia x grandiflora" */
-function speciesKey(s){
-  const w = String(s || "").toLowerCase().replace(/×/g, "x").replace(/['"‘’“”].*$/, "").trim().split(/\s+/).filter(Boolean);
-  return (w[1] === "x" ? w.slice(0, 3) : w.slice(0, 2)).join(" ");
-}
-/* Exact species first, then its genus. how: "species" | "genus" (only the genus was given) | "related" (filled in from the genus) */
-function findPreset(species, genus){
-  const sp = speciesKey(species), g = String(genus || "").trim().toLowerCase().split(/\s+/)[0] || sp.split(" ")[0];
-  if(!sp && !g) return null;
-  const byGenus = g ? PRESETS.find(p => p.s.toLowerCase().split(/[ (]/)[0] === g) : null;
-  /* Watering: the preset's, or else from how much water the genus needs (succulents rarely, ferns often). */
-  const need = GA.intervalsFor(species, genus);
-  const water = byGenus ? {ws:byGenus.ws, ww:byGenus.ww} : need ? {ws:need.ws, ww:need.ww} : {};
-  const exact = sp && PRESETS.find(p => p.s.toLowerCase() === sp);
-  if(exact) return {...exact, how:"species"};
-  const oneWord = !sp.includes(" ");
-  if(!oneWord && HARDY[sp]) return {...HARDY[sp], ...water, how:"species"};
-  if(HARDY[g]) return {...HARDY[g], ...water, how:oneWord ? "genus" : "related"};
-  if(byGenus) return {...byGenus, how:"related"};
-  return null;
-}
+/* What Alvor knows about each kind of plant is in plant-kb.js (KB), apart from your plants.
+   findPreset: the species if Alvor knows it, else its genus. how: "species" | "genus" (only the genus was given) |
+   "related" (the species isn't known, so from its genus). Also where each value comes from and how sure it is. */
+const findPreset = (species, genus) => KB.find(species, genus);
 const presetFor = s => findPreset(s, "");
+/* Where Alvor's cold limit comes from, in words, and how sure it is. */
+function kbMinFrom(r){
+  const s = `<i>${esc(r.s)}</i>`;
+  const from = {list:tr("typical for {s}", {s}), species:tr("typical for {s}", {s}), genus:tr("typical for the genus {s}", {s}), related:tr("from its genus, {s}", {s})}[r.src.min];
+  return from + (r.sure < 2 && r.range ? " · " + tr("rough guess: its species take {lo} to {hi}", {lo:deg(r.range[0]), hi:deg(r.range[1])}) : "");
+}
+function kbWaterFrom(r){
+  if(r.src.water === "need") return r.need === 1 ? tr("for plants that like it dry") : r.need === 3 ? tr("for plants that like it moist") : tr("for most plants");
+  return r.src.water === "genus" ? tr("for the genus {s}", {s:`<i>${esc(r.s.split(" ")[0])}</i>`}) : tr("for {s}", {s:`<i>${esc(r.s)}</i>`});
+}
+/* Under the cold limit and watering in the plant sheet: Alvor's value and where it comes from, or "your own"
+   with a way back to Alvor's. f = {species, genus, minTemp, ws, ww} as typed. */
+function kbSourceHtml(f){
+  const r = findPreset(f.species, f.genus);
+  if(!r) return String(f.species || f.genus || "").trim() ? `<p>${tr("Alvor doesn't know this plant yet. What you set here is used as it is.")}</p>` : "";
+  const num = v => v === "" || v == null || !isFinite(+v) ? null : +v, out = [];
+  if(num(f.minTemp) === r.min) out.push(`<p>${tr("{t} is Alvor's value, {from}.", {t:deg(r.min), from:kbMinFrom(r)})}</p>`);
+  else out.push(`<p>${tr("Lowest temperature: your own. Alvor says {t}, {from}.", {t:deg(r.min), from:kbMinFrom(r)})} <button type="button" class="linkish" data-kb="min">${tr("Use Alvor's")}</button></p>`);
+  if(r.ws != null){
+    if(num(f.ws) === r.ws && num(f.ww) === r.ww) out.push(`<p>${tr("Watering: Alvor's suggestion {from}. Your answers to its watering advice still adjust it.", {from:kbWaterFrom(r)})}</p>`);
+    else out.push(`<p>${tr("Watering: your own. Alvor suggests every {s} days in summer and {w} in winter, {from}.", {s:r.ws, w:r.ww, from:kbWaterFrom(r)})} <button type="button" class="linkish" data-kb="water">${tr("Use Alvor's")}</button></p>`);
+  }
+  return out.join("");
+}
+/* "About this plant": what Alvor knows about the species, kept apart from your plant. */
+function kbCardHtml(r){
+  if(!r) return "";
+  const t = r.traits || {}, li = [];
+  li.push(tr("Takes about {t}", {t:deg(r.min)}) + (r.sure < 2 ? ` (${tr("rough guess")})` : ""));
+  if(t.r != null) li.push(tr("Roots survive to about {t} under a thick mulch", {t:deg(t.r)}));
+  if(t.c) li.push(tr("Protect the growing point in hard frost"));
+  if(t.s != null) li.push(tr("New growth is damaged below {t} in spring", {t:deg(t.s)}));
+  if(t.w) li.push(tr("Wet cold harms it more than dry cold"));
+  if(t.b) li.push(tr("Big leaves tear in strong wind"));
+  if(t.d === 1) li.push(tr("Likes to dry out between waterings"));
+  if(t.d === 3) li.push(tr("Likes the soil kept moist"));
+  const name = plantName(r.s, r.n);
+  return `<div class="kb-head"><b>${esc(name || r.s)}</b>${name && name !== r.s ? ` <i>${esc(r.s)}</i>` : ""}${r.family ? `<small>${esc(r.family)}</small>` : ""}</div>
+    <ul>${li.map(x => `<li>${esc(x)}</li>`).join("")}</ul>${r.note ? `<p>${esc(tr(r.note))}</p>` : ""}
+    <p class="status">${tr("From Alvor's plant knowledge. What you set for your plant comes first.")}</p>`;
+}
 /* How Alvor words its watering estimate. It has no soil sensor, so it says "likely", never "needs 2 litres". */
 const STAGE_WORD = {ok:tr("No need"), soon:tr("Probably not yet"), consider:tr("Consider watering"), likely:tr("Likely needs water"), urgent:tr("Needs attention"), unknown:tr("Not sure yet")};
 /* Cold warnings start switched on, except for very hardy plants. */

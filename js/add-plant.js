@@ -108,7 +108,8 @@ function renderWizard(){
   else if(W.step === 4){
     const pr = findPreset(W.species, W.genus);
     const from = pr && ({species:"Filled in for {s}.", genus:"Filled in for the genus {s}.", related:"Filled in from its genus, {s}."}[pr.how] || "Filled in from a related plant, {s}.");
-    body.innerHTML = `${pr ? `<div class="preset-note">${tr(from, {s:`<i>${esc(pr.s)}</i>`})} ${tr("Adjust anything you know better.")}${pr.note ? "<br>" + esc(tr(pr.note)) : ""}</div>`
+    const rough = pr && pr.sure < 2 && pr.range ? " " + tr("It's a rough guess: its species take {lo} to {hi}.", {lo:deg(pr.range[0]), hi:deg(pr.range[1])}) : "";
+    body.innerHTML = `${pr ? `<div class="preset-note">${tr(from, {s:`<i>${esc(pr.s)}</i>`})}${rough} ${tr("Adjust anything you know better.")}${pr.note ? "<br>" + esc(tr(pr.note)) : ""}</div>`
         : `<div class="warn">${tr("No care data for this plant yet. Set a cautious cold limit, or switch low temperature warnings off; you can change it any time.")}</div>`}
       <label class="check"><input type="checkbox" id="wCold" ${W.coldAlert ? "checked" : ""}><span>${tr("Low temperature warnings for this plant")}<br><span class="status" id="wColdHint">${W.coldAlert ? COLD_HINT_ON : COLD_HINT_OFF}</span></span></label>
       <div class="row3">
@@ -134,6 +135,7 @@ async function wizSave(){
   const p = {id:uid(), created:new Date().toISOString(), visibility:VIS[W.visibility] ? W.visibility : defaultVis(), name:W.name.trim(), species:W.species, genus:W.genus || (W.species.split(" ")[0] || ""), family:W.family,
     pattern:W.pattern, minTemp:isNaN(min) ? null : min, coldAlert:!!W.coldAlert, ws:Math.max(1, parseInt(W.ws) || 7), ww:Math.max(1, parseInt(W.ww) || 14),
     lastWatered:W.last || null, notes:String(W.notes || "").trim()};
+  p.own = KB.ownOf(p);
   applyZone(p, W.zone, W.planting);
   state.plants.push(p); addLog(p.id, "add", "Added");
   const now = Date.now();
