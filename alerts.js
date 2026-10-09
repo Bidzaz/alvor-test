@@ -23,36 +23,11 @@
   else root.GardenAlerts = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-08.care-1";
+const VERSION = "2026-10-09.care-2";
 
-const PRESETS = [
-  {s:"Musa basjoo",min:-3,pat:"outdoor",ws:4,ww:21,note:"The trunk is damaged around −3 °C; the roots survive to about −10 °C under thick mulch. Wrap the trunk or cut it back and mulch before hard frost."},
-  {s:"Ensete ventricosum",min:1,pat:"mover",ws:4,ww:14,note:"Tender. Bring inside or lift before the first frost."},
-  {s:"Dicksonia antarctica",min:-5,pat:"outdoor",ws:3,ww:10,note:"Water the trunk, not just the soil. Stuff the crown with straw or cover it with fleece below −5 °C."},
-  {s:"Tetrapanax papyrifer",min:-8,pat:"outdoor",ws:5,ww:21,note:"Top can die back in hard frost and regrows from the roots. Mulch the base."},
-  {s:"Fatsia japonica",min:-12,pat:"outdoor",ws:7,ww:21,note:"Very hardy. Keep pots from freezing solid."},
-  {s:"Colocasia esculenta",min:2,pat:"mover",ws:3,ww:14,note:"Leaves collapse near 0 °C. Bring pots in, or cut back and mulch tubers heavily in the ground."},
-  {s:"Alocasia",min:10,pat:"mover",ws:5,ww:10,note:"Tender. Inside once nights drop below about 10 °C."},
-  {s:"Trachycarpus fortunei",min:-15,pat:"outdoor",ws:10,ww:30,note:"Very hardy palm. Keep water out of the crown in wet winters."},
-  {s:"Chamaerops humilis",min:-10,pat:"outdoor",ws:10,ww:30,note:"Hardy fan palm. Dislikes wet roots in pots over winter."},
-  {s:"Cordyline australis",min:-6,pat:"outdoor",ws:7,ww:30,note:"Tie the leaves up around the growing point in a hard frost."},
-  {s:"Phormium",min:-8,pat:"outdoor",ws:7,ww:30,note:"Variegated forms are more tender."},
-  {s:"Cycas revoluta",min:-6,pat:"greenhouse",ws:10,ww:30,note:"Keep fairly dry in winter and protect the crown from wet and frost."},
-  {s:"Canna",min:0,pat:"mover",ws:3,ww:30,note:"Cut back after frost blackens the leaves; lift the rhizomes or mulch deeply."},
-  {s:"Hedychium",min:-5,pat:"outdoor",ws:4,ww:30,note:"Dies back in winter; mulch the rhizomes."},
-  {s:"Brugmansia",min:3,pat:"mover",ws:2,ww:14,note:"Very thirsty in summer. Keep cool and fairly dry indoors in winter."},
-  {s:"Strelitzia reginae",min:3,pat:"mover",ws:7,ww:21,note:""},
-  {s:"Agave americana",min:-5,pat:"outdoor",ws:14,ww:45,note:"Wet cold kills more than dry cold. Keep rain off it in winter."},
-  {s:"Aeonium",min:3,pat:"mover",ws:10,ww:21,note:""},
-  {s:"Citrus (lemon)",min:-2,pat:"greenhouse",ws:4,ww:14,note:"Flowers and fruit are damaged before the tree is."},
-  {s:"Olea europaea",min:-8,pat:"outdoor",ws:10,ww:30,note:""},
-  {s:"Nerium oleander",min:-5,pat:"greenhouse",ws:5,ww:21,note:""},
-  {s:"Bougainvillea",min:3,pat:"greenhouse",ws:5,ww:21,note:""},
-  {s:"Hibiscus rosa-sinensis",min:7,pat:"mover",ws:3,ww:10,note:""},
-  {s:"Aloe vera",min:5,pat:"mover",ws:14,ww:30,note:""},
-  {s:"Monstera deliciosa",min:12,pat:"indoor",ws:7,ww:14,note:""},
-  {s:"Ficus lyrata",min:12,pat:"indoor",ws:7,ww:14,note:""}
-];
+/* What Alvor knows about each kind of plant (lowest temperature, traits, watering) lives in plant-kb.js:
+   in the browser it is loaded before this file, in notify it is copied in above it, in the tests it is required. */
+const KB = typeof AlvorKB !== "undefined" ? AlvorKB : require("./plant-kb.js");
 
 /* ---------- Rules: every number the care engine uses ---------- */
 const RULES = {
@@ -85,33 +60,6 @@ const RULES = {
   heat:{partial:3, pm:2, greenhouse:8, ghVent:35},
   wind:{sheltered:20}
 };
-
-/* What the species does in the cold, wind and wet, beyond its lowest temperature (hardiness.js).
-   Key: genus or "Genus species" (the species adds to its genus).
-   c: protect the crown or growing point. r: roots survive to (°C) when the top doesn't. s: new growth or blossom
-   damaged below (°C) in spring. w: wet cold harms it more than dry cold. b: big leaves that tear in wind.
-   d: water need, 1 dry (succulents, cacti) or 3 moist (ferns, marginals); used for the intervals of new plants. */
-const TRAITS = {
-  "Musa":{b:1,d:3}, "Musa basjoo":{r:-10}, "Musa sikkimensis":{r:-8}, "Musella":{r:-10,b:1}, "Ensete":{b:1,d:3},
-  "Dicksonia":{c:1,d:3}, "Cyathea":{c:1,d:3}, "Cordyline":{c:1}, "Cordyline fruticosa":{c:0}, "Gunnera":{c:1,b:1,d:3}, "Echium":{c:1},
-  "Trachycarpus":{c:1,w:1}, "Chamaerops":{w:1}, "Phoenix":{c:1}, "Butia":{c:1}, "Jubaea":{c:1}, "Washingtonia":{c:1}, "Brahea":{c:1}, "Sabal":{c:1}, "Livistona":{c:1},
-  "Cycas":{c:1,w:1,d:1},
-  "Tetrapanax":{r:-15,b:1}, "Melianthus":{r:-10}, "Colocasia":{r:-5,b:1,d:3}, "Alocasia":{b:1}, "Alocasia wentii":{r:-8}, "Alocasia odora":{r:-3},
-  "Canna":{r:-5,b:1}, "Dahlia":{r:-5}, "Aloysia":{r:-12}, "Passiflora caerulea":{r:-15}, "Hedychium":{b:1},
-  "Strelitzia nicolai":{b:1}, "Ricinus":{b:1}, "Paulownia":{b:1},
-  "Actinidia":{s:-1}, "Hydrangea":{d:3}, "Hydrangea macrophylla":{s:-2}, "Prunus persica":{s:-2}, "Prunus armeniaca":{s:-2}, "Prunus dulcis":{s:-2},
-  "Ficus carica":{s:-2}, "Juglans":{s:-1}, "Vitis":{s:-1}, "Acer palmatum":{s:-2}, "Hosta":{s:-1},
-  "Agave":{w:1,d:1}, "Aloe":{w:1,d:1}, "Yucca":{w:1,d:1}, "Dasylirion":{w:1,d:1}, "Nolina":{d:1}, "Hesperaloe":{w:1,d:1}, "Puya":{w:1,d:1}, "Beschorneria":{w:1,d:1},
-  "Aeonium":{w:1,d:1}, "Echeveria":{w:1,d:1}, "Crassula":{d:1}, "Sedum":{d:1}, "Sempervivum":{d:1}, "Haworthia":{d:1}, "Haworthiopsis":{d:1}, "Gasteria":{d:1},
-  "Lithops":{d:1}, "Opuntia":{w:1,d:1}, "Cylindropuntia":{d:1}, "Echinocactus":{d:1}, "Echinopsis":{d:1}, "Mammillaria":{d:1}, "Gymnocalycium":{d:1}, "Cereus":{d:1},
-  "Kalanchoe":{d:1}, "Beaucarnea":{d:1}, "Sansevieria":{d:1}, "Dracaena trifasciata":{d:1}, "Zamioculcas":{d:1}, "Delosperma":{d:1},
-  "Lavandula":{d:1}, "Rosmarinus":{d:1}, "Salvia rosmarinus":{d:1}, "Cistus":{d:1}, "Senecio rowleyanus":{d:1}, "Curio":{d:1},
-  "Cyperus":{d:3}, "Zantedeschia":{d:3}, "Lysichiton":{d:3}, "Caltha":{d:3}, "Darmera":{d:3}, "Ligularia":{d:3}, "Rodgersia":{d:3}, "Astilbe":{d:3},
-  "Calathea":{d:3}, "Goeppertia":{d:3}, "Maranta":{d:3}, "Adiantum":{d:3}, "Nephrolepis":{d:3}, "Brugmansia":{d:3}, "Spathiphyllum":{d:3}, "Impatiens":{d:3},
-  "Nepenthes":{d:3}, "Dionaea":{d:3}, "Drosera":{d:3}, "Acorus":{d:3}, "Juncus":{d:3}, "Equisetum":{d:3}, "Typha":{d:3}, "Pontederia":{d:3}, "Thalia":{d:3}, "Sagittaria":{d:3}
-};
-/* Intervals for a new plant with no preset, by water need (summer, winter). */
-const NEED_INTERVALS = {1:{ws:14, ww:30}, 2:{ws:7, ww:14}, 3:{ws:3, ww:10}};
 
 /* Spanish (Spain, "tú"). Another language: add a table like this one and list it in TABLES. */
 const ES = {
@@ -189,7 +137,6 @@ const daysBetween = (a, b) => Math.round((utc(b) - utc(a)) / 86400000);
 const addDays = (s, n) => new Date(utc(s) + n * 86400000).toISOString().slice(0, 10);
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const num = x => x !== null && x !== undefined && x !== "" && isFinite(+x);
-const presetFor = s => PRESETS.find(p => p.s.toLowerCase() === String(s || "").trim().toLowerCase());
 function when(date, today){
   const n = daysBetween(today, date);
   if(n === 0) return T("today");
@@ -211,19 +158,7 @@ function interval(p, month){
 }
 
 /* ---------- Species traits ---------- */
-function speciesKey(s){
-  const w = String(s || "").toLowerCase().replace(/×/g, "x").replace(/['"‘’“”(].*$/, "").trim().split(/\s+/).filter(Boolean);
-  return (w[1] === "x" ? w.slice(0, 3) : w.slice(0, 2)).join(" ");
-}
-const TR = Object.fromEntries(Object.entries(TRAITS).map(([k, v]) => [k.toLowerCase(), v]));
-function traitsFor(species, genus){
-  const sp = speciesKey(species), g = (String(genus || "").trim().toLowerCase().split(/\s+/)[0]) || sp.split(" ")[0];
-  return {...(TR[g] || {}), ...(sp.includes(" ") ? TR[sp] || {} : {})};
-}
-function intervalsFor(species, genus){
-  const t = traitsFor(species, genus);
-  return t.d ? {...NEED_INTERVALS[t.d], need:t.d} : null;
-}
+const speciesKey = KB.speciesKey, traitsFor = KB.traits, intervalsFor = KB.intervals;
 
 /* ---------- Weather (one adapter for the app and the server) ---------- */
 /* Open-Meteo today. extended asks for evapotranspiration, sunshine and hourly temperatures; if the service ever
@@ -666,7 +601,7 @@ function summarize(groups, ctx){
   return {title, body:[...lines, wLine].filter(Boolean).join("\n"), tag:"garden-morning"};
 }
 
-return {VERSION, RULES, TRAITS, setLang, ES, PRESETS, LOC, ALLOWED, deg, degCold, nightWord, daysBetween, addDays, presetFor, speciesKey, traitsFor, intervalsFor,
+return {VERSION, RULES, KB, setLang, ES, LOC, ALLOWED, deg, degCold, nightWord, daysBetween, addDays, speciesKey, traitsFor, intervalsFor,
   weatherUrl, fetchForecast, splitWeather, hargreaves, nightHours, seasonMonth, interval, placeOf, rainReach, frostBonus,
   waterState, waterStatus, feedback, learned, STAGES, STAGE_TEXT, effMin, coldLimit, coldOn, frostAction, dayRisks, heatHit,
   compute, gardenToday, summarize, COLD_KEYS};
