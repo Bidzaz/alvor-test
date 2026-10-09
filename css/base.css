@@ -303,3 +303,13 @@ dialog::backdrop{background:color-mix(in srgb,#000 45%,transparent)}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 @media (max-width:420px){.top h1{font-size:1.75rem}.col{height:118px}.meta{font-size:.68rem}}
+/* Plant knowledge (plant-kb.js): where a value comes from, and "About this plant" */
+.kb-src{font-size:.82rem;color:var(--muted);margin:-4px 0 12px;line-height:1.4}
+.kb-src p{margin:0 0 4px}
+.kb-src .linkish{padding:0 2px;font-size:.82rem}
+.kb-card .kb-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-bottom:4px}
+.kb-card .kb-head small{color:var(--muted);margin-left:auto}
+.kb-card ul{margin:4px 0 6px;padding-left:18px}
+.kb-card li{margin:2px 0}
+.kb-card p{margin:4px 0 0}
+.kb-card .status{font-size:.78rem}
