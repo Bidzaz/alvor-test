@@ -13,11 +13,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Styles by area, in this order. ?v= goes up with every new version, so phones never mix old and new files. -->
-<link rel="stylesheet" href="css/base.css?v=2026-10-13-settle1">
-<link rel="stylesheet" href="css/botanical.css?v=2026-10-13-settle1">
-<link rel="stylesheet" href="css/circle.css?v=2026-10-13-settle1">
-<link rel="stylesheet" href="css/look.css?v=2026-10-13-settle1">
-<link rel="stylesheet" href="css/themes.css?v=2026-10-13-settle1">
+<link rel="stylesheet" href="css/base.css?v=2026-10-13-journal1">
+<link rel="stylesheet" href="css/botanical.css?v=2026-10-13-journal1">
+<link rel="stylesheet" href="css/circle.css?v=2026-10-13-journal1">
+<link rel="stylesheet" href="css/look.css?v=2026-10-13-journal1">
+<link rel="stylesheet" href="css/journal.css?v=2026-10-13-journal1">
+<link rel="stylesheet" href="css/themes.css?v=2026-10-13-journal1">
 </head>
 <body data-page="today">
 <div class="bg" aria-hidden="true"><div class="bg-photo"></div><div class="bg-sun"></div><div class="bg-tint"></div><canvas id="fx"></canvas><div class="fx-flash"></div></div>
@@ -319,6 +320,7 @@
       <input type="file" id="photoFile" accept="image/*" multiple hidden>
       <input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
     </div>
+    <div class="field jr-box" id="jrnBox" hidden><label>Journal</label><div id="jrnPrev"></div></div>
     <div class="field"><label for="fName">Name</label><input id="fName" placeholder="e.g. Big banana by the pond"></div>
     <div class="field"><label for="fSpecies">Species</label><input id="fSpecies" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Start typing, e.g. Musa basjoo"><span class="hint">Pick one from the list to fill in the genus, cold limit and watering.</span></div>
     <datalist id="presetList"></datalist>
@@ -345,7 +347,6 @@
     <div class="field"><label for="fLast">Last watered</label><input id="fLast" type="date"></div>
     <div class="field"><label for="fNotes">Notes</label><textarea id="fNotes" rows="3"></textarea></div>
     <div class="field" id="plantTalkBox" hidden><label>From friends</label><div id="plantTalk"></div></div>
-    <div class="field" id="plantHistBox"><label>History</label><div class="p-hist" id="plantHist"></div></div>
     <div class="vis-box" id="fVis"></div>
   </div>
   <div class="dlg-f">
@@ -370,7 +371,26 @@
 <dialog id="viewer">
   <img id="viewerImg" alt="">
   <p class="viewer-meta"><span id="viewerDate"></span><span id="viewerHid"></span></p>
+  <div class="viewer-acts" id="viewerActs" hidden><button class="btn small" id="viewerJournal">Add to journal</button><button class="btn small" id="viewerDateBtn">Change date</button><input type="date" id="viewerDateIn" aria-label="The day this photo was taken" hidden></div>
   <div class="dlg-f"><button class="btn danger" id="viewerDelete">Delete</button><button class="btn" id="viewerHide">Hide from friends</button><button class="btn" id="viewerClose">Close</button></div>
+</dialog>
+
+<dialog id="jrnDlg" class="jrn-dlg">
+  <div class="dlg-h"><h2 id="jrnTitle">Journal</h2><button class="btn small" id="jrnClose">Close</button></div>
+  <div class="dlg-b" id="jrnBody"></div>
+</dialog>
+
+<dialog id="msDlg">
+  <div class="dlg-h"><h2 id="msTitle">Add to journal</h2><button class="btn small" id="msClose">Close</button></div>
+  <div class="dlg-b" id="msBody"></div>
+  <div class="dlg-f"><button class="btn danger" id="msDelete">Delete</button><button class="btn primary" id="msSave">Save</button></div>
+  <input type="file" id="msFile" accept="image/*" hidden>
+  <input type="file" id="msCam" accept="image/*" capture="environment" hidden>
+</dialog>
+
+<dialog id="cmpDlg" class="cmp-dlg">
+  <div class="dlg-h"><h2>Before and after</h2><button class="btn small" id="cmpClose">Close</button></div>
+  <div class="dlg-b" id="cmpBody"></div>
 </dialog>
 
 <dialog id="fplant">
@@ -454,26 +474,27 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Scripts in this order; they share one global scope. js/i18n.js (languages) runs before the app, js/start.js last. ?v= as for the styles. -->
-<script src="plant-kb.js?v=2026-10-13-settle1"></script>
-<script src="alerts.js?v=2026-10-13-settle1"></script>
-<script src="sync.js?v=2026-10-13-settle1"></script>
-<script src="species-es.js?v=2026-10-13-settle1"></script>
-<script src="supabase.js?v=2026-10-13-settle1"></script>
-<script src="qrcode.js?v=2026-10-13-settle1"></script>
-<script src="js/lang-es.js?v=2026-10-13-settle1"></script>
-<script src="js/i18n.js?v=2026-10-13-settle1"></script>
-<script src="js/core.js?v=2026-10-13-settle1"></script>
-<script src="js/weather.js?v=2026-10-13-settle1"></script>
-<script src="js/home.js?v=2026-10-13-settle1"></script>
-<script src="js/plants.js?v=2026-10-13-settle1"></script>
-<script src="js/add-plant.js?v=2026-10-13-settle1"></script>
-<script src="js/settings.js?v=2026-10-13-settle1"></script>
-<script src="js/account.js?v=2026-10-13-settle1"></script>
-<script src="js/circle.js?v=2026-10-13-settle1"></script>
-<script src="js/talk.js?v=2026-10-13-settle1"></script>
-<script src="js/your-data.js?v=2026-10-13-settle1"></script>
-<script src="js/notifications.js?v=2026-10-13-settle1"></script>
-<script src="js/themes.js?v=2026-10-13-settle1"></script>
-<script src="js/start.js?v=2026-10-13-settle1"></script>
+<script src="plant-kb.js?v=2026-10-13-journal1"></script>
+<script src="alerts.js?v=2026-10-13-journal1"></script>
+<script src="sync.js?v=2026-10-13-journal1"></script>
+<script src="species-es.js?v=2026-10-13-journal1"></script>
+<script src="supabase.js?v=2026-10-13-journal1"></script>
+<script src="qrcode.js?v=2026-10-13-journal1"></script>
+<script src="js/lang-es.js?v=2026-10-13-journal1"></script>
+<script src="js/i18n.js?v=2026-10-13-journal1"></script>
+<script src="js/core.js?v=2026-10-13-journal1"></script>
+<script src="js/weather.js?v=2026-10-13-journal1"></script>
+<script src="js/home.js?v=2026-10-13-journal1"></script>
+<script src="js/plants.js?v=2026-10-13-journal1"></script>
+<script src="js/journal.js?v=2026-10-13-journal1"></script>
+<script src="js/add-plant.js?v=2026-10-13-journal1"></script>
+<script src="js/settings.js?v=2026-10-13-journal1"></script>
+<script src="js/account.js?v=2026-10-13-journal1"></script>
+<script src="js/circle.js?v=2026-10-13-journal1"></script>
+<script src="js/talk.js?v=2026-10-13-journal1"></script>
+<script src="js/your-data.js?v=2026-10-13-journal1"></script>
+<script src="js/notifications.js?v=2026-10-13-journal1"></script>
+<script src="js/themes.js?v=2026-10-13-journal1"></script>
+<script src="js/start.js?v=2026-10-13-journal1"></script>
 </body>
 </html>

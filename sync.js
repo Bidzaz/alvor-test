@@ -8,7 +8,10 @@
      gets a "deleted" marker with the time, instead of being guessed from what's missing.
    - Syncing merges the phone and the account plant by plant: the newer change wins,
      and a deletion wins over any change made before it.
-   - Settings are merged as one block (newer wins). History is merged by adding up both sides. */
+   - Settings are merged as one block (newer wins). History is merged by adding up both sides.
+   - A plant's journal (p.journal) is merged entry by entry, so entries added on two phones both survive:
+     each entry has an id and m (when it last changed); the newer m wins, and a deleted entry stays as
+     {id, del:1, m} so it can't come back from a phone that still has it. */
 (function(root){
   "use strict";
 
@@ -37,6 +40,17 @@
   /* Settings as they are synced: without the sync's own bookkeeping. */
   const syncSettings = s => { const {updatedAt, _gone, _sAt, ...rest} = s || {}; return rest; };
   const logKey = e => `${e.t}|${e.plantId}|${e.type}|${e.detail ?? ""}`;
+
+  /* Two journals become one: every entry from both, the newer change of each, newest day first. */
+  function mergeJournal(a, b){
+    const by = new Map();
+    for(const e of [...(a || []), ...(b || [])]){
+      if(!e || e.id == null) continue;
+      const o = by.get(e.id);
+      if(!o || (+e.m || 0) > (+o.m || 0)) by.set(e.id, e);
+    }
+    return [...by.values()].sort((x, y) => x.d < y.d ? 1 : x.d > y.d ? -1 : (+y.m || 0) - (+x.m || 0) || (x.id < y.id ? -1 : 1));
+  }
 
   const KEEP_GONE = 180 * 86400000;   // deleted markers are kept 6 months
   const LOG_LOCAL = 2000, LOG_SERVER = 1000;
@@ -87,7 +101,11 @@
     const plants = [], removeFromServer = [], upsert = [];
     for(const id of ids){
       const l = lById.get(id), s = sById.get(id);
-      const p = !l ? s : !s ? l : ((+s._m || 0) > (+l._m || 0) ? s : l);
+      let p = !l ? s : !s ? l : ((+s._m || 0) > (+l._m || 0) ? s : l);
+      if(l && s && (l.journal || s.journal)){
+        const j = mergeJournal(l.journal, s.journal);
+        if(canon(j) !== canon(p.journal || [])) p = {...p, journal:j};
+      }
       if(gone[id] != null && gone[id] >= (+p._m || 0)){
         if(s) removeFromServer.push(id);
         continue;
@@ -122,5 +140,5 @@
     return {plants, gone, settings, sAt, log, upsert, removeFromServer, localChanged, serverChanged};
   }
 
-  root.GS = {canon, sig, plantSig, syncSettings, fresh, rebase, stamp, merge, LOG_SERVER};
+  root.GS = {mergeJournal, canon, sig, plantSig, syncSettings, fresh, rebase, stamp, merge, LOG_SERVER};
 })(typeof window !== "undefined" ? window : globalThis);
