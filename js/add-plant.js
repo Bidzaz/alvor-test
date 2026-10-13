@@ -7,7 +7,7 @@ const STEP_TITLES = [tr("Take a photo"), tr("What plant is it?"), tr("Give it a 
 const CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.6"/></svg>';
 let W = null;
 function openWizard(){
-  W = {step:0, photos:[], results:null, loading:false, error:"", pick:null, species:"", genus:"", family:"", common:"",
+  W = {step:0, photos:[], photoTs:[], got:"", results:null, loading:false, error:"", pick:null, species:"", genus:"", family:"", common:"",
        name:"", nameTouched:false, pattern:"outdoor", area:ZONES[defaultZone("outdoor")].area, zone:defaultZone("outdoor"), planting:defaultPlanting("outdoor"), zoneTouched:false,
        minTemp:"", ws:7, ww:14, last:"", notes:"", careTouched:false, coldAlert:true, coldTouched:false, identifiedFor:"", visibility:defaultVis(), visOpen:false};
   renderWizard(); wiz.showModal();
@@ -90,7 +90,9 @@ function renderWizard(){
   else if(W.step === 2){
     body.innerHTML = `<p class="wiz-lead">${tr("What do you call it? It could be the common name, or something like \"Big banana by the pond\".")}</p>
       <div class="field"><label for="wName">${tr("Name")}</label><input id="wName" value="${esc(W.name)}"></div>
-      ${W.species || W.genus ? `<p class="status"><i>${esc(W.species || W.genus)}</i>${W.family ? `, ${esc(W.family)}` : ""}</p>` : ""}`;
+      ${W.species || W.genus ? `<p class="status"><i>${esc(W.species || W.genus)}</i>${W.family ? `, ${esc(W.family)}` : ""}</p>` : ""}
+      <div class="field" style="margin-top:14px"><label for="wGot">${tr("When did you get it?")}</label><input id="wGot" type="date" max="${today()}" value="${esc(W.got)}"><span class="hint">${tr("Optional. It starts the plant's journal; leave it empty if it's new today.")}</span></div>`;
+    $("#wGot").addEventListener("change", e => { W.got = e.target.value && e.target.value <= today() ? e.target.value : ""; });
     const n = $("#wName");
     n.addEventListener("input", () => { W.name = n.value; W.nameTouched = true; next.disabled = !W.name.trim(); });
     next.disabled = !W.name.trim();
@@ -137,9 +139,10 @@ async function wizSave(){
     lastWatered:W.last || null, notes:String(W.notes || "").trim()};
   p.own = KB.ownOf(p);
   applyZone(p, W.zone, W.planting);
+  if(W.got && W.got < today()) p.journal = [{id:uid(), d:W.got, k:"acquired", m:Date.now()}];
   state.plants.push(p); addLog(p.id, "add", "Added");
   const now = Date.now();
-  const list = W.photos.map((data, i) => ({id:uid(), plantId:p.id, date:today(), ts:now - i, data}));
+  const list = W.photos.map((data, i) => { const ts = Math.min(W.photoTs[i] || now, now) - i; return {id:uid(), plantId:p.id, date:ymd(new Date(ts)), ts, data}; });
   for(const ph of list){ try{ await idb.put(ph); }catch(e){} }
   if(list.length) photos[p.id] = list;
   save(); wiz.close(); W = null; render(); toast(tr("{name} added", {name:p.name}));
@@ -149,14 +152,14 @@ $("#wizBody").addEventListener("click", e => {
   const a = b.dataset.wact;
   if(a === "shoot") $("#wizFile").click();
   else if(a === "camera") $("#wizCam").click();
-  else if(a === "rmPhoto"){ W.photos.splice(+b.dataset.i, 1); renderWizard(); }
+  else if(a === "rmPhoto"){ W.photos.splice(+b.dataset.i, 1); W.photoTs.splice(+b.dataset.i, 1); renderWizard(); }
   else if(a === "skip"){ W.step = 1; W.results = null; W.error = ""; renderWizard(); }
   else if(a === "morePhotos"){ W.step = 0; renderWizard(); }
   else if(a === "pick") wizPick(b.dataset.i === "other" ? "other" : +b.dataset.i);
 });
 async function wizAddFiles(input){
   const files = [...input.files].slice(0, 3 - W.photos.length); input.value = "";
-  for(const f of files){ try{ W.photos.push(await resizeImage(f)); }catch(err){ toast(tr("Couldn't use that photo")); } }
+  for(const f of files){ try{ const ts = await photoWhen(f); W.photos.push(await resizeImage(f)); W.photoTs.push(ts); }catch(err){ toast(tr("Couldn't use that photo")); } }
   renderWizard();
 }
 $("#wizFile").addEventListener("change", e => wizAddFiles(e.target));

@@ -75,7 +75,7 @@ const DATA_README = LANG === "es" ? `Tus datos de Alvor
 
 alvor-data.json   Todo lo que el servidor de Alvor guarda sobre ti: el correo con el
                   que entras, tu perfil, ajustes y ubicación, cada planta con sus notas
-                  y cuidados, tu historial, amigos, solicitudes, bloqueos, invitaciones,
+                  y cuidados y su diario, tu historial, amigos, solicitudes, bloqueos, invitaciones,
                   las reacciones y comentarios que escribiste y las denuncias que enviaste.
                   Se abre con cualquier editor de texto.
 photos/           Todas las fotos, a tamaño completo, en una carpeta por planta.
@@ -89,7 +89,7 @@ Ajustes → Borrar mi cuenta en la app, o la página "Borrar tu cuenta".
 
 alvor-data.json   Everything Alvor's server keeps about you: your sign-in email,
                   profile, settings and location, every plant with its notes and
-                  care details, your history, friends, requests, blocks, invitations,
+                  care details and its journal, your history, friends, requests, blocks, invitations,
                   reactions and comments you wrote, and reports you sent.
                   It opens in any text editor.
 photos/           Every photo, at full size, in a folder per plant.

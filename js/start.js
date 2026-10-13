@@ -6,6 +6,7 @@ normalizeLocation(); useActiveLocation();
 try{ const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; if(tz && state.settings.tz !== tz){ state.settings.tz = tz; saveLocal(); } }catch(e){}
 if("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 const startIds = upgradeIds();
+migrateJournal();   // moves from the history join each plant's journal (once; same entries on every phone)
 rebaseSync();
 applyLook();
 render();

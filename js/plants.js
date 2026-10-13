@@ -126,6 +126,7 @@ function setZone(p, z, planting){
   if(planting === "ground" && oldPlant !== "ground") text = `Planted in the ground (${ZONES[z].short.toLowerCase()})`;
   else if(oldPlant === "ground" && planting !== "ground") text = `Dug up, now: ${ZONES[z].label}`;
   addLog(p.id, "move", text);
+  jNoteMove(p);   // and in its journal
   return true;
 }
 /* From alert buttons: "inside", "greenhouse" or "outside"; goes back to the plant's usual spot. */
@@ -287,6 +288,48 @@ async function resizeImage(file){
 const smallJpeg = async data => { const c = await drawJpeg(data, 800, 0.78); return new Promise(res => c.toBlob(res, "image/jpeg", 0.78)); };
 const dataToBlob = async data => (await fetch(data)).blob();
 const blobToData = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+/* When a photo was taken: the camera's own date inside the file (EXIF DateTimeOriginal), else the file's date,
+   else now. So a photo added later from the gallery lands on its real day in the journal. */
+async function photoWhen(file){
+  const now = Date.now(), ok = t => t && t > Date.UTC(1990, 0, 1) && t <= now + 60000;
+  try{
+    const t = exifTime(new DataView(await file.slice(0, 196608).arrayBuffer()));
+    if(ok(t)) return Math.min(t, now);
+  }catch(e){}
+  return ok(file.lastModified) && file.lastModified < now - 120000 ? file.lastModified : now;
+}
+function exifTime(v){
+  if(v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return null;
+  let o = 2;
+  while(o + 4 < v.byteLength){
+    if(v.getUint8(o) !== 0xFF) return null;
+    const mk = v.getUint8(o + 1), len = v.getUint16(o + 2);
+    if(mk === 0xE1 && v.getUint32(o + 4) === 0x45786966){   // "Exif"
+      const t = o + 10, le = v.getUint16(t) === 0x4949;
+      const u16 = x => v.getUint16(t + x, le), u32 = x => v.getUint32(t + x, le);
+      const ifd = (at, want) => {   // the value of tag `want` in the directory at `at` (offset or ASCII text)
+        if(t + at + 2 > v.byteLength) return null;
+        const n = u16(at);
+        for(let i = 0; i < n; i++){
+          const e = at + 2 + i * 12; if(t + e + 12 > v.byteLength) return null;
+          if(u16(e) !== want) continue;
+          if(u16(e + 2) !== 2) return u32(e + 8);
+          const off = u32(e + 8); let str = "";
+          for(let k = 0; k < 19 && t + off + k < v.byteLength; k++) str += String.fromCharCode(v.getUint8(t + off + k));
+          return str;
+        }
+        return null;
+      };
+      const first = u32(4), sub = ifd(first, 0x8769);
+      const s = (typeof sub === "number" && ifd(sub, 0x9003)) || ifd(first, 0x0132);
+      const m = typeof s === "string" && s.match(/^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d):(\d\d)/);
+      return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() : null;
+    }
+    if(mk === 0xDA) return null;
+    o += 2 + len;
+  }
+  return null;
+}
 const galleryList = () => editingId ? (photos[editingId] || []) : pending;
 function renderGallery(){
   const list = galleryList();
@@ -300,17 +343,21 @@ $("#photoCam").addEventListener("change", e => $("#photoFile").dispatchEvent(new
 $("#photoFile").addEventListener("change", async e => {
   const input = e.detail || e.target;
   const files = [...input.files]; input.value = "";
+  let older = null;
   for(const f of files){
     try{
-      const ph = {id:uid(), plantId:editingId, date:today(), ts:Date.now(), data:await resizeImage(f)};
+      const ts = await photoWhen(f), date = ymd(new Date(ts));
+      const ph = {id:uid(), plantId:editingId, date, ts, data:await resizeImage(f)};
+      if(date !== today()) older = date;
       if(editingId){
         await idb.put(ph);
-        (photos[editingId] ||= []).unshift(ph);
+        photos[editingId] = sortPh([ph, ...(photos[editingId] || [])]);
         addLog(editingId, "photo", "Photo added"); save();
-      }else pending.unshift(ph);
+      }else pending = sortPh([ph, ...pending]);
     }catch(err){ toast(tr("Couldn't add that photo")); }
   }
-  renderGallery(); renderPlants(); renderLog();
+  renderGallery(); renderPlants(); renderLog(); refreshJournal();
+  if(older) toast(tr("Dated {date}, the day it was taken", {date:jDate(older)}));
 });
 let viewing = null;
 const viewer = $("#viewer");
@@ -318,7 +365,7 @@ function viewPhoto(id){
   viewing = galleryList().find(p => p.id === id); if(!viewing) return;
   $("#viewerImg").src = viewing.data;
   $("#viewerDate").textContent = parseDay(viewing.date).toLocaleDateString(LOCALE,{day:"numeric",month:"long",year:"numeric"});
-  fillViewerHide();
+  fillViewerHide(); fillViewerJournal();
   viewer.showModal();
 }
 /* "Hide this photo": friends never see it, even when the plant is shared. */
@@ -343,7 +390,7 @@ $("#viewerDelete").addEventListener("click", async () => {
     forgetPhoto(viewing.id);
     photos[viewing.plantId] = (photos[viewing.plantId] || []).filter(p => p.id !== viewing.id);
   }else pending = pending.filter(p => p.id !== viewing.id);
-  viewer.close(); renderGallery(); renderPlants(); toast(tr("Photo deleted"));
+  viewer.close(); renderGallery(); renderPlants(); refreshJournal(); toast(tr("Photo deleted"));
 });
 
 /* ---------- Dialog ---------- */
@@ -466,8 +513,6 @@ function openDialog(id){
   showPresetNote();
   pending = [];
   renderGallery();
-  const hist = p ? state.log.filter(e => e.plantId === p.id).slice(0, 25) : [];
-  $("#plantHistBox").hidden = !p;
   const ownT = p && online && token && me ? {owner:me.id, type:"plant", id:p.id, name:p.name, ownerName:tr("You")} : null;
   const showTalk = ownT && (visOf(p) !== "vault" || talkCount(ownT).r || talkCount(ownT).c);
   $("#plantTalkBox").hidden = !showTalk;
@@ -475,8 +520,7 @@ function openDialog(id){
   editVis = {visibility:p ? visOf(p) : defaultVis(), visOpen:false};
   $("#fVis").hidden = !online;
   $("#fVis").innerHTML = visBlock(editVis.visibility, false);
-  $("#plantHist").innerHTML = hist.length ? hist.map(e => `<div class="ph-row"><span class="ph-dot t-${e.type}"></span><span>${esc(logText(e.detail))}</span><small>${new Date(e.t).toLocaleDateString(LOCALE, {day:"numeric", month:"short"})}</small></div>`).join("")
-    : `<p class="status" style="margin:0">${tr("Nothing logged yet.")}</p>`;
+  renderJBox();
   dlg.showModal();
   if(!p) $("#fName").focus();
 }

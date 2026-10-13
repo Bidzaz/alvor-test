@@ -72,7 +72,7 @@ function applyMerged(m){
   state.plants = m.plants.map(p => ({...p})); state.log = m.log;
   state.settings = {...base.settings, ...m.settings};
   state.account = me && me.id;
-  normalizePlants(); normalizeLocation(); useActiveLocation();
+  normalizePlants(); normalizeLocation(); useActiveLocation(); migrateJournal();
   rebaseSync();
   saveLocal(); applyLook(); render(); if(currentTab === "settings") fillSettings();
   followAccountLang();   // the language was changed on another phone: reload in it
@@ -199,18 +199,24 @@ async function syncPhotos(){
           must(await store.upload(phPath(ph.id, "s"), await smallJpeg(ph.data), {upsert:true, contentType:"image/jpeg"}));
           must(await sb.from("photos").upsert({id:ph.id, plant_id:ph.plantId, owner_id:me.id, hidden:!!ph.hidden,
             path_large:phPath(ph.id, "l"), path_small:phPath(ph.id, "s"), taken_at:new Date(ph.ts || Date.now()).toISOString()}));
-          delete ph.hideDirty;
+          delete ph.hideDirty; delete ph.dateDirty;
         }
         ph.synced = true; await idb.put(ph); uploaded.add(ph.id);
       }
-      // 2b. "Hide this photo": changes on this phone go up, changes from another phone come down
+      // 2b. "Hide this photo" and "Change date": changes on this phone go up, changes from another phone come down
       const byId = Object.fromEntries(rows.map(r => [r.id, r]));
       for(const ph of local){
-        const r = byId[ph.id]; if(!r || uploaded.has(ph.id) && !ph.hideDirty) continue;
+        const r = byId[ph.id]; if(!r || uploaded.has(ph.id) && !ph.hideDirty && !ph.dateDirty) continue;
         if(ph.hideDirty){
           must(await sb.from("photos").update({hidden:!!ph.hidden}).eq("id", ph.id));
           delete ph.hideDirty; await idb.put(ph);
         }else if(!!r.hidden !== !!ph.hidden){ ph.hidden = !!r.hidden; await idb.put(ph); changed = true; }
+        if(ph.dateDirty){
+          must(await sb.from("photos").update({taken_at:new Date(ph.ts || Date.now()).toISOString()}).eq("id", ph.id));
+          delete ph.dateDirty; await idb.put(ph);
+        }else if(r.taken_at && Math.abs(Date.parse(r.taken_at) - (ph.ts || 0)) > 1000){
+          const at = new Date(r.taken_at); ph.ts = at.getTime(); ph.date = ymd(at); await idb.put(ph); changed = true;
+        }
       }
       // 3. Photos deleted on another phone
       for(const ph of local){
