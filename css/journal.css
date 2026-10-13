@@ -1,0 +1,92 @@
+/* Alvor · The plant journal: the start of it in the plant sheet, the whole journal, adding an entry,
+   before and after. Each kind has its own colour (--jk); blue stays for cold, teal for water. */
+.k-acquired{--jk:#8A6A00} .k-planted{--jk:#3F6224} .k-growth{--jk:#2E6A4E} .k-flower{--jk:#AD4A74}
+.k-fruit{--jk:#A3303D} .k-pruned{--jk:#4F5A7A} .k-repotted{--jk:#7B5A3E} .k-propagated{--jk:#5C6B2A}
+.k-protected{--jk:#2C6C99} .k-unprotected{--jk:#8C5A0E} .k-moved{--jk:#6A5236} .k-note{--jk:#56675D}
+.k-photo{--jk:#6B5BA6} .k-care{--jk:#1F6F78} .k-start{--jk:var(--fern)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .jr-ic{color:color-mix(in srgb,var(--jk) 45%,#fff)}
+}
+:root[data-theme="dark"] .jr-ic{color:color-mix(in srgb,var(--jk) 45%,#fff)}
+
+#jrnPrev{border-radius:16px;padding:12px 14px;background:color-mix(in srgb,var(--surface) 62%,transparent);border:1px solid color-mix(in srgb,var(--ink) 8%,transparent)}
+.jr-since{margin:0 0 6px;font-size:.88rem;color:var(--muted)}
+.jr-since .linkish{padding:0;font-size:.88rem}
+.jr-empty{margin:4px 0 0}
+.jr-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.jr-acts .btn svg{width:15px;height:15px;vertical-align:-3px;margin-right:4px}
+
+/* The timeline: a thin line joins the round icons */
+.jr-list{position:relative;display:flex;flex-direction:column}
+.jr-list::before{content:"";position:absolute;left:16px;top:14px;bottom:14px;width:2px;border-radius:1px;background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.jr-item{position:relative;display:flex;align-items:flex-start;gap:12px;width:100%;padding:7px 0;margin:0;border:0;background:none;color:inherit;font:inherit;text-align:left}
+button.jr-item{cursor:pointer;border-radius:14px}
+button.jr-item:active{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.jr-ic{position:relative;z-index:1;flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  color:var(--jk);background:color-mix(in srgb,var(--jk) 16%,var(--surface));box-shadow:0 0 0 3px color-mix(in srgb,var(--surface) 90%,transparent)}
+.jr-ic svg{width:18px;height:18px}
+.jr-txt{flex:1;min-width:0;display:flex;flex-direction:column;padding-top:1px}
+.jr-txt b{font-weight:700;line-height:1.25}
+.jr-txt small{color:var(--muted);font-size:.8rem;font-weight:600}
+.jr-note{font-size:.9rem;margin-top:3px;white-space:pre-wrap;overflow-wrap:anywhere}
+.jr-img{flex:none;width:56px;height:56px;border-radius:12px;object-fit:cover}
+.jr-thumbs{display:flex;gap:6px;margin-top:6px;overflow-x:auto}
+.jr-thumbs button{flex:none;border:0;padding:0;background:none;border-radius:12px}
+.jr-thumbs img{display:block;width:64px;height:64px;border-radius:12px;object-fit:cover}
+.jr-item.quiet{padding:4px 0}
+.jr-item.quiet .jr-ic{width:24px;height:24px;margin:0 5px}
+.jr-item.quiet .jr-ic svg{width:13px;height:13px}
+.jr-item.quiet .jr-txt{flex-direction:row;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 10px;font-size:.86rem;color:var(--muted);padding-top:3px}
+.jr-month{margin:18px 0 4px;font-family:var(--body);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.jr-list.mini{margin-top:4px}
+
+/* The whole journal */
+.jrn-dlg .pick-h,.cmp-dlg .pick-h{margin:16px 0 6px;font-family:var(--body);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.jr-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x proximity}
+.jr-strip button{flex:none;width:92px;padding:0;border:0;background:none;color:inherit;text-align:left;scroll-snap-align:start}
+.jr-strip img{display:block;width:92px;height:116px;border-radius:14px;object-fit:cover}
+.jr-strip span{display:block;margin-top:4px;font-size:.8rem;font-weight:700}
+.jr-strip small{display:block;color:var(--muted);font-size:.74rem;font-weight:600}
+.jr-chips{margin:16px 0 0}
+.jr-private{display:flex;gap:6px;align-items:center;margin-top:22px;font-size:.8rem}
+.jr-private svg{width:14px;height:14px;flex:none}
+
+/* Adding an entry */
+.ms-kinds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.ms-k{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 9px;border-radius:16px;
+  border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:color-mix(in srgb,var(--surface) 60%,transparent);
+  color:var(--ink);font:inherit;font-size:.8rem;font-weight:600;line-height:1.15;text-align:center}
+.ms-k .jr-ic{box-shadow:none}
+.ms-k[aria-pressed=true]{border:2px solid var(--jk);padding:9px 3px 8px;background:color-mix(in srgb,var(--jk) 12%,var(--surface))}
+.ms-ph{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.ms-ph img{width:96px;height:96px;border-radius:14px;object-fit:cover}
+.jr-movetxt{display:flex;gap:8px;align-items:center;font-weight:700;margin:0}
+.jr-movetxt svg{width:18px;height:18px;color:var(--muted)}
+
+/* Choosing photos (entry and before and after) */
+.cmp-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.cmp-strip button{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:2px;border:2px solid transparent;border-radius:14px;background:none;color:var(--muted)}
+.cmp-strip button[aria-pressed=true]{border-color:var(--fern);color:var(--ink)}
+.cmp-strip img{display:block;width:60px;height:60px;border-radius:10px;object-fit:cover}
+.cmp-strip small{font-size:.72rem;font-weight:700}
+
+/* Before and after: a slider over the two photos, or the two side by side */
+.cmp-frame{position:relative;width:min(100%,calc(56vh * 3 / 4));aspect-ratio:3/4;margin:0 auto;border-radius:18px;overflow:hidden;background:#111;touch-action:pan-y}
+.cmp-frame img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+.cmp-frame.slide .cmp-b{clip-path:inset(0 0 0 var(--x))}
+.cmp-frame.side{width:100%;aspect-ratio:3/2}
+.cmp-frame.side img{width:calc(50% - 1px)}
+.cmp-frame.side .cmp-b{left:calc(50% + 1px)}
+.cmp-line{position:absolute;top:0;bottom:0;left:var(--x);width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 8px rgba(0,0,0,.45);pointer-events:none}
+.cmp-line::after{content:"";position:absolute;top:50%;left:50%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,.4);
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2317221C' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 7l-5 5 5 5M15 7l5 5-5 5'/%3E%3C/svg%3E") center/20px no-repeat}
+.cmp-range{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize;-webkit-appearance:none;appearance:none}
+.cmp-lab{position:absolute;bottom:10px;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:.78rem;font-weight:700;pointer-events:none}
+.cmp-lab.l{left:10px} .cmp-lab.r{right:10px}
+.cmp-gap{margin:10px 0 0;text-align:center;font-weight:700}
+.cmp-dlg .seg{max-width:320px;margin:10px auto 0}
+
+/* Photo viewer: add to the journal, change the day */
+.viewer-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 16px 10px}
+.viewer-acts input[type=date]{width:auto;padding:5px 10px}
+@media (max-width:640px){ .jrn-dlg{height:92vh} }
