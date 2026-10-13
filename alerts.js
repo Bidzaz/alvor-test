@@ -23,7 +23,7 @@
   else root.GardenAlerts = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-13.care-4";
+const VERSION = "2026-10-13.care-5";
 
 /* What Alvor knows about each kind of plant (lowest temperature, traits, watering) lives in plant-kb.js:
    in the browser it is loaded before this file, in notify it is copied in above it, in the tests it is required. */
@@ -59,6 +59,18 @@ const RULES = {
     roomCold:5                                        // a night this cold outside brings rooms down to their lowest (Locations)
   },
   heat:{partial:3, pm:2, greenhouse:8, ghVent:35},
+  /* Acclimatisation: a plant that just left the house or the greenhouse has soft growth that isn't used to cold nights,
+     wind or strong sun yet. Hardening off (in and out for a night or two) counts as one move out. */
+  settle:{
+    days:14,                                          // settling in lasts this long after moving out
+    cold:2,                                           // …and the plant counts as this much more tender meanwhile
+    sunDays:10,                                       // from shade into full sun: leaves can scorch for this long
+    sunHours:6, sunMax:18,                            // a sunny day: this many hours of sunshine and at least this warm
+    noData:{max:22, prob:40}                          // without sunshine hours in the forecast: this warm and rain this unlikely
+  },
+  /* Hardy plants harden as autumn cools and soften in a mild spell: the first cold after a mild week hits harder
+     than the same cold in midwinter. Tropical plants never harden, so this is only for plants that take frost. */
+  harden:{days:7, mild:8, cold:1, upTo:0, months:[9,10,11,12,1,2]},   // autumn and winter (spring frosts: "Cover new growth")
   wind:{sheltered:20}
 };
 
@@ -78,7 +90,13 @@ const ES = {
   "against a wall":"contra una pared", "under a tree":"bajo un árbol", "sheltered":"resguardada", "on the porch":"en el porche", "on the balcony":"en el balcón",
   "keep rain off it":"protégela de la lluvia", "may not survive outside":"puede no sobrevivir fuera", "new growth":"brotes nuevos",
   "Get ready to move soon":"Prepárate para moverlas pronto", "Nights are getting close to their limit later this week.":"Las noches se acercan a su límite a finales de semana.",
-  "Safe to move outside":"Ya pueden salir fuera", "No night this week drops below {t}.":"Ninguna noche de esta semana baja de {t}.", "takes {t}":"aguanta {t}",
+  "Safe to move outside":"Ya pueden salir fuera", "takes {t}":"aguanta {t}",
+  "No night this week drops below {t}. Ease them out over a week or two: shade first, then more sun.":"Ninguna noche de esta semana baja de {t}. Sácalas poco a poco durante una o dos semanas: primero a la sombra y luego más sol.",
+  "just moved out, not used to the cold yet":"recién sacada, aún no está hecha al frío", "first cold after a mild spell":"primer frío tras días templados", "just moved out":"recién sacada",
+  "Ease them into the sun":"Acostúmbralas al sol poco a poco",
+  "They came from a shadier spot. Give them shade around midday on sunny days for the first week or so, or the leaves can scorch.":"Vienen de un sitio con menos luz. Dales sombra a mediodía los días de sol durante la primera semana o así, o las hojas pueden quemarse.",
+  "moved today":"movida hoy", "moved yesterday":"movida ayer", "moved {n} days ago":"movida hace {n} días", "{t} and sunny {when}":"{t} y sol {when}",
+  "1 plant just moved into the sun: shade it at midday":"1 planta recién puesta al sol: dale sombra a mediodía", "{n} plants just moved into the sun: shade them at midday":"{n} plantas recién puestas al sol: dales sombra a mediodía",
   "Hot spell":"Ola de calor", "{t} {when}. Water these early in the morning and give them shade where you can.":"{t} {when}. Riégalas temprano por la mañana y dales sombra donde puedas.",
   "pot in partial sun":"maceta a semisombra", "pot in the sun":"maceta al sol", "pot in afternoon sun":"maceta con sol de tarde",
   "Open the greenhouse":"Abre el invernadero", "Outside will reach {t}; the greenhouse gets much hotter. Open vents or the door.":"Fuera llegará a {t}; el invernadero se calienta mucho más. Abre las ventanas o la puerta.",
@@ -416,9 +434,75 @@ function spotLow(p, t, s){
   return t + frostBonus(p, s);
 }
 const effMin = (p, d, s) => spotLow(p, d.min, s);
+/* ---------- Acclimatisation ---------- */
+/* p.moved, written on every move by moveRecord: {date, from (the zone it left), out (the day it left the house or the
+   greenhouse for outdoors), sun (the day it went from shade into full sun), ok (the owner says it's used to it)}. */
+const zoneArea = z => !z ? null : z === "greenhouse" ? "greenhouse" : /^house/.test(z) ? "house" : /^porch/.test(z) ? "porch" : /^balc/.test(z) ? "balcony" : /^out/.test(z) ? "outside" : null;
+const SHELTER = ["house", "greenhouse"], OUT = ["outside", "porch", "balcony"];
+const shadyZone = z => SHELTER.includes(zoneArea(z)) || zoneArea(z) === "porch" || /shade$/.test(z || "");
+const sunZone = z => /-sun$/.test(z || "");
+function moveRecord(p, to, today){
+  const prev = p.moved || {}, from = p.zone, fa = zoneArea(from), ta = zoneArea(to), S = RULES.settle;
+  const open = (d, n) => !!d && daysBetween(d, today) >= 0 && daysBetween(d, today) < n;
+  const rec = {date:today, from};
+  if(OUT.includes(ta)){
+    if(SHELTER.includes(fa)) rec.out = open(prev.out, S.days) ? prev.out : today;   // back out after a night in: the same settling
+    else if(open(prev.out, S.days)) rec.out = prev.out;                              // from one outdoor spot to another
+    if(sunZone(to)){
+      if(shadyZone(from)) rec.sun = open(prev.sun, S.sunDays) ? prev.sun : today;
+      else if(open(prev.sun, S.sunDays)) rec.sun = prev.sun;
+    }
+  }else{
+    // In for the night while hardening off: remembered, so the next move out carries on.
+    if(open(prev.out, S.days)) rec.out = prev.out;
+    if(open(prev.sun, S.sunDays)) rec.sun = prev.sun;
+  }
+  if(prev.ok && ((rec.out && rec.out === prev.out) || (rec.sun && rec.sun === prev.sun))) rec.ok = true;
+  return rec;
+}
+/* Is this plant settling in after a move? {kind:"out", cold, sun, days} outdoors, {kind:"in", days} just brought into
+   the house from outside (a few dropped leaves are normal), or null. */
+function settling(p, today){
+  const m = p.moved, S = RULES.settle;
+  if(!m || m.ok || !today) return null;
+  const P = placeOf(p), age = d => d ? daysBetween(d, today) : null;
+  if(outdoors(P)){
+    const a = age(m.out), b = age(m.sun);
+    const cold = a != null && a >= 0 && a < S.days, sun = b != null && b >= 0 && b < S.sunDays && P.sun === "full";
+    return cold || sun ? {kind:"out", cold, sun, days:cold ? a : b} : null;
+  }
+  if(P.inside && !m.out && OUT.includes(zoneArea(m.from))){
+    const a = age(m.date);
+    return a != null && a >= 0 && a < S.days ? {kind:"in", days:a} : null;
+  }
+  return null;
+}
+/* How many degrees more tender than its limit a plant is right now (x = {W, today}; without it, none):
+   just moved out of the house or greenhouse, or a hardy plant meeting the first cold after a mild week. */
+function softness(p, s, x){
+  if(!x || !outdoors(placeOf(p))) return {k:0, why:null};
+  const st = settling(p, x.today), H = RULES.harden;
+  let k = 0, why = null;
+  if(st && st.cold){ k = RULES.settle.cold; why = "settle"; }
+  if(x.W && x.today && H.months.includes(seasonMonth(+x.today.slice(5, 7), s)) && num(p.minTemp) && +p.minTemp <= H.upTo && H.cold > k){
+    const nights = x.W.past.slice(-H.days).map(d => d.min).filter(num);
+    if(nights.length >= 4 && nights.reduce((a, t) => a + +t, 0) / nights.length >= H.mild){ k = H.cold; why = "mild"; }
+  }
+  return {k, why};
+}
+const SOFT_WHY = {settle:"just moved out, not used to the cold yet", mild:"first cold after a mild spell"};
+/* A sunny day: enough sunshine hours (or, without them, warm and dry), and warm enough to scorch soft leaves. */
+function sunnyDay(d){
+  const S = RULES.settle;
+  if(!d || !num(d.max) || d.max < S.sunMax) return false;
+  return num(d.sun) ? +d.sun >= S.sunHours * 3600 : d.max >= S.noData.max && (d.prob || 0) < S.noData.prob;
+}
+const movedWhen = n => n === 0 ? T("moved today") : n === 1 ? T("moved yesterday") : T("moved {n} days ago", {n});
+
 /* Cold warnings are per plant: off when the owner switched them off, or when no limit is set. */
 const coldOn = p => p.coldAlert !== false && num(p.minTemp);
-const coldLimit = (p, s) => +p.minTemp + +s.margin + (p.planting === "pot" && p.current === "outside" ? RULES.frost.pot : 0);
+/* x = {W, today}: counts acclimatisation (softness) too. The alerts, the forecast badges and the Home chips all pass it. */
+const coldLimit = (p, s, x) => +p.minTemp + +s.margin + (p.planting === "pot" && p.current === "outside" ? RULES.frost.pot : 0) + softness(p, s, x).k;
 
 /* ---------- Watering ---------- */
 /* What feedback taught Alvor: this plant's own factor, or else the factor of other plants in the same spot. */
@@ -530,6 +614,10 @@ function feedback(p, kind, W, ctx, plants, opt){
   }else if(kind === "fine"){
     detail = "Looks fine"; care.check = {date:today, d:Rw.fine}; delete care.snooze;
     if(est != null && est >= Rw.stages.consider){ k *= L.fine; learnt = true; }
+  }else if(kind === "settled"){
+    detail = "Used to it";
+    if(p.moved) patch.moved = {...p.moved, ok:true};
+    return {patch, log:{type:"care", detail, est:null, stage:null, k:care.k || 1}};
   }else{ detail = "Later"; care.snooze = today; }
   if(learnt){ care.k = Math.round(clamp(k, L.min, L.max) * 1000) / 1000; care.n = (+care.n || 0) + 1; }
   patch.care = care;
@@ -556,7 +644,7 @@ function frostAction(p, t, s, hasGh, gh){
 }
 
 /* ---------- All alerts ---------- */
-const ORDER = [...COLD_KEYS, "heater", "frostOk", "vent", "heat", "wind", "water", "rainWill", "waterUnknown", "plan", "goOut"];
+const ORDER = [...COLD_KEYS, "heater", "frostOk", "vent", "heat", "wind", "settleSun", "water", "rainWill", "waterUnknown", "plan", "goOut"];
 const RANK = {danger:0, warn:1, heat:2, wind:3, water:4, info:5};
 const BASE = {
   bringIn:() => ({title:T("Bring inside"), text:T("Cold is coming that these can't take outside."), move:"inside"}),
@@ -583,8 +671,8 @@ function placeWhy(p){
   return w;
 }
 /* Frost and heat for one forecast day, for the badges on the forecast and the chips on Home. */
-function dayRisks(plants, d, s){
-  const frost = plants.filter(p => { if(!coldOn(p)) return false; const t = effMin(p, d, s); return t != null && t < coldLimit(p, s); });
+function dayRisks(plants, d, s, x){
+  const frost = plants.filter(p => { if(!coldOn(p)) return false; const t = effMin(p, d, s); return t != null && t < coldLimit(p, s, x); });
   const heat = plants.filter(p => heatHit(p, d.max, s) || (p.current === "greenhouse" && d.max + RULES.heat.greenhouse >= RULES.heat.ghVent));
   return {frost, heat};
 }
@@ -599,7 +687,7 @@ function compute(plants, ctx){
   if(ctx.lang) setLang(ctx.lang);
   const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today, ctx.hourly), groups = {};
   const evening = ctx.mode === "evening", sm = seasonMonth(ctx.month, s);
-  const hasGh = s.home !== "apartment";
+  const hasGh = s.home !== "apartment", x = {W, today:ctx.today};
   const add = (key, base, item) => {
     const g = (groups[key] ||= {...base, items:[]});
     if(RANK[base.level] < RANK[g.level]) g.level = base.level;
@@ -619,7 +707,7 @@ function compute(plants, ctx){
       let worst = null;
       for(const d of look){ const t = spotLow(p, d.min, s); if(t != null && (!worst || t < worst.t)) worst = {t, date:d.date, out:d.min}; }
       if(!worst) continue;
-      const lim = coldLimit(p, s), whenTxt = nightWord(worst.date, ctx.today, evening);
+      const lim = coldLimit(p, s, x), soft = softness(p, s, x), whenTxt = nightWord(worst.date, ctx.today, evening);
       if(worst.t >= lim){
         const Tr = traitsFor(p.species, p.genus);
         // A heated greenhouse: fine thanks to the heater, but it would be too cold without it.
@@ -630,7 +718,7 @@ function compute(plants, ctx){
         if(RULES.frost.spring.includes(sm) && num(Tr.s) && outdoors(placeOf(p)) && worst.t <= Tr.s + 1){
           coldIds.add(p.id); freezing = true;
           add("springGrowth", {...BASE.springGrowth(), level:"warn"}, {p, t:worst.t, date:worst.date, reasons:[T("{t} {when}, takes {min}", {t:degCold(worst.t), when:whenTxt, min:deg(Tr.s)}), T("new growth")]});
-        }else if(worst.t < lim + RULES.frost.okWithin) near.push({p, t:worst.t, date:worst.date});
+        }else if(worst.t < lim + RULES.frost.okWithin) near.push({p, t:worst.t, date:worst.date, soft});
         continue;
       }
       coldIds.add(p.id);
@@ -642,6 +730,8 @@ function compute(plants, ctx){
       const hrs = inside ? null : nightHours(W, worst.date, min, p.current === "greenhouse" ? x => ghLow(x, s) : frostBonus(p, s));
       if(hrs) reasons.push(T("for {n} hours", {n:hrs}));
       if(A.key === "mulchRoots") reasons.push(T("roots take {t}", {t:deg(A.roots)}));
+      // Only when it made the difference (or the plant just came out, which is worth knowing anyway).
+      if(soft.why && (soft.why === "settle" || worst.t >= lim - soft.k)) reasons.push(T(SOFT_WHY[soft.why]));
       reasons.push(...placeWhy(p));
       const Tr = traitsFor(p.species, p.genus);
       if(Tr.w && W.next.slice(0, 3).some(d => d.rain >= 2)) reasons.push(T("keep rain off it"));
@@ -656,7 +746,7 @@ function compute(plants, ctx){
         {p, t, date, reasons:[T("unheated: about {t}, takes {min}", {t:degCold(bare), min:deg(p.minTemp)}), T("the heater keeps {t}", {t:deg(ghHeat(s))})]}));
     }
     // Reassurance: when it freezes or plants need protecting, say which ones are fine as they are.
-    if(coldIds.size || freezing) near.filter(x => !coldIds.has(x.p.id)).forEach(({p, t, date}) =>
+    if(coldIds.size || freezing) near.filter(n => !coldIds.has(n.p.id)).forEach(({p, t, date}) =>
       add("frostOk", {title:T("No action needed"), text:T("These stay within what they take."), level:"info"}, {p, t, date, reasons:[T("{t} {when}, takes {min}", {t:degCold(t), when:nightWord(date, ctx.today, evening), min:deg(p.minTemp)}), ...placeWhy(p)].slice(0, 2)}));
 
     if(!evening){
@@ -664,7 +754,7 @@ function compute(plants, ctx){
         if(coldIds.has(p.id) || !coldOn(p)) continue;
         const movable = p.pattern === "mover" || p.pattern === "greenhouse";
         if(p.current === "outside" && p.planting === "pot" && movable && sm >= 8 && sm <= 11){
-          const hit = W.next.slice(3).find(d => { const t = effMin(p, d, s); return t != null && t < coldLimit(p, s) + 2; });
+          const hit = W.next.slice(3).find(d => { const t = effMin(p, d, s); return t != null && t < coldLimit(p, s, x) + 2; });
           if(hit) add("plan", {level:"info", title:T("Get ready to move soon"), text:T("Nights are getting close to their limit later this week.")},
             {p, reasons:[`${deg(effMin(p, hit, s))} ${when(hit.date, ctx.today)}`, T("takes {t}", {t:deg(p.minTemp)})]});
         }
@@ -672,7 +762,7 @@ function compute(plants, ctx){
         if(sheltered && sm >= 3 && sm <= 6 && W.next.length){
           const lowest = Math.min(...W.next.map(d => d.min));
           if(lowest >= +p.minTemp + +s.margin + 3)
-            add("goOut", {level:"info", title:T("Safe to move outside"), text:T("No night this week drops below {t}.", {t:deg(lowest)}), move:"outside"},
+            add("goOut", {level:"info", title:T("Safe to move outside"), text:T("No night this week drops below {t}. Ease them out over a week or two: shade first, then more sun.", {t:deg(lowest)}), move:"outside"},
               {p, reasons:[T("takes {t}", {t:deg(p.minTemp)})]});
         }
       }
@@ -688,6 +778,14 @@ function compute(plants, ctx){
           plants.filter(p => p.current === "greenhouse").forEach(p =>
             add("vent", {level:"heat", title:T("Open the greenhouse"), text:T("Outside will reach {t}; the greenhouse gets much hotter. Open vents or the door.", {t:deg(hottest.max)}), date:hottest.date}, {p, reasons:[T("in the greenhouse")]}));
       }
+      // Just moved into full sun: soft leaves scorch on the first sunny days.
+      const sunny = W.next.slice(0, 2).find(sunnyDay);
+      if(sunny) plants.forEach(p => {
+        const st = settling(p, ctx.today);
+        if(!st || !st.sun) return;
+        add("settleSun", {level:"info", title:T("Ease them into the sun"), text:T("They came from a shadier spot. Give them shade around midday on sunny days for the first week or so, or the leaves can scorch."), date:sunny.date, feedback:["settled"]},
+          {p, reasons:[movedWhen(daysBetween(p.moved.sun, ctx.today)), T("{t} and sunny {when}", {t:deg(sunny.max), when:when(sunny.date, ctx.today)}), T("full sun")]});
+      });
       const windy = look.reduce((a, d) => !a || d.gust > a.gust ? d : a, null);
       if(windy && windy.gust >= +s.wind){
         plants.forEach(p => {
@@ -698,6 +796,8 @@ function compute(plants, ctx){
           if(P.pot) why.push(T("pot"));
           if(Tr.b) why.push(T("big leaves tear"));
           if(P.wind === "exposed") why.push(T("windy spot"));
+          const st = settling(p, ctx.today);
+          if(st && st.cold) why.push(T("just moved out"));
           if(!why.length) return;   // a plant in the ground, in a normal spot, rides out a gust
           add("wind", {level:"wind", title:T("Strong gusts"), text:T("Up to {n} km/h {when}. Secure pots, stake tall plants, close the greenhouse.", {n:Math.round(windy.gust), when:when(windy.date, ctx.today)}), date:windy.date}, {p, reasons:why});
         });
@@ -726,7 +826,7 @@ function compute(plants, ctx){
 }
 
 /* ---------- Garden today: what matters now ---------- */
-/* lines: {kind:"frost"|"heat"|"wind"|"water"|"rain"|"soon"|"move"|"unknown", text, ids, urgent}. */
+/* lines: {kind:"frost"|"heat"|"wind"|"sun"|"water"|"rain"|"soon"|"move"|"unknown", text, ids, urgent}. */
 function gardenToday(groups, plants, ctx){
   if(ctx.lang) setLang(ctx.lang);
   const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today, ctx.hourly);
@@ -751,6 +851,8 @@ function gardenToday(groups, plants, ctx){
   const vent = by("vent"); if(vent.length) lines.push({kind:"heat", urgent:true, ids:ids(vent), text:T("Open the greenhouse {when}", {when:vent[0].date ? when(vent[0].date, ctx.today) : T("today")})});
   const wind = by("wind"); if(wind.length){ const n = ids(wind).length;
     lines.push({kind:"wind", urgent:true, ids:ids(wind), text:P(n, "Gusts {when}: secure 1 plant", "Gusts {when}: secure {n} plants", {when:wind[0].date ? when(wind[0].date, ctx.today) : T("today")})}); }
+  const sunG = by("settleSun"); if(sunG.length){ const n = ids(sunG).length;
+    lines.push({kind:"sun", urgent:false, ids:ids(sunG), text:P(n, "1 plant just moved into the sun: shade it at midday", "{n} plants just moved into the sun: shade them at midday")}); }
   const water = by("water"); if(water.length){ const n = ids(water).length;
     lines.push({kind:"water", urgent:water[0].items.some(i => i.stage === "urgent"), ids:ids(water), text:P(n, "1 plant likely needs water", "{n} plants likely need water")}); }
   const rain = by("rainWill"); if(rain.length){ const n = ids(rain).length;
@@ -805,5 +907,5 @@ function summarize(groups, ctx){
 return {VERSION, RULES, KB, setLang, ES, LOC, ALLOWED, deg, degCold, nightWord, daysBetween, addDays, speciesKey, traitsFor, intervalsFor,
   weatherUrl, metUrl, fetchForecast, fromMet, withPast, sunTimes, localTime, WX, splitWeather, hargreaves, nightHours, seasonMonth, interval, placeOf, rainReach, frostBonus,
   waterState, waterStatus, feedback, learned, STAGES, STAGE_TEXT, effMin, spotLow, ghLow, roomLow, coldLimit, coldOn, frostAction, dayRisks, heatHit,
-  compute, gardenToday, summarize, COLD_KEYS};
+  compute, gardenToday, summarize, COLD_KEYS, moveRecord, settling, softness, sunnyDay, zoneArea};
 });
