@@ -25,6 +25,7 @@ const ICON = {
   clock:SV('<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4.2h4.2"/><path d="M12 7.5V12l3 2"/>'),
   gear:SV('<circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.6 2.3 2.8-.5.5 2.8 2.3 1.6-1.2 2.5 1.2 2.5-2.3 1.6-.5 2.8-2.8-.5L12 21.2l-1.6-2.3-2.8.5-.5-2.8-2.3-1.6L6 12.5 4.8 10l2.3-1.6.5-2.8 2.8.5z"/>'),
   plus:SV('<path d="M12 5v14M5 12h14"/>'),
+  thermo:SV('<path d="M10 13.8V5a2 2 0 0 1 4 0v8.8a4 4 0 1 1-4 0z"/><path d="M12 9.5v7"/>'),
   camera:SV('<path d="M4 8.5h3.2L9 6h6l1.8 2.5H20V19H4z"/><circle cx="12" cy="13.3" r="3.4"/>'),
   drop:SV('<path d="M12 3.5s6 6.4 6 10.6a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5z"/>'),
   snow:SV('<path d="M12 2.5v19M3.8 7.2l16.4 9.6M3.8 16.8l16.4-9.6"/><path d="M9.5 3.8 12 6l2.5-2.2M9.5 20.2 12 18l2.5 2.2"/>'),
@@ -225,7 +226,7 @@ let editingId = null;
 
 function defaults(){
   return {
-    settings:{home:"house", balconyRain:false, place:"Lekunberri", lat:43.0014, lon:-1.8908, margin:2, gh:3, heat:32, wind:55, rain:5, morningHour:8, eveningHour:19, eveningCheck:true, tz:"Europe/Madrid"},
+    settings:{home:"house", balconyRain:false, place:"Lekunberri", lat:43.0014, lon:-1.8908, margin:2, gh:3, ghHeat:null, rooms:{}, heat:32, wind:55, rain:5, morningHour:8, eveningHour:19, eveningCheck:true, tz:"Europe/Madrid"},
     plants:[], log:[], weather:null, updatedAt:0
   };
 }

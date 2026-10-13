@@ -143,7 +143,7 @@ function fillSettings(){
   refreshNotifyStatus();
   if(me && me.owner && token) loadAdmin();
   renderColdPick();
-  $("#sMargin").value = s.margin; $("#sGh").value = s.gh; $("#sHeat").value = s.heat; $("#sWind").value = s.wind; $("#sRain").value = s.rain;
+  $("#sMargin").value = s.margin; $("#sHeat").value = s.heat; $("#sWind").value = s.wind; $("#sRain").value = s.rain;
 }
 /* Low temperature warnings per plant, in Alert rules. Changes save at once. */
 function renderColdPick(open){
@@ -178,7 +178,7 @@ $("#saveSettings").addEventListener("click", () => {
   const n = (sel, fb) => { const v = parseFloat($(sel).value); return isNaN(v) ? fb : v; };
   const s = state.settings;
   state.settings = {...s,
-    margin:n("#sMargin", s.margin), gh:n("#sGh", s.gh), heat:n("#sHeat", s.heat), wind:n("#sWind", s.wind), rain:n("#sRain", s.rain)};
+    margin:n("#sMargin", s.margin), heat:n("#sHeat", s.heat), wind:n("#sWind", s.wind), rain:n("#sRain", s.rain)};
   save(); toast(tr("Settings saved")); fetchWeather(true);
 });
 $("#exportBtn").addEventListener("click", async () => {

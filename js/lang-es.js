@@ -3,6 +3,31 @@
    Another language: copy this file as lang-xx.js and translate the right-hand side. */
 window.ALVOR_LANG = window.ALVOR_LANG || {};
 window.ALVOR_LANG.es = {
+/* ---- Locations: how warm a place stays ---- */
+"Find a warmer spot for {n} plant:":"Busca un sitio más cálido para {n} planta:",
+"Find a warmer spot for {n} plants:":"Busca un sitio más cálido para {n} plantas:",
+"Check the greenhouse heater":"Revisa la calefacción del invernadero",
+"Heated · above {t}":"Con calefacción · más de {t}",
+"Unheated · {t} warmer":"Sin calefacción · {t} más",
+"Coldest spot {t}":"Sitio más frío {t}",
+"Warm all year":"Cálido todo el año",
+"{place} temperature":"Temperatura: {place}",
+"Alvor uses this to know which plants are safe in the greenhouse on a cold night, and which need fleece or the house.":"Alvor lo usa para saber qué plantas están a salvo en el invernadero en una noche fría y cuáles necesitan manta térmica o entrar en casa.",
+"Heating":"Calefacción",
+"Unheated":"Sin calefacción",
+"Heated":"Con calefacción",
+"The heater keeps it above (°C)":"La calefacción lo mantiene por encima de (°C)",
+"The thermostat setting, or the lowest you've seen on a cold night with the heater on.":"Lo que marca el termostato, o lo más bajo que has visto en una noche fría con la calefacción puesta.",
+"Without heat: warmer than outside by (°C)":"Sin calefacción: más cálido que fuera en (°C)",
+"On a cold, clear night. Most unheated greenhouses stay 2 to 4° warmer. With a heater, Alvor uses it to tell you when the plants depend on it.":"En una noche fría y despejada. La mayoría de los invernaderos sin calefacción se quedan entre 2 y 4° por encima. Con calefacción, Alvor lo usa para avisarte cuando las plantas dependen de ella.",
+"How cold each spot gets on a cold winter night. Leave it empty if it stays warm: Alvor then never warns about it.":"Cuánto se enfría cada sitio en una noche fría de invierno. Déjalo vacío si se mantiene cálido: así Alvor nunca avisa por él.",
+"Warm":"Cálido",
+"Lowest °C":"Mínima °C",
+"Window sills can be several degrees colder than the room. A simple min/max thermometer tells you. Alvor counts it on nights at or below 5° outside.":"Junto a la ventana puede hacer varios grados menos que en el resto de la habitación. Un termómetro de máximas y mínimas te lo dice. Alvor lo tiene en cuenta las noches en que fuera baja a 5° o menos.",
+"Say how warm the heater keeps it":"Indica a cuánto lo mantiene la calefacción",
+"Greenhouse and rooms":"Invernadero y habitaciones",
+"How warm your greenhouse and the spots in the house stay is set on Locations: tap the thermometer on their cards.":"La temperatura del invernadero y de los sitios de la casa se indica en Lugares: toca el termómetro de sus tarjetas.",
+"Temperature":"Temperatura",
 /* ---- Words used all over ---- */
 "Alvor":"Alvor", "@username":"@usuario",
 "Cancel":"Cancelar", "Back":"Atrás", "Next":"Siguiente", "Close":"Cerrar", "Save":"Guardar", "Saved":"Guardado", "Saving…":"Guardando…",

@@ -73,14 +73,16 @@ function alertLook(g){
     const when = (worst.why || "").split(/,| · /)[0];
     const lead = {bringIn:trn(n, "Bring {n} plant inside:", "Bring {n} plants inside:"), toGh:trn(n, "Move {n} plant to the greenhouse:", "Move {n} plants to the greenhouse:"), ghProtect:g.text,
       potProtect:trn(n, "Shelter this pot:", "Shelter these {n} pots:"), groundProtect:trn(n, "Protect {n} plant in the ground:", "Protect {n} plants in the ground:"),
+      warmerSpot:trn(n, "Find a warmer spot for {n} plant:", "Find a warmer spot for {n} plants:"),
       crownProtect:trn(n, "Protect the crown of {n} plant:", "Protect the crown of {n} plants:"), mulchRoots:trn(n, "Mulch the roots of {n} plant:", "Mulch the roots of {n} plants:"),
       springGrowth:trn(n, "Cover the new growth of {n} plant:", "Cover the new growth of {n} plants:"), frostOk:g.text}[g.key];
     if(g.key === "frostOk") return {type:"frost", icon:"snow", label:tr("Frost plan"), title:tr("Nothing to protect"), chip:"", lead, tip:""};
     const frosty = worst.t <= 0;   /* "frost" only when it really freezes; plants can be hurt well above 0 °C */
     return {type:"frost", icon:"snow", label:g.level === "danger" ? (frosty ? tr("Frost alert") : tr("Low temperature alert")) : tr("Low temperature watch"),
       title:g.level === "danger" ? (frosty ? tr("Frost is coming") : tr("Too cold for these plants")) : tr("A cold night ahead"), chip:when, lead,
-      tip:["potProtect","groundProtect","crownProtect","mulchRoots","springGrowth"].includes(g.key) ? g.text : ""};
+      tip:["potProtect","groundProtect","crownProtect","mulchRoots","springGrowth","warmerSpot"].includes(g.key) ? g.text : ""};
   }
+  if(g.key === "heater") return {type:"frost", icon:"snow", label:tr("Frost plan"), title:tr("Check the greenhouse heater"), chip:"", lead:g.text, tip:""};
   if(g.key === "heat" || g.key === "vent") return {type:"heat", icon:"heat", label:tr("Heat alert"), title:g.key === "vent" ? tr("Open the greenhouse") : tr("A hot spell"), lead:g.text};
   if(g.key === "wind") return {type:"wind", icon:"wind", label:tr("Wind alert"), title:tr("Strong gusts"), lead:g.text};
   if(g.key === "water") return {type:"water", icon:"drop", label:tr("Watering"), title:trn(n, "{n} plant likely needs water", "{n} plants likely need water"), lead:""};
@@ -244,7 +246,7 @@ function renderPlaces(W){
   ensureScene();
   const SS = sceneSet(), S = SS.views[sceneMode] || SS.views.overview, orb = $("#orb"), stage = $("#stage");
   const next3 = W ? W.next.slice(0,3) : [];
-  const risk = p => p.current !== "inside" && GA.coldOn(p) && next3.some(d => effMin(p, d) < coldLimit(p));
+  const risk = p => GA.coldOn(p) && next3.some(d => { const t = effMin(p, d); return t != null && t < coldLimit(p); });
   const tx = 50 - Math.min(100 - 50 / S.s, Math.max(50 / S.s, S.cx)), ty = 50 - Math.min(100 - 50 / S.s, Math.max(50 / S.s, S.cy));
   stage.style.transform = `scale(${S.s}) translate(${tx}%, ${ty}%)`;
   stage.style.setProperty("--inv", 1 / S.s);
@@ -393,7 +395,9 @@ function renderLocations(W){
       AREAS[a].zones.forEach(z => { if(z === "greenhouse") return; spots.push({f:z, icon:ZONES[z].icon, label:ZONES[z].short, c:list.filter(p => p.zone === z).length}); });
     });
     if(L.k === "greenhouse"){ const g = list.filter(p => p.pattern === "greenhouse").length; if(g) spots.push({f:"greenhouse", icon:"snow", label:tr("Wintering guests"), c:g}); }
-    const status = risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk from the cold", {n:risk})}</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : "";
+    const temp = tempChip(L.k);
+    const status = (risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk from the cold", {n:risk})}</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : "")
+      + (temp ? `<button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button>` : "");
     const mine = locPicSrc(L.k), canPic = online && !!me && !!token;
     return `<div class="loc loc-${L.k} ${list.length ? "" : "empty"} ${mine ? "has-img" : ""}" style="${mine ? "" : locStyle(look().style, L.k)}">
       ${mine ? `<img class="loc-img" src="${mine}" alt="">` : `<span class="loc-art">${ICON[L.icon]}</span>`}
@@ -412,7 +416,82 @@ const LOC_TITLE = {all:tr("All plants"), garden:tr("Garden"), house:tr("House"),
 const plantsTitle = () => idsFilter ? tr("Selected plants") : LOC_TITLE[plantFilter] || (ZONES[plantFilter] ? ZONES[plantFilter].label : tr("Plants"));
 $("#view-locations").addEventListener("click", e => {
   const pic = e.target.closest("[data-locpic]"); if(pic){ openLocPic(pic.dataset.locpic); return; }
+  const th = e.target.closest("[data-loctemp]"); if(th){ openLocTemp(th.dataset.loctemp); return; }
   const b = e.target.closest("[data-loc]"); if(!b) return;
   idsFilter = null; plantFilter = b.dataset.loc;
   showTab("plants"); renderPlants();
+});
+
+/* ---------- How warm a place stays (Locations): the greenhouse's heater, how cold the spots in the house get ---------- */
+/* settings.gh: the greenhouse without heat, °C warmer than outside on a cold night. settings.ghHeat: a heater keeps it
+   above this (null: no heater). settings.rooms: {"house-window":9, …} the lowest each indoor spot reaches on a cold night
+   (missing: warm enough for anything). The care engine (alerts.js) uses them for the frost plan; the garden and balcony
+   simply follow the outside, with the porch, walls and shelter set per plant. */
+const ROOM_ZONES = ["house-window","house-low","house-cabinet"];
+const isNum = v => v !== null && v !== undefined && v !== "" && isFinite(+v);
+const halfDeg = v => `${Math.round(+v * 2) / 2}°`;
+function tempChip(k){
+  const s = state.settings;
+  if(k === "greenhouse") return isNum(s.ghHeat) ? tr("Heated · above {t}", {t:halfDeg(s.ghHeat)}) : tr("Unheated · {t} warmer", {t:halfDeg(+s.gh || 0)});
+  if(k === "house"){
+    const set = ROOM_ZONES.filter(z => isNum((s.rooms || {})[z]));
+    return set.length ? tr("Coldest spot {t}", {t:halfDeg(Math.min(...set.map(z => +s.rooms[z])))}) : tr("Warm all year");
+  }
+  return "";
+}
+const locTempDlg = $("#locTempDlg");
+let ltFor = null, ltHeated = false;
+function openLocTemp(k){
+  ltFor = k;
+  const s = state.settings, place = k === "greenhouse" ? tr("Greenhouse") : areaLabel("house");
+  $("#ltTitle").textContent = tr("{place} temperature", {place});
+  if(k === "greenhouse"){
+    ltHeated = isNum(s.ghHeat);
+    $("#ltBody").innerHTML = `
+      <p class="lt-intro">${tr("Alvor uses this to know which plants are safe in the greenhouse on a cold night, and which need fleece or the house.")}</p>
+      <div class="seg" role="radiogroup" aria-label="${tr("Heating")}">
+        <button type="button" data-heat="0" aria-pressed="${!ltHeated}">${tr("Unheated")}</button>
+        <button type="button" data-heat="1" aria-pressed="${ltHeated}">${tr("Heated")}</button>
+      </div>
+      <div class="field" id="ltHeatF" ${ltHeated ? "" : "hidden"}><label for="ltHeat">${tr("The heater keeps it above (°C)")}</label>
+        <input id="ltHeat" type="number" step="0.5" inputmode="decimal" value="${isNum(s.ghHeat) ? +s.ghHeat : ""}" placeholder="5">
+        <span class="hint">${tr("The thermostat setting, or the lowest you've seen on a cold night with the heater on.")}</span></div>
+      <div class="field"><label for="ltGh">${tr("Without heat: warmer than outside by (°C)")}</label>
+        <input id="ltGh" type="number" step="0.5" min="0" max="15" inputmode="decimal" value="${isNum(s.gh) ? +s.gh : 3}">
+        <span class="hint">${tr("On a cold, clear night. Most unheated greenhouses stay 2 to 4° warmer. With a heater, Alvor uses it to tell you when the plants depend on it.")}</span></div>
+      <div class="a-act"><button class="btn primary" id="ltSave">${tr("Save")}</button></div>`;
+  }else{
+    const r = s.rooms || {};
+    $("#ltBody").innerHTML = `
+      <p class="lt-intro">${tr("How cold each spot gets on a cold winter night. Leave it empty if it stays warm: Alvor then never warns about it.")}</p>
+      ${ROOM_ZONES.map(z => `<div class="field lt-room"><label for="lt-${z}">${ICON[ZONES[z].icon] || ""}<span>${esc(ZONES[z].label)}</span></label>
+        <input id="lt-${z}" data-zone="${z}" type="number" step="0.5" inputmode="decimal" value="${isNum(r[z]) ? +r[z] : ""}" placeholder="${tr("Warm")}" aria-label="${tr("Lowest °C")}"><span class="lt-u">°C</span></div>`).join("")}
+      <p class="lt-note">${tr("Window sills can be several degrees colder than the room. A simple min/max thermometer tells you. Alvor counts it on nights at or below 5° outside.")}</p>
+      <div class="a-act"><button class="btn primary" id="ltSave">${tr("Save")}</button></div>`;
+  }
+  locTempDlg.showModal();
+}
+$("#ltClose").addEventListener("click", () => locTempDlg.close());
+$("#ltBody").addEventListener("click", e => {
+  const h = e.target.closest("[data-heat]");
+  if(h){
+    ltHeated = h.dataset.heat === "1";
+    $("#ltBody").querySelectorAll("[data-heat]").forEach(b => b.setAttribute("aria-pressed", b === h));
+    $("#ltHeatF").hidden = !ltHeated;
+    if(ltHeated && !$("#ltHeat").value) $("#ltHeat").focus();
+    return;
+  }
+  if(!e.target.closest("#ltSave")) return;
+  const val = el => { const x = parseFloat(String(el.value).replace(",", ".")); return isNaN(x) ? null : x; };
+  const s = state.settings, clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  if(ltFor === "greenhouse"){
+    const gh = val($("#ltGh")), heat = ltHeated ? val($("#ltHeat")) : null;
+    if(ltHeated && heat == null){ toast(tr("Say how warm the heater keeps it")); $("#ltHeat").focus(); return; }
+    state.settings = {...s, gh:gh == null ? (isNum(s.gh) ? +s.gh : 3) : clamp(gh, 0, 15), ghHeat:heat == null ? null : clamp(heat, -5, 30)};
+  }else{
+    const rooms = {};
+    $("#ltBody").querySelectorAll("input[data-zone]").forEach(i => { const v = val(i); if(v != null) rooms[i.dataset.zone] = clamp(v, -10, 30); });
+    state.settings = {...s, rooms};
+  }
+  save(); locTempDlg.close(); render(); toast(tr("Saved"));
 });
