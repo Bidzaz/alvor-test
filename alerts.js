@@ -23,7 +23,7 @@
   else root.GardenAlerts = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-09.care-3";
+const VERSION = "2026-10-13.care-4";
 
 /* What Alvor knows about each kind of plant (lowest temperature, traits, watering) lives in plant-kb.js:
    in the browser it is loaded before this file, in notify it is copied in above it, in the tests it is required. */
@@ -55,7 +55,8 @@ const RULES = {
     bringIn:3,                                        // a pot this far below its limit comes inside whatever its pattern
     rootSafety:2,                                     // "mulch the roots" only when the roots have this much to spare
     spring:[3,4,5],                                   // months when new growth is tender (hemisphere-adjusted)
-    okWithin:4                                        // "no action needed" lists plants within this of their limit
+    okWithin:4,                                       // "no action needed" lists plants within this of their limit
+    roomCold:5                                        // a night this cold outside brings rooms down to their lowest (Locations)
   },
   heat:{partial:3, pm:2, greenhouse:8, ghVent:35},
   wind:{sheltered:20}
@@ -82,6 +83,15 @@ const ES = {
   "pot in partial sun":"maceta a semisombra", "pot in the sun":"maceta al sol", "pot in afternoon sun":"maceta con sol de tarde",
   "Open the greenhouse":"Abre el invernadero", "Outside will reach {t}; the greenhouse gets much hotter. Open vents or the door.":"Fuera llegará a {t}; el invernadero se calienta mucho más. Abre las ventanas o la puerta.",
   "in the greenhouse":"en el invernadero",
+  "The heater keeps the greenhouse at about {t}, colder than these take. Raise the heater, add fleece or bring them inside.":"La calefacción mantiene el invernadero a unos {t}, más frío de lo que aguantan. Sube la calefacción, pon manta térmica o mételas en casa.",
+  "Find a warmer spot":"Busca un sitio más cálido", "Their spot indoors gets colder on cold nights than they take. Move them away from the window or to a warmer room.":"Su sitio dentro de casa se enfría en las noches frías más de lo que aguantan. Apártalas de la ventana o llévalas a una habitación más cálida.",
+  "about {t} on cold nights, takes {min}":"unos {t} en las noches frías, aguanta {min}",
+  "by the window":"junto a la ventana", "away from the windows":"lejos de las ventanas", "in the grow cabinet":"en el armario de cultivo",
+  "Check the greenhouse heater":"Revisa la calefacción del invernadero", "{t} outside {when}. Without heat the greenhouse would fall to about {g}: these depend on the heater.":"{t} fuera {when}. Sin calefacción el invernadero bajaría a unos {g}: estas plantas dependen de ella.",
+  "unheated: about {t}, takes {min}":"sin calefacción: unos {t}, aguanta {min}", "the heater keeps {t}":"la calefacción mantiene {t}",
+  "Check the greenhouse heater {when}: 1 plant depends on it":"Revisa la calefacción del invernadero {when}: 1 planta depende de ella",
+  "Check the greenhouse heater {when}: {n} plants depend on it":"Revisa la calefacción del invernadero {when}: {n} plantas dependen de ella",
+  "too cold in the greenhouse":"demasiado frío en el invernadero",
   "Strong gusts":"Rachas fuertes", "Up to {n} km/h {when}. Secure pots, stake tall plants, close the greenhouse.":"Hasta {n} km/h {when}. Sujeta las macetas, entutora las plantas altas y cierra el invernadero.",
   "pot":"maceta", "in the ground":"en tierra", "big leaves tear":"las hojas grandes se rompen", "windy spot":"sitio con viento",
   "Skip these, rain is coming":"No las riegues, viene lluvia", "About {n} mm expected over the next two days.":"Se esperan unos {n} mm en los próximos dos días.",
@@ -350,11 +360,13 @@ function hargreaves(d, lat, date){
   return Math.max(0, 0.0023 * 0.408 * Ra * ((d.max + d.min) / 2 + 17.8) * Math.sqrt(Math.max(0, d.max - d.min)));
 }
 /* Hours of the night before `date` (18:00 to 10:00) colder than `thr`, or null when there are no hourly figures. */
+/* `bonus` is °C added to the outside, or a function turning the outside into the spot (a heated greenhouse). */
 function nightHours(W, date, thr, bonus){
   if(!W || !W.hourly) return null;
+  const at = typeof bonus === "function" ? bonus : t => t + (+bonus || 0);
   const from = addDays(date, -1) + "T18:00", to = date + "T10:00";
   let n = 0, seen = 0;
-  W.hourly.time.forEach((t, i) => { if(t >= from && t <= to && num(W.hourly.t[i])){ seen++; if(+W.hourly.t[i] + bonus < thr) n++; } });
+  W.hourly.time.forEach((t, i) => { if(t >= from && t <= to && num(W.hourly.t[i])){ seen++; const v = at(+W.hourly.t[i]); if(num(v) && v < thr) n++; } });
   return seen ? n : null;
 }
 
@@ -388,7 +400,22 @@ function frostBonus(p, s){
   if(P.wind === "sheltered") b += B.sheltered;
   return Math.min(b, B.max);
 }
-const effMin = (p, d, s) => d.min + frostBonus(p, s);
+/* The temperatures people give each place on Locations (settings):
+   gh      the greenhouse without heat, °C warmer than outside on a cold night
+   ghHeat  a heated greenhouse never drops below this (null: no heater)
+   rooms   {"house-window":8, …} the lowest each indoor spot reaches on a cold night (missing: always warm enough) */
+const ghHeat = s => num(s.ghHeat) ? +s.ghHeat : null;
+const ghLow = (t, s) => { const g = t + (+s.gh || 0), h = ghHeat(s); return h == null ? g : Math.max(g, h); };
+const roomLow = (p, s) => { const r = (s.rooms || {})[p.zone || "house-window"]; return num(r) ? +r : null; };
+/* How cold a plant's spot gets when the night outside drops to t, or null when the outside doesn't reach it
+   (indoors: rooms only reach their lowest on nights at or below RULES.frost.roomCold outside). */
+function spotLow(p, t, s){
+  const P = placeOf(p);
+  if(P.inside){ const r = roomLow(p, s); return r != null && t <= RULES.frost.roomCold ? r : null; }
+  if(P.gh) return ghLow(t, s);
+  return t + frostBonus(p, s);
+}
+const effMin = (p, d, s) => spotLow(p, d.min, s);
 /* Cold warnings are per plant: off when the owner switched them off, or when no limit is set. */
 const coldOn = p => p.coldAlert !== false && num(p.minTemp);
 const coldLimit = (p, s) => +p.minTemp + +s.margin + (p.planting === "pot" && p.current === "outside" ? RULES.frost.pot : 0);
@@ -510,14 +537,16 @@ function feedback(p, kind, W, ctx, plants, opt){
 }
 
 /* ---------- Frost plan for one plant ---------- */
-const COLD_KEYS = ["bringIn","toGh","ghProtect","potProtect","crownProtect","mulchRoots","groundProtect","springGrowth"];
-function frostAction(p, t, s, hasGh){
+const COLD_KEYS = ["bringIn","toGh","ghProtect","warmerSpot","potProtect","crownProtect","mulchRoots","groundProtect","springGrowth"];
+/* gh: how cold the greenhouse gets that night, so a plant is only sent there when it's warm enough. */
+function frostAction(p, t, s, hasGh, gh){
   const P = placeOf(p), Tr = traitsFor(p.species, p.genus), min = +p.minTemp, short = min - t;
   const tender = min >= 0;
+  if(P.inside) return {key:"warmerSpot"};
   if(P.gh) return {key:"ghProtect"};
   if(P.pot){
     if(p.pattern === "mover" || p.pattern === "indoor") return {key:"bringIn", move:"inside"};
-    if(p.pattern === "greenhouse" && hasGh) return {key:"toGh", move:"greenhouse"};
+    if(p.pattern === "greenhouse" && hasGh) return num(gh) && gh < min ? {key:"bringIn", move:"inside", ghCold:true} : {key:"toGh", move:"greenhouse"};
     if(short >= RULES.frost.bringIn || tender) return {key:"bringIn", move:"inside"};
     return {key:"potProtect"};
   }
@@ -527,20 +556,25 @@ function frostAction(p, t, s, hasGh){
 }
 
 /* ---------- All alerts ---------- */
-const ORDER = [...COLD_KEYS, "frostOk", "vent", "heat", "wind", "water", "rainWill", "waterUnknown", "plan", "goOut"];
+const ORDER = [...COLD_KEYS, "heater", "frostOk", "vent", "heat", "wind", "water", "rainWill", "waterUnknown", "plan", "goOut"];
 const RANK = {danger:0, warn:1, heat:2, wind:3, water:4, info:5};
 const BASE = {
   bringIn:() => ({title:T("Bring inside"), text:T("Cold is coming that these can't take outside."), move:"inside"}),
   toGh:() => ({title:T("Move to the greenhouse"), text:T("Cold is coming that these can't take outside."), move:"greenhouse"}),
-  ghProtect:t => ({title:T("Protect in the greenhouse"), text:T("The greenhouse could drop to about {t}. Add fleece or turn on a heater.", {t:degCold(t)})}),
+  ghProtect:(t, s) => ({title:T("Protect in the greenhouse"), text:s && ghHeat(s) != null
+    ? T("The heater keeps the greenhouse at about {t}, colder than these take. Raise the heater, add fleece or bring them inside.", {t:degCold(t)})
+    : T("The greenhouse could drop to about {t}. Add fleece or turn on a heater.", {t:degCold(t)})}),
+  warmerSpot:() => ({title:T("Find a warmer spot"), text:T("Their spot indoors gets colder on cold nights than they take. Move them away from the window or to a warmer room.")}),
   potProtect:() => ({title:T("Shelter the pots"), text:T("Move them against a house wall, lift them off the ground and wrap the pots.")}),
   crownProtect:() => ({title:T("Protect the crown"), text:T("Cover the top with fleece and pack the crown with straw. The growing point is the part that mustn't freeze.")}),
   mulchRoots:() => ({title:T("Mulch the roots"), text:T("The leaves or trunk may be damaged, but the roots should survive under a thick mulch. Wrap the stem if you want to keep it.")}),
   groundProtect:() => ({title:T("Protect plants in the ground"), text:T("Cover them with fleece overnight and mulch the base.")}),
   springGrowth:() => ({title:T("Cover new growth"), text:T("A light frost can kill fresh shoots and blossom. Fleece overnight is enough.")})
 };
+const ROOM_WORD = {"house-window":"by the window", "house-low":"away from the windows", "house-cabinet":"in the grow cabinet"};
 function placeWhy(p){
   const P = placeOf(p), w = [];
+  if(P.inside) w.push(T(ROOM_WORD[p.zone] || "indoors"));
   if(P.porch) w.push(T("on the porch"));
   if(P.balcony) w.push(T("on the balcony"));
   if(P.wall) w.push(T("against a wall"));
@@ -550,7 +584,7 @@ function placeWhy(p){
 }
 /* Frost and heat for one forecast day, for the badges on the forecast and the chips on Home. */
 function dayRisks(plants, d, s){
-  const frost = plants.filter(p => p.current !== "inside" && coldOn(p) && effMin(p, d, s) < coldLimit(p, s));
+  const frost = plants.filter(p => { if(!coldOn(p)) return false; const t = effMin(p, d, s); return t != null && t < coldLimit(p, s); });
   const heat = plants.filter(p => heatHit(p, d.max, s) || (p.current === "greenhouse" && d.max + RULES.heat.greenhouse >= RULES.heat.ghVent));
   return {frost, heat};
 }
@@ -577,15 +611,22 @@ function compute(plants, ctx){
     const look = evening ? W.next.slice(1, 2) : W.next.slice(0, 3);
     const coldIds = new Set(), near = [];
     let freezing = look.some(d => d.min <= 0);
+    const heater = [];
     for(const p of plants){
-      if(p.current === "inside" || !coldOn(p)) continue;
-      const bonus = frostBonus(p, s);
+      if(!coldOn(p)) continue;
+      const inside = p.current === "inside";
+      if(inside && evening) continue;   // a room's cold is the same every cold night: the morning says it, the evening doesn't nag
       let worst = null;
-      for(const d of look){ const t = d.min + bonus; if(!worst || t < worst.t) worst = {t, date:d.date}; }
+      for(const d of look){ const t = spotLow(p, d.min, s); if(t != null && (!worst || t < worst.t)) worst = {t, date:d.date, out:d.min}; }
       if(!worst) continue;
       const lim = coldLimit(p, s), whenTxt = nightWord(worst.date, ctx.today, evening);
       if(worst.t >= lim){
         const Tr = traitsFor(p.species, p.genus);
+        // A heated greenhouse: fine thanks to the heater, but it would be too cold without it.
+        if(p.current === "greenhouse" && ghHeat(s) != null){
+          const cold = look.reduce((a, d) => !a || d.min < a.min ? d : a, null), bare = cold.min + (+s.gh || 0);
+          if(bare < lim){ heater.push({p, t:cold.min, bare, date:cold.date}); continue; }
+        }
         if(RULES.frost.spring.includes(sm) && num(Tr.s) && outdoors(placeOf(p)) && worst.t <= Tr.s + 1){
           coldIds.add(p.id); freezing = true;
           add("springGrowth", {...BASE.springGrowth(), level:"warn"}, {p, t:worst.t, date:worst.date, reasons:[T("{t} {when}, takes {min}", {t:degCold(worst.t), when:whenTxt, min:deg(Tr.s)}), T("new growth")]});
@@ -593,17 +634,26 @@ function compute(plants, ctx){
         continue;
       }
       coldIds.add(p.id);
-      const A = frostAction(p, worst.t, s, hasGh), min = +p.minTemp;
+      const A = frostAction(p, worst.t, s, hasGh, ghLow(worst.out, s)), min = +p.minTemp;
       const level = worst.t < min + (p.planting === "pot" && p.current === "outside" ? RULES.frost.pot : 0) ? "danger" : "warn";
-      const reasons = [T("{t} {when}, takes {min}", {t:degCold(worst.t), when:whenTxt, min:deg(min)})];
-      const hrs = nightHours(W, worst.date, min, bonus);
+      const reasons = [inside ? T("about {t} on cold nights, takes {min}", {t:deg(worst.t), min:deg(min)}) : T("{t} {when}, takes {min}", {t:degCold(worst.t), when:whenTxt, min:deg(min)})];
+      if(p.current === "greenhouse" && ghHeat(s) != null) reasons.push(T("the heater keeps {t}", {t:deg(ghHeat(s))}));
+      if(A.ghCold) reasons.push(T("too cold in the greenhouse"));
+      const hrs = inside ? null : nightHours(W, worst.date, min, p.current === "greenhouse" ? x => ghLow(x, s) : frostBonus(p, s));
       if(hrs) reasons.push(T("for {n} hours", {n:hrs}));
       if(A.key === "mulchRoots") reasons.push(T("roots take {t}", {t:deg(A.roots)}));
       reasons.push(...placeWhy(p));
       const Tr = traitsFor(p.species, p.genus);
       if(Tr.w && W.next.slice(0, 3).some(d => d.rain >= 2)) reasons.push(T("keep rain off it"));
       if(A.hopeless) reasons.push(T("may not survive outside"));
-      add(A.key, {...BASE[A.key](worst.t), level}, {p, t:worst.t, date:worst.date, act:A.key, reasons});
+      add(A.key, {...BASE[A.key](worst.t, s), level}, {p, t:worst.t, date:worst.date, act:A.key, reasons});
+    }
+    // The heater carries these tonight: worth a look that it's on.
+    if(heater.length){
+      const c = heater.reduce((a, x) => x.t < a.t ? x : a), g = c.bare;
+      heater.forEach(({p, t, bare, date}) => add("heater", {level:"warn", title:T("Check the greenhouse heater"),
+        text:T("{t} outside {when}. Without heat the greenhouse would fall to about {g}: these depend on the heater.", {t:degCold(c.t), when:nightWord(c.date, ctx.today, evening), g:degCold(g)}), date:c.date},
+        {p, t, date, reasons:[T("unheated: about {t}, takes {min}", {t:degCold(bare), min:deg(p.minTemp)}), T("the heater keeps {t}", {t:deg(ghHeat(s))})]}));
     }
     // Reassurance: when it freezes or plants need protecting, say which ones are fine as they are.
     if(coldIds.size || freezing) near.filter(x => !coldIds.has(x.p.id)).forEach(({p, t, date}) =>
@@ -614,7 +664,7 @@ function compute(plants, ctx){
         if(coldIds.has(p.id) || !coldOn(p)) continue;
         const movable = p.pattern === "mover" || p.pattern === "greenhouse";
         if(p.current === "outside" && p.planting === "pot" && movable && sm >= 8 && sm <= 11){
-          const hit = W.next.slice(3).find(d => effMin(p, d, s) < coldLimit(p, s) + 2);
+          const hit = W.next.slice(3).find(d => { const t = effMin(p, d, s); return t != null && t < coldLimit(p, s) + 2; });
           if(hit) add("plan", {level:"info", title:T("Get ready to move soon"), text:T("Nights are getting close to their limit later this week.")},
             {p, reasons:[`${deg(effMin(p, hit, s))} ${when(hit.date, ctx.today)}`, T("takes {t}", {t:deg(p.minTemp)})]});
         }
@@ -696,6 +746,8 @@ function gardenToday(groups, plants, ctx){
     lines.push({kind:"frost", urgent:false, ids:ids(spring), text:P(n, "Cover new growth on 1 plant {when}", "Cover new growth on {n} plants {when}", {when:i.date ? nightWord(i.date, ctx.today) : T("tonight")})}); }
   const heat = by("heat"); if(heat.length){ const n = ids(heat).length;
     lines.push({kind:"heat", urgent:true, ids:ids(heat), text:P(n, "Heat {when}: shade and water 1 pot early", "Heat {when}: shade and water {n} pots early", {when:heat[0].date ? when(heat[0].date, ctx.today) : T("today")})}); }
+  const heat0 = by("heater"); if(heat0.length){ const n = ids(heat0).length, i = heat0[0].items[0];
+    lines.push({kind:"frost", urgent:false, ids:ids(heat0), text:P(n, "Check the greenhouse heater {when}: 1 plant depends on it", "Check the greenhouse heater {when}: {n} plants depend on it", {when:i.date ? nightWord(i.date, ctx.today, ctx.mode === "evening") : T("tonight")})}); }
   const vent = by("vent"); if(vent.length) lines.push({kind:"heat", urgent:true, ids:ids(vent), text:T("Open the greenhouse {when}", {when:vent[0].date ? when(vent[0].date, ctx.today) : T("today")})});
   const wind = by("wind"); if(wind.length){ const n = ids(wind).length;
     lines.push({kind:"wind", urgent:true, ids:ids(wind), text:P(n, "Gusts {when}: secure 1 plant", "Gusts {when}: secure {n} plants", {when:wind[0].date ? when(wind[0].date, ctx.today) : T("today")})}); }
@@ -735,8 +787,10 @@ function summarize(groups, ctx){
   });
   const cold = loud.filter(g => COLD_KEYS.includes(g.key));
   const lowest = cold.length ? Math.min(...cold.flatMap(g => g.items.map(i => i.t))) : null;
+  const heaterG = loud.find(g => g.key === "heater");
   if(evening){
-    if(!cold.length) return null;
+    if(!cold.length && !heaterG) return null;
+    if(!cold.length) return {title:T("Cold tonight: down to {t}", {t:degCold(heaterG.items[0].t)}), body:lines.join("\n"), tag:"garden-evening"};
     const ok = groups.some(g => g.key === "frostOk");
     return {title:T("Cold tonight: down to {t}", {t:degCold(lowest)}), body:[...lines, ok ? T("No action needed for the others.") : ""].filter(Boolean).join("\n"), tag:"garden-evening"};
   }
@@ -750,6 +804,6 @@ function summarize(groups, ctx){
 
 return {VERSION, RULES, KB, setLang, ES, LOC, ALLOWED, deg, degCold, nightWord, daysBetween, addDays, speciesKey, traitsFor, intervalsFor,
   weatherUrl, metUrl, fetchForecast, fromMet, withPast, sunTimes, localTime, WX, splitWeather, hargreaves, nightHours, seasonMonth, interval, placeOf, rainReach, frostBonus,
-  waterState, waterStatus, feedback, learned, STAGES, STAGE_TEXT, effMin, coldLimit, coldOn, frostAction, dayRisks, heatHit,
+  waterState, waterStatus, feedback, learned, STAGES, STAGE_TEXT, effMin, spotLow, ghLow, roomLow, coldLimit, coldOn, frostAction, dayRisks, heatHit,
   compute, gardenToday, summarize, COLD_KEYS};
 });
