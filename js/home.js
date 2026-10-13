@@ -31,7 +31,7 @@ function render(){
 
 /* ---------- Forecast with warnings on the days ---------- */
 let fcOpen = null;
-const dayRisks = d => GA.dayRisks(state.plants, d, state.settings);   // the same rules as the alerts
+const dayRisks = d => GA.dayRisks(state.plants, d, state.settings, {W:wx(), today:today()});   // the same rules as the alerts (acclimatisation too)
 function renderForecast(W){
   const el = $("#forecast");
   if(!W || !W.next.length){ el.innerHTML = `<p class="fc-empty">${tr("No forecast yet. Tap the weather at the top to try again.")}</p>`; $("#fcDetail").hidden = true; return; }
@@ -88,14 +88,15 @@ function alertLook(g){
   if(g.key === "water") return {type:"water", icon:"drop", label:tr("Watering"), title:trn(n, "{n} plant likely needs water", "{n} plants likely need water"), lead:""};
   if(g.key === "rainWill") return {type:"water", icon:"drop", label:tr("Watering"), title:tr("Skip these, rain is coming"), lead:g.text};
   if(g.key === "waterUnknown") return {type:"water", icon:"drop", label:tr("Watering"), title:tr("Not sure about these"), lead:g.text};
+  if(g.key === "settleSun") return {type:"info", icon:"sun", label:tr("Heads-up"), title:g.title, lead:g.text};
   if(g.key === "goOut") return {type:"info", icon:"move", label:tr("Good news"), title:tr("Safe to move outside"), lead:g.text};
   return {type:"info", icon:"move", label:tr("Heads-up"), title:g.title, lead:g.text};
 }
 /* Feedback on a suggestion, under each plant: what the gardener actually found. */
-const FB = {water:tr("Watered"), wet:tr("Already wet"), fine:tr("Looks fine"), later:tr("Later")};
+const FB = {water:tr("Watered"), wet:tr("Already wet"), fine:tr("Looks fine"), later:tr("Later"), settled:tr("It's used to it")};
 const fbRow = (g, p) => g.feedback ? `<span class="fb" role="group" aria-label="${tr("What did you find?")}">${g.feedback.map(k => `<button class="fb-b" data-act="fb" data-kind="${k}" data-id="${p.id}">${FB[k]}</button>`).join("")}</span>` : "";
 /* Garden today: what matters now, in a few lines, then plainly "nothing else is urgent". */
-const GT_ICON = {frost:"snow", heat:"heat", wind:"wind", water:"drop", rain:"drop", soon:"drop", move:"move", unknown:"drop"};
+const GT_ICON = {frost:"snow", heat:"heat", wind:"wind", sun:"sun", water:"drop", rain:"drop", soon:"drop", move:"move", unknown:"drop"};
 function gardenTodayHtml(groups){
   const G = GA.gardenToday(groups, state.plants, ctx());
   return `<div class="acard gtoday ${G.lines.length ? "" : "t-calm"}">

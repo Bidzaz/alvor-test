@@ -110,6 +110,7 @@ function careFeedback(id, kind){
   Object.assign(p, f.patch);
   addLog(id, "care", f.log.detail, {est:f.log.est, stage:f.log.stage, k:f.log.k});
   save(); render(); refreshCareBox();
+  if(kind === "settled") return toast(tr("Got it. Alvor treats {name} as used to its spot.", {name:p.name}));
   toast(kind === "wet" ? tr("Got it. Alvor will expect {name} to dry more slowly.", {name:p.name})
     : kind === "fine" ? tr("Got it. Alvor will look at {name} again in a few days.", {name:p.name}) : tr("Alvor will ask again tomorrow."));
 }
@@ -119,6 +120,7 @@ function setZone(p, z, planting){
   const old = p.zone, oldPlant = p.planting;
   if(ZONES[old] && ZONES[old].area === "house") p.lastInside = old;
   if(ZONES[old] && (ZONES[old].area === "outside" || ZONES[old].area === "balcony")) p.lastOutside = old;
+  if(z !== old) p.moved = GA.moveRecord(p, z, today());   // acclimatisation: when it left the house, greenhouse or shade
   applyZone(p, z, planting);
   let text = `Moved to: ${ZONES[z].label}`;
   if(planting === "ground" && oldPlant !== "ground") text = `Planted in the ground (${ZONES[z].short.toLowerCase()})`;
@@ -390,10 +392,31 @@ function careBoxHtml(p){
   return `<div class="care-now st-${st.stage}"><b>${STAGE_WORD[st.stage]}</b><ul>${st.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
     <p class="status">${tr("An estimate from the weather, the spot and what you've told Alvor. It can't see the soil, so trust your finger.")}</p><span class="fb">${fb}</span></div>`;
 }
+/* Settling in: just moved out of the house or greenhouse, into full sun, or brought inside (acclimatisation). */
+function settleHtml(p){
+  const st = GA.settling(p, today());
+  if(!st) return "";
+  const AGO = {in:[tr("Brought inside today."), tr("Brought inside yesterday."), n => tr("Brought inside {n} days ago.", {n})],
+    out:[tr("Moved out today."), tr("Moved out yesterday."), n => tr("Moved out {n} days ago.", {n})],
+    sun:[tr("Moved into full sun today."), tr("Moved into full sun yesterday."), n => tr("Moved into full sun {n} days ago.", {n})]};
+  const ago = (n, k) => n === 0 ? AGO[k][0] : n === 1 ? AGO[k][1] : AGO[k][2](n);
+  const S = GA.RULES.settle;
+  if(st.kind === "in") return `<div class="settle"><b>${ago(st.days, "in")}</b><p>${tr("A few yellow or dropped leaves in the first weeks are normal while it gets used to less light. It also needs less water than outside.")}</p></div>`;
+  const lines = [];
+  if(st.cold) lines.push(tr("For the first {n} days Alvor counts it as {t} more tender: growth made indoors isn't used to cold nights or wind yet.", {n:S.days, t:S.cold + "°"}));
+  if(st.sun) lines.push(tr("Give it shade around midday on sunny days for the first week or so, or the leaves can scorch."));
+  return `<div class="settle"><b>${ago(st.days, st.cold ? "out" : "sun")}</b>${lines.map(l => `<p>${l}</p>`).join("")}
+    <span class="fb"><button type="button" class="fb-b" data-act="fb" data-kind="settled" data-id="${p.id}">${FB.settled}</button></span></div>`;
+}
+function showSettle(p){
+  const h = p ? settleHtml(p) : "";
+  $("#settleBox").hidden = !h; $("#settleNow").innerHTML = h;
+}
 function refreshCareBox(){
   if(!dlg.open || !editingId) return;
   const p = state.plants.find(x => x.id === editingId); if(!p) return;
   $("#careNow").innerHTML = careBoxHtml(p);
+  showSettle(p);
   $("#fLast").value = p.lastWatered || "";
 }
 $("#fZonePick").addEventListener("click", e => { if(pickerClick(e, editSel)) drawEditPick(); });
@@ -431,6 +454,7 @@ function openDialog(id){
   drawEditPick();
   $("#careBox").hidden = !p;
   $("#careNow").innerHTML = p ? careBoxHtml(p) : "";
+  showSettle(p);
   $("#fMin").value = p && hasMin(p) ? p.minTemp : "";
   $("#fCold").checked = p ? p.coldAlert !== false : true;
   coldHintEdit();

@@ -21,7 +21,7 @@ const ctx = () => ({settings:state.settings, daily:state.weather && state.weathe
 function wx(){ return state.weather ? GA.splitWeather(state.weather.daily, today(), state.weather.hourly) : null; }
 const waterStatus = (p, W) => GA.waterStatus(p, W, ctx(), state.plants);
 const effMin = (p, d) => GA.effMin(p, d, state.settings);
-const coldLimit = p => GA.coldLimit(p, state.settings);
+const coldLimit = p => GA.coldLimit(p, state.settings, {W:wx(), today:today()});
 const buildAlerts = () => GA.compute(state.plants, ctx());
 
 /* Weather codes (WMO) to a sky type */
