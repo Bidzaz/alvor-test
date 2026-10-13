@@ -333,6 +333,7 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .gt-line.k-frost .gt-ic{background:var(--frost-red-bg);color:var(--frost-red)}
 .gt-line.k-heat .gt-ic{background:#FBE6CF;color:#B4601C}
 .gt-line.k-wind .gt-ic{background:#E6E9EC;color:#4D5C66}
+.gt-line.k-sun .gt-ic{background:var(--heat-bg);color:var(--heat)}
 .gt-line.k-water .gt-ic,.gt-line.k-rain .gt-ic,.gt-line.k-soon .gt-ic,.gt-line.k-unknown .gt-ic{background:var(--water-bg);color:var(--water)}
 .gt-line.k-soon,.gt-line.k-unknown,.gt-line.k-rain{font-weight:500}
 .gt-calm{margin:10px 0 0;color:var(--muted);font-weight:500;font-size:.9rem}
@@ -352,6 +353,9 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .care-now ul{margin:6px 0 4px;padding-left:18px;font-size:.88rem}
 .care-now ul li{margin:1px 0}
 .care-now .status{font-size:.78rem;margin:4px 0 2px}
+.settle{border-radius:16px;padding:12px 14px;background:color-mix(in srgb,var(--fern-soft) 75%,transparent)}
+.settle > b{display:block;color:var(--fern);font-size:1rem}
+.settle p{margin:6px 0 2px;font-size:.88rem}
 /* Watering words on plant rows */
 .tag.w-consider{background:var(--water-bg);color:var(--water)}
 .tag.w-likely{background:var(--water-bg);color:var(--water);font-weight:700}
