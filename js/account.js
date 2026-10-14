@@ -69,7 +69,7 @@ const sharedRow = p => ({id:p.id, owner_id:me.id, name:String(p.name || "").trim
 /* Puts a merged garden on this phone (see syncGarden). */
 function applyMerged(m){
   const base = defaults();
-  state.plants = m.plants.map(p => ({...p})); state.log = m.log;
+  splitArchive(m.plants.map(p => ({...p}))); state.log = m.log;
   state.settings = {...base.settings, ...m.settings};
   state.account = me && me.id;
   normalizePlants(); normalizeLocation(); useActiveLocation(); migrateJournal();
@@ -137,7 +137,7 @@ function syncGarden(){
         const legacy = rev || 0;   // rows saved before per-plant times existed
         plants.forEach(p => { if(p._m == null) p._m = legacy; });
         const S = gp ? {plants, gone:st._gone || {}, settings:st, sAt:st._sAt != null ? +st._sAt : legacy, log:gp.log || []} : null;
-        const m = GS.merge({plants:state.plants, gone:M.gone, settings:state.settings, sAt:M.sAt, log:state.log}, S, Date.now());
+        const m = GS.merge({plants:allPlants(), gone:M.gone, settings:state.settings, sAt:M.sAt, log:state.log}, S, Date.now());
         M.gone = m.gone; M.sAt = m.sAt; writeMeta();
         if(m.localChanged) applyMerged(m);
         const newRev = m.serverChanged ? await uploadMerged(m) : rev;
@@ -185,7 +185,7 @@ async function syncPhotos(){
         must(await sb.from("photos").delete().in("id", dels));
         writeDels(readDels().filter(id => !dels.includes(id)));
       }
-      const plantIds = new Set(state.plants.map(p => p.id));
+      const plantIds = new Set(allPlants().map(p => p.id));
       const rows = must(await sb.from("photos").select("id,plant_id,path_large,taken_at,hidden").eq("owner_id", me.id));
       const server = new Set(rows.map(r => r.id));
       const local = await idb.all(), localIds = new Set(local.map(p => p.id)), pendingDel = new Set(readDels());

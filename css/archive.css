@@ -1,0 +1,51 @@
+/* Alvor · The Archive: plants that left the garden. Quiet and warm, never grim: muted earth tones,
+   no red (red is for heat), no blue (cold) or teal (water). */
+.k-gone{--jk:#6E6259} .k-back{--jk:#3F6224}
+.w-died{--aw:#6E6259} .w-gave{--aw:#8A6A00} .w-swapped{--aw:#5C6B2A} .w-sold{--aw:#7B5A3E} .w-other{--aw:#56675D}
+
+/* In the plant sheet */
+.arc-box{margin-top:18px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--ink) 8%,transparent)}
+.arc-box .status{margin:0 0 8px}
+
+/* Choosing what happened */
+.arc-intro{margin:0 0 12px}
+.arc-why{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.arc-w{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:11px 12px;border-radius:16px;text-align:left;
+  border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:color-mix(in srgb,var(--surface) 60%,transparent);
+  color:var(--ink);font:inherit;font-size:.9rem;line-height:1.2}
+.arc-w b{font-weight:700}
+.arc-w small{color:var(--muted);font-size:.76rem;font-weight:600}
+.arc-w[aria-pressed=true]{border:2px solid var(--aw);padding:10px 11px;background:color-mix(in srgb,var(--aw) 12%,var(--surface))}
+.arc-w.w-other{grid-column:1 / -1}
+.arc-cause{margin:0}
+
+/* The list in the Plants tab */
+.arc-list .arc-intro{display:flex;gap:8px;align-items:flex-start;font-size:.86rem}
+.arc-list .arc-intro svg,.chip svg.arc{width:16px;height:16px;flex:none}
+.arc-row{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:18px;text-align:left;font:inherit;color:inherit;
+  border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.arc-row + .arc-row{margin-top:8px}
+.arc-th{flex:none;width:56px;height:56px;border-radius:14px;overflow:hidden;display:grid;place-items:center}
+.arc-th img{width:100%;height:100%;object-fit:cover;filter:saturate(.55)}
+.arc-th .initial{width:100%;height:100%;display:grid;place-items:center;font-weight:700;opacity:.75}
+.arc-tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.arc-tx b{font-weight:700;line-height:1.25}
+.arc-tx i{color:var(--muted);font-size:.84rem}
+.arc-what{margin-top:3px;font-size:.84rem;font-weight:700;color:color-mix(in srgb,var(--aw) 80%,var(--ink))}
+.arc-tx small{color:var(--muted);font-size:.78rem;font-weight:600}
+
+/* At the top of an archived plant's journal */
+.arc-banner{display:flex;gap:12px;align-items:flex-start;margin:0 0 14px;padding:12px 14px;border-radius:16px;
+  background:color-mix(in srgb,var(--aw) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--aw) 30%,transparent)}
+.arc-bi{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--aw);background:color-mix(in srgb,var(--aw) 18%,var(--surface))}
+.arc-bi svg{width:18px;height:18px}
+.arc-banner b{display:block;font-weight:700;line-height:1.25}
+.arc-banner small{color:var(--muted);font-size:.8rem;font-weight:600}
+.arc-banner p{margin:6px 0 0;font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.arc-banner .jr-acts{margin-top:10px}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .arc-bi,:root:not([data-theme="light"]) .arc-what{color:color-mix(in srgb,var(--aw) 45%,#fff)}
+}
+:root[data-theme="dark"] .arc-bi,:root[data-theme="dark"] .arc-what{color:color-mix(in srgb,var(--aw) 45%,#fff)}
+.arc-cause{flex-wrap:wrap;overflow:visible}
+.arc-box .btn{align-self:flex-start;width:auto}

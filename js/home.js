@@ -413,7 +413,7 @@ function renderLocations(W){
     </div>`;
   }).join("");
 }
-const LOC_TITLE = {all:tr("All plants"), garden:tr("Garden"), house:tr("House"), greenhouse:tr("Greenhouse"), balcony:tr("Balcony"), porch:tr("Porch"), outside:tr("Open garden"), vault:tr("Only me")};
+const LOC_TITLE = {all:tr("All plants"), garden:tr("Garden"), house:tr("House"), greenhouse:tr("Greenhouse"), balcony:tr("Balcony"), porch:tr("Porch"), outside:tr("Open garden"), vault:tr("Only me"), archive:tr("Archive")};
 const plantsTitle = () => idsFilter ? tr("Selected plants") : LOC_TITLE[plantFilter] || (ZONES[plantFilter] ? ZONES[plantFilter].label : tr("Plants"));
 $("#view-locations").addEventListener("click", e => {
   const pic = e.target.closest("[data-locpic]"); if(pic){ openLocPic(pic.dataset.locpic); return; }

@@ -20,7 +20,9 @@ const JI = {
   unprotected:ICON.sun,
   moved:ICON.move,
   note:SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
-  photo:ICON.camera, care:ICON.drop, start:ICON.leaf
+  photo:ICON.camera, care:ICON.drop, start:ICON.leaf,
+  gone:SV('<rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"/><path d="M10 13h4"/>'),
+  back:SV('<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/><path d="M12 16v-4.5"/><path d="M12 12.5c0-2 1.3-3.3 3.3-3.3 0 2-1.3 3.3-3.3 3.3z"/>')
 };
 const JK = {
   acquired:{label:tr("Got it"), hint:tr("Where from, a gift, what it cost…")},
@@ -74,7 +76,7 @@ function jNoteMove(p){
 }
 /* Once per start: moves still in the history that aren't in their plant's journal yet. Returns true if any. */
 function migrateJournal(){
-  const byId = new Map(state.plants.map(p => [p.id, p]));
+  const byId = new Map(allPlants().map(p => [p.id, p]));
   const add = new Map();
   for(const e of state.log){
     if(e.type !== "move" || !byId.has(e.plantId)) continue;
@@ -94,9 +96,12 @@ function jSince(p){
 }
 function jSinceHtml(p, link){
   const s = jSince(p); if(!s) return "";
-  const age = daysBetween(s.d, today()) >= 1 ? ` · ${jAge(s.d)}` : "";
-  const when = parseDay(s.d).toLocaleDateString(LOCALE, {month:"long", year:"numeric"});
-  return `<p class="jr-since">${s.got ? tr("In your garden since {date}", {date:when}) : tr("With Alvor since {date}", {date:when})}${age}` +
+  const end = p.archived && p.archived.d >= s.d ? p.archived.d : null;   // an archived plant's time with you ended that day
+  const age = daysBetween(s.d, end || today()) >= 1 ? ` · ${jAge(s.d, end || today())}` : "";
+  const mY = d => parseDay(d).toLocaleDateString(LOCALE, {month:"long", year:"numeric"}), when = mY(s.d);
+  const head = end ? (s.got ? tr("In your garden from {from} to {to}", {from:when, to:mY(end)}) : tr("With Alvor from {from} to {to}", {from:when, to:mY(end)}))
+    : s.got ? tr("In your garden since {date}", {date:when}) : tr("With Alvor since {date}", {date:when});
+  return `<p class="jr-since">${head}${age}` +
     (!s.got && link ? ` · <button type="button" class="linkish" data-j="since">${tr("When did you get it?")}</button>` : "") + `</p>`;
 }
 const jPhotos = id => (photos[id] || []).slice().sort((a, b) => a.ts - b.ts);   // oldest first
@@ -128,6 +133,10 @@ function jItems(p, filter){
 }
 function jItemHtml(it, p){
   const ph = id => (photos[p.id] || []).find(x => x.id === id);
+  if(it.type === "ms" && (it.e.k === "gone" || it.e.k === "back")){   // the Archive's own entries: changed from its banner
+    const e = it.e, gone = e.k === "gone";
+    return `<div class="jr-item k-${e.k}"><span class="jr-ic">${JI[e.k]}</span><span class="jr-txt"><b>${gone ? esc(arcWhat(e)) : tr("Back in the garden")}</b><small>${jDate(e.d)}</small>${e.n ? `<span class="jr-note">${esc(e.n)}</span>` : ""}</span></div>`;
+  }
   if(it.type === "ms"){
     const e = it.e, k = JK[e.k] ? e.k : "note", img = e.ph && ph(e.ph);
     return `<button type="button" class="jr-item k-${k}" data-j="edit" data-e="${esc(e.id)}"><span class="jr-ic">${JI[k]}</span>
@@ -155,7 +164,7 @@ function jTimeline(p, filter){
 
 /* ---------- In the plant sheet: the start of the journal ---------- */
 function renderJBox(){
-  const p = editingId && state.plants.find(x => x.id === editingId);
+  const p = editingId && plantById(editingId);
   $("#jrnBox").hidden = !p; if(!p) return;
   const recent = jItems(p, "all").filter(it => it.type !== "waterings" && it.type !== "start").slice(0, 3);
   const n = jEntries(p).filter(e => !e.auto).length, nph = (photos[p.id] || []).length;
@@ -176,7 +185,7 @@ function openJournal(id, f){
   $("#jrnBody").scrollTop = 0;
 }
 function renderJournal(){
-  const p = J && state.plants.find(x => x.id === J.id);
+  const p = J && plantById(J.id);
   if(!p){ if(jrnDlg.open) jrnDlg.close(); return; }
   $("#jrnTitle").textContent = tr("{name}'s journal", {name:p.name});
   const list = jPhotos(p.id);
@@ -186,7 +195,7 @@ function renderJournal(){
   const count = {all:null, ms:E.filter(e => !(e.k === "moved" && e.auto)).length, photos:(photos[p.id] || []).length, moves:E.filter(e => e.k === "moved").length,
     care:state.log.filter(l => l.plantId === p.id && (l.type === "water" || l.type === "care")).length};
   const F = {all:tr("Everything"), ms:tr("Milestones"), photos:tr("Photos"), moves:tr("Moves"), care:tr("Watering")};
-  $("#jrnBody").innerHTML = jSinceHtml(p, true) +
+  $("#jrnBody").innerHTML = arcBannerHtml(p) + jSinceHtml(p, true) +
     `<div class="jr-acts"><button type="button" class="btn small primary" data-j="add">${ICON.plus}${tr("Add to journal")}</button>${list.length >= 2 ? `<button type="button" class="btn small" data-j="cmp">${tr("Before and after")}</button>` : ""}</div>` +
     strip +
     `<div class="chips jr-chips">${Object.keys(F).filter(k => k === "all" || count[k] || k === J.f).map(k => `<button type="button" class="chip" data-jf="${k}" aria-pressed="${J.f === k}">${F[k]}${count[k] != null ? ` ${count[k]}` : ""}</button>`).join("")}</div>` +
@@ -203,7 +212,7 @@ function refreshJournal(){
 const msDlg = $("#msDlg");
 let MS = null;   // {plantId, id, k, d, n, ph, newPh:{data, ts}, dateTouched}
 function openMs(plantId, id, preset){
-  const p = state.plants.find(x => x.id === plantId); if(!p) return;
+  const p = plantById(plantId); if(!p) return;
   const e = id && jEntries(p).find(x => x.id === id);
   MS = e ? {plantId, id, k:e.k, d:e.d, n:e.n || "", ph:e.ph || null, txt:e.txt, auto:e.auto, newPh:null, dateTouched:true}
     : {plantId, id:null, k:null, d:today(), n:"", ph:null, newPh:null, dateTouched:false, ...(preset || {})};
@@ -211,7 +220,7 @@ function openMs(plantId, id, preset){
   renderMs(); msDlg.showModal();
 }
 function renderMs(){
-  const p = state.plants.find(x => x.id === MS.plantId); if(!p) return msDlg.close();
+  const p = plantById(MS.plantId); if(!p) return msDlg.close();
   $("#msTitle").textContent = MS.id ? (MS.auto ? tr("Move") : tr("Journal entry")) : tr("Add to {name}'s journal", {name:p.name});
   $("#msDelete").hidden = !MS.id;
   const sel = MS.newPh ? MS.newPh.data : MS.ph && ((photos[p.id] || []).find(x => x.id === MS.ph) || {}).data;
@@ -256,7 +265,7 @@ $("#msFile").addEventListener("change", e => msAddFile(e.target));
 $("#msCam").addEventListener("change", e => msAddFile(e.target));
 $("#msClose").addEventListener("click", () => { msDlg.close(); MS = null; });
 $("#msSave").addEventListener("click", async () => {
-  const p = MS && state.plants.find(x => x.id === MS.plantId); if(!p) return;
+  const p = MS && plantById(MS.plantId); if(!p) return;
   if(!MS.k){ toast(tr("Pick what happened")); return; }
   if(MS.d > today()) MS.d = today();
   let ph = MS.ph;
@@ -280,7 +289,7 @@ $("#msSave").addEventListener("click", async () => {
   toast(isNew ? tr("Added to the journal") : tr("Saved"));
 });
 $("#msDelete").addEventListener("click", () => {
-  const p = MS && state.plants.find(x => x.id === MS.plantId); if(!p || !MS.id) return;
+  const p = MS && plantById(MS.plantId); if(!p || !MS.id) return;
   if(!confirm(tr("Delete this journal entry? Its photo stays with the plant."))) return;
   jDelete(p, MS.id);
   save(); msDlg.close(); MS = null; refreshJournal(); toast(tr("Deleted"));

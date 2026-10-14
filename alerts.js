@@ -23,7 +23,7 @@
   else root.GardenAlerts = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-13.care-5";
+const VERSION = "2026-10-14.care-6";
 
 /* What Alvor knows about each kind of plant (lowest temperature, traits, watering) lives in plant-kb.js:
    in the browser it is loaded before this file, in notify it is copied in above it, in the tests it is required. */
@@ -671,7 +671,10 @@ function placeWhy(p){
   return w;
 }
 /* Frost and heat for one forecast day, for the badges on the forecast and the chips on Home. */
+/* Plants in the Archive (lost, given away, swapped, sold) are out of every alert. */
+const inGarden = plants => (plants || []).filter(p => p && !p.archived);
 function dayRisks(plants, d, s, x){
+  plants = inGarden(plants);
   const frost = plants.filter(p => { if(!coldOn(p)) return false; const t = effMin(p, d, s); return t != null && t < coldLimit(p, s, x); });
   const heat = plants.filter(p => heatHit(p, d.max, s) || (p.current === "greenhouse" && d.max + RULES.heat.greenhouse >= RULES.heat.ghVent));
   return {frost, heat};
@@ -684,6 +687,7 @@ function heatHit(p, max, s){
 }
 
 function compute(plants, ctx){
+  plants = inGarden(plants);
   if(ctx.lang) setLang(ctx.lang);
   const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today, ctx.hourly), groups = {};
   const evening = ctx.mode === "evening", sm = seasonMonth(ctx.month, s);
@@ -828,6 +832,7 @@ function compute(plants, ctx){
 /* ---------- Garden today: what matters now ---------- */
 /* lines: {kind:"frost"|"heat"|"wind"|"sun"|"water"|"rain"|"soon"|"move"|"unknown", text, ids, urgent}. */
 function gardenToday(groups, plants, ctx){
+  plants = inGarden(plants);
   if(ctx.lang) setLang(ctx.lang);
   const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today, ctx.hourly);
   const h = num(ctx.hour) ? +ctx.hour : 8;
@@ -904,7 +909,7 @@ function summarize(groups, ctx){
   return {title, body:[...lines, wLine].filter(Boolean).join("\n"), tag:"garden-morning"};
 }
 
-return {VERSION, RULES, KB, setLang, ES, LOC, ALLOWED, deg, degCold, nightWord, daysBetween, addDays, speciesKey, traitsFor, intervalsFor,
+return {VERSION, inGarden, RULES, KB, setLang, ES, LOC, ALLOWED, deg, degCold, nightWord, daysBetween, addDays, speciesKey, traitsFor, intervalsFor,
   weatherUrl, metUrl, fetchForecast, fromMet, withPast, sunTimes, localTime, WX, splitWeather, hargreaves, nightHours, seasonMonth, interval, placeOf, rainReach, frostBonus,
   waterState, waterStatus, feedback, learned, STAGES, STAGE_TEXT, effMin, spotLow, ghLow, roomLow, coldLimit, coldOn, frostAction, dayRisks, heatHit,
   compute, gardenToday, summarize, COLD_KEYS, moveRecord, settling, softness, sunnyDay, zoneArea};

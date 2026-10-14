@@ -9,13 +9,15 @@ function renderPlants(){
   const counts = {all:state.plants.length};
   ALL_AREAS.forEach(a => counts[a] = state.plants.filter(p => p.area === a).length);
   counts.vault = online ? state.plants.filter(p => visOf(p) === "vault").length : 0;
+  counts.archive = (state.archive || []).length;
   if(plantFilter === "vault" && !counts.vault) plantFilter = "all";
-  const chips = ["all", ...ALL_AREAS.filter(a => counts[a]), ...(counts.vault ? ["vault"] : [])];
+  if(plantFilter === "archive" && !counts.archive) plantFilter = "all";
+  const chips = ["all", ...ALL_AREAS.filter(a => counts[a]), ...(counts.vault ? ["vault"] : []), ...(counts.archive ? ["archive"] : [])];
   if(ZONES[plantFilter] && plantFilter !== "greenhouse") chips.push(plantFilter);
   $("#chips").innerHTML = (idsFilter ? `<button class="chip" data-act="clearIds" aria-pressed="true">${tr("From the alert: {n}", {n:idsFilter.length})} ✕</button>` : "") +
     chips.map(k => {
-      const label = k === "all" ? tr("All") : k === "vault" ? `${ICON.lock}${tr("Vault")}` : AREAS[k] ? areaLabel(k) : ZONES[k].label;
-      const n = k === "all" || k === "vault" ? counts[k] : AREAS[k] ? counts[k] : state.plants.filter(p => p.zone === k).length;
+      const label = k === "all" ? tr("All") : k === "vault" ? `${ICON.lock}${tr("Vault")}` : k === "archive" ? `${ARC_ICON}${tr("Archive")}` : AREAS[k] ? areaLabel(k) : ZONES[k].label;
+      const n = k === "all" || k === "vault" || k === "archive" ? counts[k] : AREAS[k] ? counts[k] : state.plants.filter(p => p.zone === k).length;
       return `<button class="chip" data-act="filter" data-f="${k}" aria-pressed="${!idsFilter && plantFilter === k}">${label} ${n}</button>`;
     }).join("");
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === plantView));
@@ -24,6 +26,7 @@ function renderPlants(){
   const match = p => idsFilter ? idsFilter.includes(p.id) : plantFilter === "all" || (plantFilter === "vault" ? visOf(p) === "vault" : plantFilter === "garden" ? (p.area === "outside" || p.area === "porch") : p.area === plantFilter || p.zone === plantFilter);
   const list = state.plants.filter(p => match(p) && (!q || [p.name, p.species, p.genus, p.notes].join(" ").toLowerCase().includes(q)));
   const el = $("#plantList");
+  if(plantFilter === "archive" && !idsFilter){ renderArchiveList(el, q); return; }
   el.className = "plist v-" + plantView;
   if(!state.plants.length){
     el.innerHTML = `<div class="empty"><h3>${tr("No plants yet")}</h3><p>${tr("Tap Add plant and take a photo; the app suggests the species for you.")}</p><button class="btn primary" data-act="add">${tr("Add plant")}</button></div>`;
@@ -84,7 +87,7 @@ document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click"
 function renderLog(){
   const el = $("#logList");
   if(!state.log.length){ el.innerHTML = `<div class="empty"><h3>${tr("No history yet")}</h3><p>${tr("Every watering and every move you log shows up here.")}</p></div>`; return; }
-  const names = Object.fromEntries(state.plants.map(p => [p.id, p.name]));
+  const names = Object.fromEntries(allPlants().map(p => [p.id, p.name]));
   let html = "", lastDay = "";
   for(const e of state.log.slice(0,300)){
     const d = new Date(e.t), key = ymd(d);
@@ -208,6 +211,7 @@ document.addEventListener("click", e => {
   else if(act === "clearIds"){ idsFilter = null; renderPlants(); }
   else if(act === "sceneBack") goScene("overview");
   else if(act === "viewPhoto") viewPhoto(b.dataset.ph);
+  else if(act === "openArc") openJournal(b.dataset.id);
   else if(act === "filter"){ idsFilter = null; plantFilter = b.dataset.f; renderPlants(); }
 });
 
@@ -491,6 +495,7 @@ function openDialog(id){
   const p = id ? state.plants.find(x => x.id === id) : null;
   $("#dlgTitle").textContent = p ? tr("Edit plant") : tr("Add plant");
   $("#dlgDelete").hidden = !p;
+  $("#arcBox").hidden = !p;
   $("#fName").value = p ? p.name : "";
   $("#fSpecies").value = p ? p.species : "";
   $("#fGenus").value = p ? (p.genus || "") : "";
@@ -575,14 +580,19 @@ $("#dlgSave").addEventListener("click", async () => {
   }
   save(); dlg.close(); render(); toast(tr("Plant saved"));
 });
-$("#dlgDelete").addEventListener("click", async () => {
-  const p = state.plants.find(x => x.id === editingId); if(!p) return;
-  if(!confirm(tr("Delete {name}? Its history stays in the log.", {name:p.name}))) return;
-  for(const ph of photos[editingId] || []){ try{ await idb.del(ph.id); }catch(e){} }
-  delete photos[editingId];
-  state.plants = state.plants.filter(x => x.id !== editingId);
-  save(); dlg.close(); render(); toast(tr("Plant deleted"));
-});
+/* Gone for good: the plant, its photos and its journal, here and in the account. The Archive keeps them instead. */
+async function deleteForGood(id){
+  const p = plantById(id); if(!p) return false;
+  if(!confirm(p.archived ? tr("Delete {name} for good, with its photos and journal? This can't be undone.", {name:p.name})
+    : tr("Delete {name} for good, with its photos and journal? If it died or you gave it away, Move to the Archive keeps its story.", {name:p.name}))) return false;
+  for(const ph of photos[id] || []){ try{ await idb.del(ph.id); }catch(e){} }
+  delete photos[id];
+  state.plants = state.plants.filter(x => x.id !== id);
+  state.archive = (state.archive || []).filter(x => x.id !== id);
+  save(); if(dlg.open && editingId === id) dlg.close(); render(); toast(tr("Plant deleted"));
+  return true;
+}
+$("#dlgDelete").addEventListener("click", () => deleteForGood(editingId));
 
 /* ---------- Species suggestions while typing ---------- */
 const SPX = (() => {

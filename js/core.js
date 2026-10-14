@@ -104,8 +104,20 @@ function applyZone(p, z, planting){
   p.rainCounts = Z.area === "outside" || (Z.area === "balcony" && !!state.settings.balconyRain);
   p.sun = Z.light === "sun" ? "full" : Z.light === "partial" ? "partial" : "none";
 }
+/* Plants that left the garden (lost, given away, swapped, sold) live in state.archive with p.archived set:
+   out of the alerts, the lists and friends' view, but synced with the rest so their story is kept.
+   allPlants() is everything the account holds; state.plants is only the garden as it is now. */
+const allPlants = () => [...state.plants, ...(state.archive || [])];
+const plantById = id => allPlants().find(x => x.id === id);
+/* Puts each plant on the right list (after a sync, a backup import or a change on another phone). */
+function splitArchive(list){
+  state.plants = list.filter(p => !p.archived);
+  state.archive = list.filter(p => p.archived);
+}
 function normalizePlants(){
-  state.plants.forEach(p => {
+  if(!Array.isArray(state.archive)) state.archive = [];
+  if(state.plants.some(p => p.archived) || state.archive.some(p => !p.archived)) splitArchive(allPlants());
+  allPlants().forEach(p => {
     if(ZONES[p.zone]) applyZone(p, p.zone, p.planting);
     else applyZone(p, zoneFromOld(p), p.zone === "ground" ? "ground" : p.planting);
     followKB(p);
@@ -136,7 +148,7 @@ function idFromOld(s){
 }
 function upgradeIds(){
   const map = {};
-  state.plants.forEach(p => { if(!UUID_RE.test(String(p.id))){ const n = idFromOld(p.id); map[p.id] = n; p.id = n; } });
+  allPlants().forEach(p => { if(!UUID_RE.test(String(p.id))){ const n = idFromOld(p.id); map[p.id] = n; p.id = n; } });
   if(!Object.keys(map).length) return null;
   state.log.forEach(l => { if(map[l.plantId]) l.plantId = map[l.plantId]; });
   saveLocal();
@@ -227,7 +239,7 @@ let editingId = null;
 function defaults(){
   return {
     settings:{home:"house", balconyRain:false, place:"Lekunberri", lat:43.0014, lon:-1.8908, margin:2, gh:3, ghHeat:null, rooms:{}, heat:32, wind:55, rain:5, morningHour:8, eveningHour:19, eveningCheck:true, tz:"Europe/Madrid"},
-    plants:[], log:[], weather:null, updatedAt:0
+    plants:[], archive:[], log:[], weather:null, updatedAt:0
   };
 }
 function load(){
@@ -250,17 +262,17 @@ function syncMeta(){
   const acct = state.account || null;
   if(!syncMetaCache){ try{ syncMetaCache = JSON.parse(localStorage.getItem(META_KEY) || "null"); }catch(e){} }
   if(!syncMetaCache || syncMetaCache.v !== 1 || syncMetaCache.account !== acct){
-    syncMetaCache = GS.fresh(acct, state.plants, state.settings, state.updatedAt || 0);
+    syncMetaCache = GS.fresh(acct, allPlants(), state.settings, state.updatedAt || 0);
     writeMeta(); saveLocal();
   }
   return syncMetaCache;
 }
 function writeMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(syncMetaCache)); }catch(e){} }
 /* After the app tidies its own data (on start, after a download): that isn't a change to send. */
-function rebaseSync(){ GS.rebase(syncMeta(), state.plants, state.settings); writeMeta(); }
+function rebaseSync(){ GS.rebase(syncMeta(), allPlants(), state.settings); writeMeta(); }
 function save(){
   state.updatedAt = Date.now();
-  GS.stamp(syncMeta(), state.plants, state.settings, Date.now()); writeMeta();
+  GS.stamp(syncMeta(), allPlants(), state.settings, Date.now()); writeMeta();
   saveLocal(); queueSync();
 }
 function toast(msg){
