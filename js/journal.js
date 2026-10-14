@@ -14,7 +14,7 @@ const JI = {
   flower:SV('<g transform="translate(12 9.2)"><ellipse cy="-3.7" rx="2.1" ry="3.1"/><ellipse cy="-3.7" rx="2.1" ry="3.1" transform="rotate(72)"/><ellipse cy="-3.7" rx="2.1" ry="3.1" transform="rotate(144)"/><ellipse cy="-3.7" rx="2.1" ry="3.1" transform="rotate(216)"/><ellipse cy="-3.7" rx="2.1" ry="3.1" transform="rotate(288)"/><circle r="1.3"/></g><path d="M12 15.6V21.5"/>'),
   fruit:SV('<circle cx="8" cy="16" r="3.6"/><circle cx="16.2" cy="17" r="3.4"/><path d="M8 12.4c.8-4.2 3-7.2 7-8.9M16.2 13.6c-.3-4-.6-7-1.2-10.1"/>'),
   pruned:SV('<circle cx="6.5" cy="17.5" r="2.6"/><circle cx="17.5" cy="17.5" r="2.6"/><path d="M8.4 15.6 18 4M15.6 15.6 6 4"/>'),
-  repotted:SV('<path d="M5 11h14l-1.6 9H6.6z"/><path d="M4 11h16"/><path d="M12 8V2.8M9.5 5.2 12 2.8l2.5 2.4"/>'),
+  repotted:ICON.repot, fed:ICON.feed,
   propagated:SV('<path d="M7 20v-5.5"/><path d="M7 14.5c0-2.6 1.5-4.2 4-4.2 0 2.6-1.5 4.2-4 4.2z"/><path d="M17 20v-8.5"/><path d="M17 11.5c0-3 1.7-4.9 4.6-4.9 0 3-1.7 4.9-4.6 4.9zM17 13.5c0-2.6-1.6-4.1-4.2-4.1"/><path d="M3 20h18"/>'),
   protected:SV('<path d="M12 3.5 19 6v5.6c0 4.4-3 7.5-7 8.9-4-1.4-7-4.5-7-8.9V6z"/><path d="M12 8v6M9.4 9.5l5.2 3M14.6 9.5l-5.2 3"/>'),
   unprotected:ICON.sun,
@@ -32,13 +32,14 @@ const JK = {
   fruit:{label:tr("Fruiting"), hint:tr("How many, ripe or not…")},
   pruned:{label:tr("Pruned"), hint:tr("What you cut and why…")},
   repotted:{label:tr("Repotted"), hint:tr("Pot size, the compost you used…")},
+  fed:{label:tr("Fed"), hint:tr("What you used, and how strong…")},
   propagated:{label:tr("Propagated"), hint:tr("Cuttings, division, seeds, who got one…")},
   protected:{label:tr("Protected for winter"), hint:tr("Fleece, wrapped the trunk, mulched the roots…")},
   unprotected:{label:tr("Protection off"), hint:tr("Took the fleece or wrapping off…")},
   moved:{label:tr("Moved"), hint:tr("Where to, and why…")},
   note:{label:tr("Note"), hint:tr("Anything worth remembering…")}
 };
-const JK_ORDER = ["acquired","planted","growth","flower","fruit","pruned","repotted","propagated","protected","unprotected","moved","note"];
+const JK_ORDER = ["acquired","planted","growth","flower","fruit","pruned","repotted","fed","propagated","protected","unprotected","moved","note"];
 
 /* ---------- Dates and ages ---------- */
 const jDate = (d, year = true) => parseDay(d).toLocaleDateString(LOCALE, year ? {day:"numeric", month:"short", year:"numeric"} : {day:"numeric", month:"short"});
@@ -106,13 +107,14 @@ function jSinceHtml(p, link){
 }
 const jPhotos = id => (photos[id] || []).slice().sort((a, b) => a.ts - b.ts);   // oldest first
 
-/* Everything that happened to a plant, newest first. filter: all, ms (milestones), photos, moves, care. */
+/* Everything that happened to a plant, newest first. filter: all, ms (milestones), photos, moves, care, feed. */
 function jItems(p, filter){
   const items = [], E = jEntries(p);
   const linked = new Set(E.map(e => e.ph).filter(Boolean));
   if(filter === "all" || filter === "ms") E.filter(e => e.k !== "moved" || !e.auto).forEach(e => items.push({d:e.d, t:e.m, type:"ms", e}));
   if(filter === "all" || filter === "moves") E.filter(e => e.k === "moved" && e.auto).forEach(e => items.push({d:e.d, t:e.m, type:"move", e}));
   if(filter === "moves") E.filter(e => e.k === "moved" && !e.auto).forEach(e => items.push({d:e.d, t:e.m, type:"ms", e}));
+  if(filter === "feed") E.filter(e => e.k === "fed").forEach(e => items.push({d:e.d, t:e.m, type:"ms", e}));
   if(filter === "all" || filter === "photos"){
     const byDay = {};
     (photos[p.id] || []).filter(ph => filter === "photos" || !linked.has(ph.id)).forEach(ph => (byDay[ph.date] ||= []).push(ph));
@@ -152,7 +154,7 @@ function jItemHtml(it, p){
 }
 function jTimeline(p, filter){
   const items = jItems(p, filter);
-  if(!items.length) return `<p class="status jr-empty">${{ms:tr("No milestones yet."), photos:tr("No photos yet."), moves:tr("No moves yet."), care:tr("No waterings logged yet.")}[filter] || tr("Nothing here yet.")}</p>`;
+  if(!items.length) return `<p class="status jr-empty">${{ms:tr("No milestones yet."), photos:tr("No photos yet."), moves:tr("No moves yet."), care:tr("No waterings logged yet."), feed:tr("No feeding logged yet.")}[filter] || tr("Nothing here yet.")}</p>`;
   let html = "", month = "";
   for(const it of items){
     const m = it.d.slice(0, 7);
@@ -166,7 +168,8 @@ function jTimeline(p, filter){
 function renderJBox(){
   const p = editingId && plantById(editingId);
   $("#jrnBox").hidden = !p; if(!p) return;
-  const recent = jItems(p, "all").filter(it => it.type !== "waterings" && it.type !== "start").slice(0, 3);
+  // Feeding has its own box in the plant sheet, so the three latest things leave it out.
+  const recent = jItems(p, "all").filter(it => it.type !== "waterings" && it.type !== "start" && !(it.type === "ms" && it.e.k === "fed")).slice(0, 3);
   const n = jEntries(p).filter(e => !e.auto).length, nph = (photos[p.id] || []).length;
   $("#jrnPrev").innerHTML = jSinceHtml(p, true) +
     (recent.length ? `<div class="jr-list mini">${recent.map(it => jItemHtml(it, p)).join("")}</div>`
@@ -193,8 +196,8 @@ function renderJournal(){
     `<button type="button" data-act="viewPhoto" data-ph="${x.id}"><img src="${x.data}" alt="${tr("Photo from {date}", {date:jDate(x.date)})}"><span>${parseDay(x.date).toLocaleDateString(LOCALE, {month:"short", year:"numeric"})}</span>${i ? `<small>+${jAge(list[0].date, x.date)}</small>` : `<small>${tr("first")}</small>`}</button>`).join("")}</div>` : "";
   const E = jEntries(p);
   const count = {all:null, ms:E.filter(e => !(e.k === "moved" && e.auto)).length, photos:(photos[p.id] || []).length, moves:E.filter(e => e.k === "moved").length,
-    care:state.log.filter(l => l.plantId === p.id && (l.type === "water" || l.type === "care")).length};
-  const F = {all:tr("Everything"), ms:tr("Milestones"), photos:tr("Photos"), moves:tr("Moves"), care:tr("Watering")};
+    care:state.log.filter(l => l.plantId === p.id && (l.type === "water" || l.type === "care")).length, feed:E.filter(e => e.k === "fed").length};
+  const F = {all:tr("Everything"), ms:tr("Milestones"), photos:tr("Photos"), moves:tr("Moves"), care:tr("Watering"), feed:tr("Feeding")};
   $("#jrnBody").innerHTML = arcBannerHtml(p) + jSinceHtml(p, true) +
     `<div class="jr-acts"><button type="button" class="btn small primary" data-j="add">${ICON.plus}${tr("Add to journal")}</button>${list.length >= 2 ? `<button type="button" class="btn small" data-j="cmp">${tr("Before and after")}</button>` : ""}</div>` +
     strip +
@@ -205,7 +208,7 @@ function renderJournal(){
 $("#jrnClose").addEventListener("click", () => jrnDlg.close());
 function refreshJournal(){
   if(jrnDlg.open) renderJournal();
-  if(dlg.open && editingId) renderJBox();
+  if(dlg.open && editingId){ renderJBox(); refreshCareBox(); }   // a "Fed" or "Repotted" entry changes the feeding box too
 }
 
 /* ---------- Add or edit an entry ---------- */

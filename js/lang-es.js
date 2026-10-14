@@ -3,6 +3,26 @@
    Another language: copy this file as lang-xx.js and translate the right-hand side. */
 window.ALVOR_LANG = window.ALVOR_LANG || {};
 window.ALVOR_LANG.es = {
+/* ---- Feeding and repotting ---- */
+"Feeding and repotting":"Abonado y trasplante", "Feeding":"Abonado", "Feed":"Abonar", "Repot":"Trasplantar",
+"{n} plant is ready for feeding":"{n} planta pide abono", "{n} plants are ready for feeding":"{n} plantas piden abono",
+"Ready for feeding":"Toca abonar", "Time to repot":"Toca trasplantar", "Mark all fed":"Marcar todas como abonadas",
+"Fed":"Abonada", "Fed today":"Abonada hoy", "Another day…":"Otro día…", "Skip this time":"Esta vez no", "Repotted…":"Trasplantada…", "Not this year":"Este año no",
+"{n} plants fed":"{n} plantas abonadas", "Alvor will ask again next spring.":"Alvor te volverá a preguntar la próxima primavera.",
+"Skipped. Alvor counts the next feed from today.":"Saltado. Alvor cuenta el próximo abonado desde hoy.",
+"What you used, and how strong…":"Qué usaste y a qué dosis…", "No feeding logged yet.":"Aún no hay abonados registrados.",
+"Never":"Nunca", "Once a year, in spring":"Una vez al año, en primavera", "Every week":"Cada semana", "Every {n} weeks":"Cada {n} semanas",
+"Every year":"Cada año", "Every {n} years":"Cada {n} años", "Alvor's: {v}":"El de Alvor: {v}",
+"Feed soon: around {date}":"Abonar pronto: hacia el {date}", "Next feed around {date}":"Próximo abonado hacia el {date}",
+"Resting until {month}":"En reposo hasta {month}", "Fresh compost: no feed until {date}":"Sustrato nuevo: sin abonar hasta el {date}",
+"Feeding not logged yet":"Abonado aún sin registrar", "Never fed: it catches its own food":"Nunca se abona: caza su propio alimento",
+"No feeding needed in the ground":"En tierra no necesita abono", "You don't feed this one":"Esta no la abonas",
+"Log a feed once and Alvor reminds you when the next one is due.":"Registra un abonado una vez y Alvor te avisará cuando toque el siguiente.",
+"Ready to repot: spring {y}":"Lista para trasplantar: primavera de {y}", "Next repot: spring {y}":"Próximo trasplante: primavera de {y}",
+"Repotting not logged yet":"Trasplante aún sin registrar", "You don't repot this one":"Esta no la trasplantas",
+"Log the last repotting, or when you got it, and Alvor reminds you in spring.":"Registra el último trasplante, o cuándo la conseguiste, y Alvor te lo recordará en primavera.",
+"Keep feeding in winter":"Seguir abonando en invierno",
+"For plants that keep growing under grow lights or in a warm room: half as often.":"Para plantas que siguen creciendo con luz de cultivo o en una habitación cálida: la mitad de veces.",
 /* ---- Locations: how warm a place stays ---- */
 "Find a warmer spot for {n} plant:":"Busca un sitio más cálido para {n} planta:",
 "Find a warmer spot for {n} plants:":"Busca un sitio más cálido para {n} plantas:",

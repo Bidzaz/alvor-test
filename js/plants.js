@@ -106,8 +106,38 @@ function water(ids, single){
     Object.assign(p, f.patch); addLog(id, "water", "Watered", {est:f.log.est, stage:f.log.stage}); });
   save(); render(); refreshCareBox(); toast(ids.length > 1 ? tr("{n} plants watered", {n:ids.length}) : tr("Watered"));
 }
+/* Feeding: a "Fed" entry in each plant's journal, with what was used last time (change it in the journal).
+   One a day at most, so a second tap doesn't add another. */
+function feedPlants(ids){
+  const d = today(); let n = 0;
+  ids.forEach(id => {
+    const p = plantById(id); if(!p || p.archived) return;
+    const fed = jEntries(p).filter(e => e.k === "fed").sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : (+a.m || 0) - (+b.m || 0));
+    n++;
+    if(fed.some(e => e.d === d)) return;
+    const last = fed[fed.length - 1];
+    jPut(p, {id:uid(), d, k:"fed", ...(last && last.n ? {n:last.n} : {})});
+    delete p.feedSkip;
+    addLog(id, "feed", "Fed");
+  });
+  if(!n) return;
+  save(); render(); refreshJournal(); refreshCareBox();
+  toast(ids.length > 1 ? tr("{n} plants fed", {n}) : tr("Fed"));
+}
+/* The spring window of repotting this plant: "Not this year" waits for the next one. */
+function repotNotYear(id){
+  const p = plantById(id); if(!p) return;
+  const r = repotState(p);
+  p.rpSkip = r.next ? +r.next.slice(0, 4) : new Date().getFullYear();
+  save(); render(); refreshCareBox();
+  toast(tr("Alvor will ask again next spring."));
+}
 function careFeedback(id, kind){
   if(kind === "water") return water([id], true);
+  if(kind === "fed") return feedPlants([id]);
+  if(kind === "skip"){ const p = plantById(id); if(!p) return; p.feedSkip = today(); save(); render(); refreshCareBox(); return toast(tr("Skipped. Alvor counts the next feed from today.")); }
+  if(kind === "repotted") return openMs(id, null, {k:"repotted"});
+  if(kind === "notYear") return repotNotYear(id);
   const p = state.plants.find(x => x.id === id); if(!p) return;
   const f = GA.feedback(p, kind, wx(), ctx(), state.plants);
   Object.assign(p, f.patch);
@@ -205,6 +235,8 @@ document.addEventListener("click", e => {
   else if(act === "water") water([b.dataset.id], true);
   else if(act === "fb") careFeedback(b.dataset.id, b.dataset.kind);
   else if(act === "waterAll") water(ids);
+  else if(act === "feedAll") feedPlants(ids);
+  else if(act === "fedOn"){ const p = plantById(b.dataset.id), last = p && jEntries(p).filter(x => x.k === "fed").sort((x, y) => x.d < y.d ? -1 : 1).pop(); openMs(b.dataset.id, null, {k:"fed", n:(last && last.n) || ""}); }
   else if(act === "move") openMove(b.dataset.id);
   else if(act === "moveAll") moveGroup(ids, b.dataset.to);
   else if(act === "seePlants"){ idsFilter = ids; showTab("plants"); renderPlants(); }
@@ -418,7 +450,7 @@ function onVisClick(e, st, el){
 }
 let editVis = {visibility:"vault", visOpen:false};
 $("#fVis").addEventListener("click", e => onVisClick(e, editVis, $("#fVis")));
-const drawEditPick = () => { $("#fZonePick").innerHTML = pickerHtml(editSel); drawMicro(); };
+const drawEditPick = () => { $("#fZonePick").innerHTML = pickerHtml(editSel); drawMicro(); if(dlg.open && editingId) drawFeedChoices(plantById(editingId)); };
 /* About this spot: only what changes Alvor's advice (frost, rain, drying, wind). Outdoors only. */
 let editMicro = {};
 const MICRO = [["wall", tr("Against a wall")], ["tree", tr("Under a tree")], ["exposed", tr("Windy spot")], ["sheltered", tr("Sheltered")], ["pm", tr("Hot afternoon sun")]];
@@ -463,10 +495,50 @@ function showSettle(p){
   const h = p ? settleHtml(p) : "";
   $("#settleBox").hidden = !h; $("#settleNow").innerHTML = h;
 }
+/* Feeding and repotting: what Alvor would do for this plant, when it was last done (from the journal) and your own choice. */
+const FEED_EVERY = [7, 14, 21, 28, 42, 56, 365, 0], REPOT_EVERY = [1, 2, 3, 4, 5, 0];
+const feedEveryText = n => !n ? tr("Never") : n >= 180 ? tr("Once a year, in spring") : n === 7 ? tr("Every week") : tr("Every {n} weeks", {n:n / 7});
+const repotEveryText = n => !n ? tr("Never") : n === 1 ? tr("Every year") : tr("Every {n} years", {n});
+function feedBoxHtml(p){
+  const f = feedState(p), r = repotState(p), L = f.plan;
+  const short = d => jDate(d, false), month = d => GA.monthName(+d.slice(5, 7));
+  const head = {due:tr("Ready for feeding"), soon:f.next && tr("Feed soon: around {date}", {date:short(f.next)}), ok:f.next && tr("Next feed around {date}", {date:short(f.next)}),
+    rest:f.next && tr("Resting until {month}", {month:month(f.next)}), fresh:f.next && tr("Fresh compost: no feed until {date}", {date:short(f.next)}),
+    unknown:tr("Feeding not logged yet"),
+    none:f.why === "carnivorous" ? tr("Never fed: it catches its own food") : f.why === "ground" ? tr("No feeding needed in the ground") : tr("You don't feed this one")}[f.stage];
+  const fb = f.stage === "none" ? "" : `<span class="fb"><button type="button" class="fb-b" data-act="fb" data-kind="fed" data-id="${p.id}">${tr("Fed today")}</button>` +
+    `<button type="button" class="fb-b" data-act="fedOn" data-id="${p.id}">${tr("Another day…")}</button>` +
+    (f.stage === "due" ? `<button type="button" class="fb-b" data-act="fb" data-kind="skip" data-id="${p.id}">${FB.skip}</button>` : "") + `</span>`;
+  let html = `<div class="care-now feed-now fs-${f.stage}"><b>${ICON.feed}${esc(head)}</b>${f.reasons.length ? `<ul>${f.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}` +
+    (f.stage === "unknown" ? `<p class="status">${tr("Log a feed once and Alvor reminds you when the next one is due.")}</p>` : "") + fb + `</div>`;
+  if(r.stage !== "ground"){
+    const rh = {due:tr("Time to repot"), next:tr("Ready to repot: spring {y}", {y:r.nextYear}), ok:tr("Next repot: spring {y}", {y:r.nextYear}),
+      unknown:tr("Repotting not logged yet"), none:tr("You don't repot this one")}[r.stage];
+    html += `<div class="care-now feed-now rs-${r.stage}"><b>${ICON.repot}${esc(rh)}</b>${r.reasons.length ? `<ul>${r.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}` +
+      (r.stage === "unknown" ? `<p class="status">${tr("Log the last repotting, or when you got it, and Alvor reminds you in spring.")}</p>` : "") +
+      (r.stage === "none" ? "" : `<span class="fb"><button type="button" class="fb-b" data-act="fb" data-kind="repotted" data-id="${p.id}">${FB.repotted}</button>` +
+        (r.stage === "due" ? `<button type="button" class="fb-b" data-act="fb" data-kind="notYear" data-id="${p.id}">${FB.notYear}</button>` : "") + `</span>`) + `</div>`;
+  }
+  return html;
+}
+/* The choices: Alvor's value first (it then follows Alvor), with the plant's species and planting as they are in the form. */
+function drawFeedChoices(p){
+  if(!p) return;
+  const L = GA.feedPlan({...p, species:$("#fSpecies").value, genus:$("#fGenus").value, planting:editSel.planting || p.planting, fe:null, rpy:null});
+  const opt = (v, label, sel) => `<option value="${v}"${sel ? " selected" : ""}>${esc(label)}</option>`;
+  const fe = $("#fFe").dataset.v ?? (p.fe ?? ""), rp = $("#fRpy").dataset.v ?? (p.rpy ?? "");
+  $("#fFe").innerHTML = opt("", tr("Alvor's: {v}", {v:feedEveryText(L.alvor).toLowerCase()}), fe === "") + FEED_EVERY.map(n => opt(n, feedEveryText(n), fe !== "" && +fe === n)).join("");
+  $("#fRpy").innerHTML = opt("", tr("Alvor's: {v}", {v:repotEveryText(L.rpAlvor).toLowerCase()}), rp === "") + REPOT_EVERY.map(n => opt(n, repotEveryText(n), rp !== "" && +rp === n)).join("");
+  $("#fRpyF").hidden = !L.pot;
+  const every = fe === "" ? L.alvor : +fe;
+  $("#fFeedWinterRow").hidden = !every || every >= 180;   // nothing to keep going in winter
+}
+["#fFe", "#fRpy"].forEach(id => $(id).addEventListener("change", e => { e.target.dataset.v = e.target.value; drawFeedChoices(plantById(editingId)); }));
 function refreshCareBox(){
   if(!dlg.open || !editingId) return;
   const p = state.plants.find(x => x.id === editingId); if(!p) return;
   $("#careNow").innerHTML = careBoxHtml(p);
+  $("#feedNow").innerHTML = feedBoxHtml(p);
   showSettle(p);
   $("#fLast").value = p.lastWatered || "";
 }
@@ -506,6 +578,10 @@ function openDialog(id){
   drawEditPick();
   $("#careBox").hidden = !p;
   $("#careNow").innerHTML = p ? careBoxHtml(p) : "";
+  $("#feedBox").hidden = !p || !!p.archived;
+  $("#feedNow").innerHTML = p && !p.archived ? feedBoxHtml(p) : "";
+  delete $("#fFe").dataset.v; delete $("#fRpy").dataset.v;
+  $("#fFeedWinter").checked = !!(p && p.feedWinter);
   showSettle(p);
   $("#fMin").value = p && hasMin(p) ? p.minTemp : "";
   $("#fCold").checked = p ? p.coldAlert !== false : true;
@@ -526,11 +602,13 @@ function openDialog(id){
   $("#fVis").hidden = !online;
   $("#fVis").innerHTML = visBlock(editVis.visibility, false);
   renderJBox();
+  if(p) drawFeedChoices(p);
   dlg.showModal();
   if(!p) $("#fName").focus();
 }
 
 $("#fSpecies").addEventListener("change", () => {
+  if(editingId) drawFeedChoices(plantById(editingId));
   const pr = presetFor($("#fSpecies").value), was = formKB;
   formKB = pr;
   if(!pr){ showPresetNote(); return; }
@@ -567,6 +645,10 @@ $("#dlgSave").addEventListener("click", async () => {
     if(online && visOf(p) !== data.visibility) addLog(p.id, "share", data.visibility === "vault" ? "Moved to the Vault" : "Shared with friends");
     Object.assign(p, data);
     p.own = KB.ownOf(p);
+    /* Feeding and repotting: empty follows Alvor, so the key is left out. */
+    const setOwn = (k, v) => { if(v === "" || v == null) delete p[k]; else p[k] = +v; };
+    setOwn("fe", $("#fFe").value); setOwn("rpy", $("#fRpy").value);
+    if($("#fFeedWinter").checked && !$("#fFeedWinterRow").hidden) p.feedWinter = true; else delete p.feedWinter;
     if(editSel.zone) setZone(p, editSel.zone, editSel.planting);
   }else{
     const p = {id:uid(), created:new Date().toISOString(), ...data};

@@ -23,7 +23,7 @@
   else root.GardenAlerts = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-14.care-6";
+const VERSION = "2026-10-14.care-7";
 
 /* What Alvor knows about each kind of plant (lowest temperature, traits, watering) lives in plant-kb.js:
    in the browser it is loaded before this file, in notify it is copied in above it, in the tests it is required. */
@@ -71,7 +71,21 @@ const RULES = {
   /* Hardy plants harden as autumn cools and soften in a mild spell: the first cold after a mild week hits harder
      than the same cold in midwinter. Tropical plants never harden, so this is only for plants that take frost. */
   harden:{days:7, mild:8, cold:1, upTo:0, months:[9,10,11,12,1,2]},   // autumn and winter (spring frosts: "Cover new growth")
-  wind:{sheltered:20}
+  wind:{sheltered:20},
+  /* Feeding: days between feeds in the growing season, by how much feed the plant wants (plant-kb.js trait f:
+     0 none, 1 light, 2 regular, 3 heavy). 0 means never, 365 means once a year, early in the season. In the ground
+     roots find most of what they need: light feeders get nothing and regular ones a spring feed. */
+  feed:{
+    pot:{0:0, 1:28, 2:14, 3:7}, ground:{0:0, 1:0, 2:365, 3:21},
+    season:{from:3, to:9, fromDry:4},                 // growing season (hemisphere-adjusted); succulents start a month later
+    winter:2,                                         // "Keep feeding in winter" (grow lights, heated rooms): half as often
+    soon:3,                                           // the plant sheet says "soon" this many days before
+    spring:3,                                         // a once-a-year feed is due in the first months of the season
+    fresh:42                                          // fresh compost after repotting feeds a plant for about six weeks
+  },
+  /* Repotting (pots only): every plant-kb.js rp years, in spring, counted from the last "Repotted" in the journal
+     (or "Got it"). Due from a couple of months early, so a plant repotted in May is ready again the next March. */
+  repot:{months:[3,4,5], early:2}
 };
 
 /* Spanish (Spain, "tú"). Another language: add a table like this one and list it in TABLES. */
@@ -145,6 +159,20 @@ const ES = {
   "Gusts {when}: secure 1 plant":"Rachas {when}: sujeta 1 planta", "Gusts {when}: secure {n} plants":"Rachas {when}: sujeta {n} plantas",
   "1 plant can go back outside":"1 planta puede volver fuera", "{n} plants can go back outside":"{n} plantas pueden volver fuera",
   "Get 1 plant ready to move this week":"Prepara 1 planta para moverla esta semana", "Get {n} plants ready to move this week":"Prepara {n} plantas para moverlas esta semana",
+  "Ready for feeding":"Toca abonar", "A feed now keeps them growing well. Use what you used last time, at the strength on the label.":"Un abonado ahora las mantiene creciendo bien. Usa lo de la última vez, a la dosis de la etiqueta.",
+  "Time to repot":"Toca trasplantar", "Spring is the time: one pot size bigger, with fresh compost. If it's already in a big pot, replace the top few centimetres of compost instead.":"La primavera es el momento: una maceta un tamaño mayor, con sustrato nuevo. Si ya está en una maceta grande, cambia solo los primeros centímetros de sustrato.",
+  "fed today":"abonada hoy", "fed yesterday":"abonada ayer", "last fed {n} days ago":"abonada hace {n} días", "last fed {n} weeks ago":"abonada hace {n} semanas", "last fed {n} months ago":"abonada hace {n} meses",
+  "you skipped the last one":"te saltaste el último", "first feed of the season":"primer abonado de la temporada", "no feeding logged yet":"sin abonados registrados", "last time: {what}":"la última vez: {what}",
+  "every week":"cada semana", "every {n} weeks":"cada {n} semanas", "every {n} days":"cada {n} días", "once a year, in spring":"una vez al año, en primavera",
+  "{every}, {from} to {to}":"{every}, de {from} a {to}", "usually {every}":"normalmente {every}",
+  "kept feeding in winter, half as often":"se sigue abonando en invierno, la mitad de veces",
+  "resting until {month}: no feeding in winter":"en reposo hasta {month}: sin abonar en invierno",
+  "repotted {n} days ago: the fresh compost feeds it for about six weeks":"trasplantada hace {n} días: el sustrato nuevo la alimenta unas seis semanas",
+  "repotted {age} ago":"trasplantada hace {age}", "got it {age} ago, no repotting logged":"la tienes desde hace {age}, sin trasplantes registrados",
+  "1 month":"1 mes", "{n} months":"{n} meses", "1 year":"1 año", "{n} years":"{n} años",
+  "usually every year":"normalmente cada año", "usually every {n} years":"normalmente cada {n} años", "spring {y}":"primavera de {y}",
+  "1 plant is ready for feeding":"1 planta pide abono", "{n} plants are ready for feeding":"{n} plantas piden abono",
+  "1 pot could be repotted this spring":"1 maceta se podría trasplantar esta primavera", "{n} pots could be repotted this spring":"{n} macetas se podrían trasplantar esta primavera",
   "Tell Alvor when 1 plant was last watered":"Dile a Alvor cuándo regaste 1 planta", "Tell Alvor when {n} plants were last watered":"Dile a Alvor cuándo regaste {n} plantas"
 };
 const TABLES = {es:ES}, LOCALES = {en:"en-GB", es:"es-ES"};
@@ -643,8 +671,104 @@ function frostAction(p, t, s, hasGh, gh){
   return {key:"groundProtect", hopeless:tender && short >= 4};
 }
 
+/* ---------- Feeding and repotting ---------- */
+/* What's done lives in the plant's journal ("Fed", "Repotted", "Got it"), so it syncs and the server sees it too.
+   On the plant: fe (days between feeds, your own; 0 never; left out: Alvor's), feedWinter (keep feeding in winter),
+   feedSkip (the day you said "Skip this time"), rpy (years between repottings, your own; 0 never), rpSkip (the year
+   you said "Not this year"). Alvor never knows the soil: these are reminders from what you logged, nothing more. */
+const jLastEntry = (p, k) => (p.journal || []).filter(e => e && !e.del && e.k === k && e.d).reduce((a, e) => !a || e.d > a.d || (e.d === a.d && (+e.m || 0) > (+a.m || 0)) ? e : a, null);
+const monthName = m => new Date(Date.UTC(2026, m - 1, 15)).toLocaleDateString(LOCALES[lang] || "en-GB", {month:"long", timeZone:"UTC"});
+const monthOf = d => +String(d).slice(5, 7);
+/* The first day of the most recent season that started on north-month m (hemisphere-adjusted). */
+function seasonStartDay(today, m, s){
+  const am = seasonMonth(m, s), y = +today.slice(0, 4);
+  return `${monthOf(today) >= am ? y : y - 1}-${String(am).padStart(2, "0")}-01`;
+}
+const monthsBetween = (a, b) => { const A = a.split("-").map(Number), B = b.split("-").map(Number); return (B[0] - A[0]) * 12 + B[1] - A[1] - (B[2] < A[2] ? 1 : 0); };
+const agoMonths = m => m < 24 ? P(Math.max(1, m), "1 month", "{n} months") : P(Math.floor(m / 12), "1 year", "{n} years");
+function everyText(n){
+  if(n >= 180) return T("once a year, in spring");
+  if(n % 7 === 0) return n === 7 ? T("every week") : T("every {n} weeks", {n:n / 7});
+  return T("every {n} days", {n});
+}
+/* Alvor's feeding and repotting for this plant, and the plant's own values where it has them. */
+function feedPlan(p){
+  const F = RULES.feed, K = KB.feeding(p.species, p.genus), pot = p.planting !== "ground", Tr = traitsFor(p.species, p.genus);
+  const alvor = (pot ? F.pot : F.ground)[K.f] || 0;
+  return {f:K.f, pot, alvor, every:num(p.fe) ? Math.max(0, Math.round(+p.fe)) : alvor, own:num(p.fe),
+    from:Tr.d === 1 ? F.season.fromDry : F.season.from, to:F.season.to, winter:!!p.feedWinter,
+    rpAlvor:K.rp, rp:num(p.rpy) ? Math.max(0, Math.round(+p.rpy)) : K.rp, rpOwn:num(p.rpy)};
+}
+/* stage: due, soon, ok, rest (winter), fresh (just repotted), unknown (never logged: no reminders), none (never fed). */
+function feedState(p, ctx){
+  const s = ctx.settings || {}, today = ctx.today, F = RULES.feed, L = feedPlan(p);
+  const sm = seasonMonth(monthOf(today), s), inSeason = sm >= L.from && sm <= L.to;
+  const lastE = jLastEntry(p, "fed"), last = lastE ? lastE.d : null;
+  const skip = p.feedSkip && p.feedSkip <= today ? p.feedSkip : null;
+  const base = [last, skip].filter(Boolean).sort().pop() || null;
+  const r = {plan:L, last, what:(lastE && lastE.n) || "", inSeason, next:null, reasons:[]};
+  if(!L.every){ r.stage = "none"; r.why = L.own ? "own" : L.f === 0 ? "carnivorous" : "ground"; return r; }
+  const usual = L.every >= 180 ? everyText(L.every) : T("{every}, {from} to {to}", {every:everyText(L.every), from:monthName(seasonMonth(L.from, s)), to:monthName(seasonMonth(L.to, s))});
+  const rep = jLastEntry(p, "repotted");
+  if(L.pot && rep && rep.d <= today && daysBetween(rep.d, today) < F.fresh){
+    r.stage = "fresh"; r.next = addDays(rep.d, F.fresh);
+    r.reasons.push(T("repotted {n} days ago: the fresh compost feeds it for about six weeks", {n:daysBetween(rep.d, today)}));
+    return r;
+  }
+  const yearly = L.every >= 180;
+  if(!inSeason && (!L.winter || yearly)){
+    r.stage = "rest"; r.next = seasonStartDay(addDays(today, 200), L.from, s);
+    r.reasons.push(T("resting until {month}: no feeding in winter", {month:monthName(seasonMonth(L.from, s))}));
+    return r;
+  }
+  if(!base){ r.stage = "unknown"; r.reasons.push(T("no feeding logged yet"), T("usually {every}", {every:usual})); return r; }
+  const n = last ? daysBetween(last, today) : 0;
+  const agoT = base !== last ? T("you skipped the last one") : n <= 0 ? T("fed today") : n === 1 ? T("fed yesterday") : n < 14 ? T("last fed {n} days ago", {n}) : n < 60 ? T("last fed {n} weeks ago", {n:Math.floor(n / 7)}) : T("last fed {n} months ago", {n:Math.max(2, monthsBetween(base, today))});
+  const start = seasonStartDay(today, L.from, s);
+  if(yearly){
+    if(base >= start){ r.stage = "ok"; r.next = seasonStartDay(addDays(start, 400), L.from, s); }
+    else if(sm < L.from + F.spring){ r.stage = "due"; r.next = today; }
+    else { r.stage = "ok"; r.next = seasonStartDay(addDays(start, 400), L.from, s); }   // missed this spring: next year
+  }else{
+    const eff = inSeason ? L.every : L.every * F.winter;
+    r.next = addDays(base, eff);
+    if(inSeason && r.next < start) r.next = start;   // the first feed of the season
+    const left = daysBetween(today, r.next);
+    r.stage = left <= 0 ? "due" : left <= F.soon ? "soon" : "ok";
+  }
+  r.reasons.push(agoT);
+  if(r.stage === "due" && inSeason && base < start) r.reasons.push(T("first feed of the season"));
+  r.reasons.push(T("usually {every}", {every:usual}));
+  if(!inSeason) r.reasons.push(T("kept feeding in winter, half as often"));
+  if(r.what && r.stage === "due") r.reasons.push(T("last time: {what}", {what:r.what.length > 60 ? r.what.slice(0, 57) + "…" : r.what}));
+  return r;
+}
+/* stage: due (in the spring window), next (ready, but the window is later), ok, unknown (nothing logged), ground, none. */
+function repotState(p, ctx){
+  const s = ctx.settings || {}, today = ctx.today, R = RULES.repot, L = feedPlan(p);
+  const r = {rp:L.rp, alvor:L.rpAlvor, own:L.rpOwn, last:null, got:null, next:null, reasons:[]};
+  if(!L.pot){ r.stage = "ground"; return r; }
+  if(!L.rp){ r.stage = "none"; return r; }
+  const rep = jLastEntry(p, "repotted"), got = jLastEntry(p, "acquired");
+  r.last = rep ? rep.d : null; r.got = got ? got.d : null;
+  const since = r.last || r.got;
+  if(!since || since > today){ r.stage = "unknown"; return r; }
+  const readyFrom = (() => { const [y, m, d] = since.split("-").map(Number), t = (m - 1) + L.rp * 12 - R.early; return `${y + Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, "0")}-${String(Math.min(d, 28)).padStart(2, "0")}`; })();
+  const ago = agoMonths(monthsBetween(since, today));
+  r.reasons.push(r.last ? T("repotted {age} ago", {age:ago}) : T("got it {age} ago, no repotting logged", {age:ago}));
+  r.reasons.push(L.rp === 1 ? T("usually every year") : T("usually every {n} years", {n:L.rp}));
+  /* The next spring window at or after the day it's ready (this one if it's still open and not skipped). */
+  let y = +readyFrom.slice(0, 4);
+  const startOf = Y => `${Y}-${String(seasonMonth(R.months[0], s)).padStart(2, "0")}-01`;
+  const endOf = Y => addDays(`${Y}-${String(seasonMonth(R.months[R.months.length - 1], s)).padStart(2, "0")}-28`, 3);
+  while(endOf(y) < readyFrom || endOf(y) < today || String(y) === String(p.rpSkip)) y++;
+  r.next = startOf(y); r.nextYear = y;
+  r.stage = readyFrom <= today && today >= startOf(y) && today <= endOf(y) ? "due" : readyFrom <= today ? "next" : "ok";
+  return r;
+}
+
 /* ---------- All alerts ---------- */
-const ORDER = [...COLD_KEYS, "heater", "frostOk", "vent", "heat", "wind", "settleSun", "water", "rainWill", "waterUnknown", "plan", "goOut"];
+const ORDER = [...COLD_KEYS, "heater", "frostOk", "vent", "heat", "wind", "settleSun", "water", "rainWill", "waterUnknown", "feed", "repot", "plan", "goOut"];
 const RANK = {danger:0, warn:1, heat:2, wind:3, water:4, info:5};
 const BASE = {
   bringIn:() => ({title:T("Bring inside"), text:T("Cold is coming that these can't take outside."), move:"inside"}),
@@ -823,6 +947,13 @@ function compute(plants, ctx){
         add("water", {level:"water", title:T("Needs water"), text:"", waterAll:true, feedback:["water","wet","fine","later"]}, {p, stage:st.stage, d:st.d, reasons:st.reasons});
     }
     if(groups.water) groups.water.items.sort((a, b) => b.d - a.d);
+    // Feeding and repotting: only for plants whose feeding (or repotting, or "Got it") is in the journal.
+    for(const p of plants){
+      const f = feedState(p, ctx);
+      if(f.stage === "due") add("feed", {level:"info", title:T("Ready for feeding"), text:T("A feed now keeps them growing well. Use what you used last time, at the strength on the label."), feedAll:true, feedback:["fed","skip"]}, {p, reasons:f.reasons});
+      const rp = repotState(p, ctx);
+      if(rp.stage === "due") add("repot", {level:"info", title:T("Time to repot"), text:T("Spring is the time: one pot size bigger, with fresh compost. If it's already in a big pot, replace the top few centimetres of compost instead."), feedback:["repotted","notYear"]}, {p, reasons:rp.reasons});
+    }
   }
 
   return ORDER.filter(k => groups[k]).map(k => ({key:k, ...groups[k]}))
@@ -830,7 +961,7 @@ function compute(plants, ctx){
 }
 
 /* ---------- Garden today: what matters now ---------- */
-/* lines: {kind:"frost"|"heat"|"wind"|"sun"|"water"|"rain"|"soon"|"move"|"unknown", text, ids, urgent}. */
+/* lines: {kind:"frost"|"heat"|"wind"|"sun"|"water"|"rain"|"soon"|"feed"|"repot"|"move"|"unknown", text, ids, urgent}. */
 function gardenToday(groups, plants, ctx){
   plants = inGarden(plants);
   if(ctx.lang) setLang(ctx.lang);
@@ -866,6 +997,8 @@ function gardenToday(groups, plants, ctx){
   if(soonIds.length) lines.push({kind:"soon", urgent:false, ids:soonIds, text:P(soonIds.length, "1 more may need water soon", "{n} more may need water soon")});
   const out = by("goOut"); if(out.length){ const n = ids(out).length; lines.push({kind:"move", urgent:false, ids:ids(out), text:P(n, "1 plant can go back outside", "{n} plants can go back outside")}); }
   const plan = by("plan"); if(plan.length){ const n = ids(plan).length; lines.push({kind:"move", urgent:false, ids:ids(plan), text:P(n, "Get 1 plant ready to move this week", "Get {n} plants ready to move this week")}); }
+  const feed = by("feed"); if(feed.length){ const n = ids(feed).length; lines.push({kind:"feed", urgent:false, ids:ids(feed), text:P(n, "1 plant is ready for feeding", "{n} plants are ready for feeding")}); }
+  const repot = by("repot"); if(repot.length){ const n = ids(repot).length; lines.push({kind:"repot", urgent:false, ids:ids(repot), text:P(n, "1 pot could be repotted this spring", "{n} pots could be repotted this spring")}); }
   const unk = by("waterUnknown"); if(unk.length){ const n = ids(unk).length; lines.push({kind:"unknown", urgent:false, ids:ids(unk), text:P(n, "Tell Alvor when 1 plant was last watered", "Tell Alvor when {n} plants were last watered")}); }
 
   const urgent = lines.some(l => l.urgent);
@@ -880,13 +1013,15 @@ function gardenToday(groups, plants, ctx){
 
 /* ---------- Phone notifications ---------- */
 /* Short text for a phone notification. Returns null when there is nothing worth sending.
-   Quiet groups (not sure about watering, nothing to do) never cause a notification. */
-const QUIET = ["frostOk", "waterUnknown"];
+   Quiet groups (not sure about watering, nothing to do) never cause a notification. Feeding and repotting are
+   weekend jobs: they join the Saturday morning message only. */
+const QUIET = ["frostOk", "waterUnknown"], WEEKEND = ["feed", "repot"];
 function summarize(groups, ctx){
   if(ctx.lang) setLang(ctx.lang);
   const W = splitWeather(ctx.daily, ctx.today, ctx.hourly);
   const evening = ctx.mode === "evening";
-  const loud = groups.filter(g => !QUIET.includes(g.key));
+  const saturday = new Date(utc(ctx.today)).getUTCDay() === 6;
+  const loud = groups.filter(g => !QUIET.includes(g.key) && (saturday || !WEEKEND.includes(g.key)));
   const lines = loud.map(g => {
     const names = g.items.map(i => i.p.name);
     const list = names.length > 4 ? T("{list} and {n} more", {list:names.slice(0, 4).join(", "), n:names.length - 4}) : names.join(", ");
@@ -912,5 +1047,6 @@ function summarize(groups, ctx){
 return {VERSION, inGarden, RULES, KB, setLang, ES, LOC, ALLOWED, deg, degCold, nightWord, daysBetween, addDays, speciesKey, traitsFor, intervalsFor,
   weatherUrl, metUrl, fetchForecast, fromMet, withPast, sunTimes, localTime, WX, splitWeather, hargreaves, nightHours, seasonMonth, interval, placeOf, rainReach, frostBonus,
   waterState, waterStatus, feedback, learned, STAGES, STAGE_TEXT, effMin, spotLow, ghLow, roomLow, coldLimit, coldOn, frostAction, dayRisks, heatHit,
-  compute, gardenToday, summarize, COLD_KEYS, moveRecord, settling, softness, sunnyDay, zoneArea};
+  compute, gardenToday, summarize, COLD_KEYS, moveRecord, settling, softness, sunnyDay, zoneArea,
+  feedPlan, feedState, repotState, everyText, monthName};
 });

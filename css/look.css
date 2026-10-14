@@ -376,3 +376,23 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .lt-room input{width:108px;flex:none;text-align:right}
 .lt-note{margin:2px 0 6px;color:var(--muted);font-size:.82rem}
 .lt-u{color:var(--muted);font-size:.85rem}
+
+/* Feeding and repotting: soil brown, so it never reads as water (teal), cold (blue) or heat (orange) */
+:root{--soil:#7B5A3E;--soil-bg:#F1E7DB}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--soil:#DDB894;--soil-bg:#33281E}}
+:root[data-theme="dark"]{--soil:#DDB894;--soil-bg:#33281E}
+.t-care{--a-ic:var(--soil-bg);--a-ink:var(--soil)}
+.gt-line.k-feed .gt-ic,.gt-line.k-repot .gt-ic{background:var(--soil-bg);color:var(--soil)}
+.gt-line.k-feed,.gt-line.k-repot{font-weight:500}
+.f-feed{background:var(--soil-bg);color:var(--soil)}
+.k-fed{--jk:#8A6A2E}
+.feed-box #feedNow{display:flex;flex-direction:column;gap:8px}
+.care-now.feed-now{background:color-mix(in srgb,var(--soil-bg) 75%,transparent)}
+.care-now.feed-now > b{display:flex;align-items:center;gap:6px;color:var(--soil)}
+.care-now.feed-now > b svg{width:18px;height:18px;flex-shrink:0}
+.care-now.fs-due > b,.care-now.rs-due > b{color:#9A4E1C}
+.care-now.fs-unknown > b,.care-now.rs-unknown > b,.care-now.fs-none > b,.care-now.rs-none > b,.care-now.fs-rest > b{color:var(--muted, #6B6F6A)}
+.feed-sel{display:grid;gap:0;margin-top:10px}
+.feed-box select{width:100%}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .care-now.fs-due > b,:root:not([data-theme="light"]) .care-now.rs-due > b{color:#F0A56B}}
+:root[data-theme="dark"] .care-now.fs-due > b,:root[data-theme="dark"] .care-now.rs-due > b{color:#F0A56B}

@@ -89,14 +89,17 @@ function alertLook(g){
   if(g.key === "rainWill") return {type:"water", icon:"drop", label:tr("Watering"), title:tr("Skip these, rain is coming"), lead:g.text};
   if(g.key === "waterUnknown") return {type:"water", icon:"drop", label:tr("Watering"), title:tr("Not sure about these"), lead:g.text};
   if(g.key === "settleSun") return {type:"info", icon:"sun", label:tr("Heads-up"), title:g.title, lead:g.text};
+  if(g.key === "feed") return {type:"care", icon:"feed", label:tr("Feeding and repotting"), title:trn(n, "{n} plant is ready for feeding", "{n} plants are ready for feeding"), lead:g.text};
+  if(g.key === "repot") return {type:"care", icon:"repot", label:tr("Feeding and repotting"), title:tr("Time to repot"), lead:g.text};
   if(g.key === "goOut") return {type:"info", icon:"move", label:tr("Good news"), title:tr("Safe to move outside"), lead:g.text};
   return {type:"info", icon:"move", label:tr("Heads-up"), title:g.title, lead:g.text};
 }
 /* Feedback on a suggestion, under each plant: what the gardener actually found. */
-const FB = {water:tr("Watered"), wet:tr("Already wet"), fine:tr("Looks fine"), later:tr("Later"), settled:tr("It's used to it")};
+const FB = {water:tr("Watered"), wet:tr("Already wet"), fine:tr("Looks fine"), later:tr("Later"), settled:tr("It's used to it"),
+  fed:tr("Fed"), skip:tr("Skip this time"), repotted:tr("Repotted…"), notYear:tr("Not this year")};
 const fbRow = (g, p) => g.feedback ? `<span class="fb" role="group" aria-label="${tr("What did you find?")}">${g.feedback.map(k => `<button class="fb-b" data-act="fb" data-kind="${k}" data-id="${p.id}">${FB[k]}</button>`).join("")}</span>` : "";
 /* Garden today: what matters now, in a few lines, then plainly "nothing else is urgent". */
-const GT_ICON = {frost:"snow", heat:"heat", wind:"wind", sun:"sun", water:"drop", rain:"drop", soon:"drop", move:"move", unknown:"drop"};
+const GT_ICON = {frost:"snow", heat:"heat", wind:"wind", sun:"sun", water:"drop", rain:"drop", soon:"drop", feed:"feed", repot:"repot", move:"move", unknown:"drop"};
 function gardenTodayHtml(groups){
   const G = GA.gardenToday(groups, state.plants, ctx());
   return `<div class="acard gtoday ${G.lines.length ? "" : "t-calm"}">
@@ -134,6 +137,7 @@ function renderAlerts(groups){
       const ids = g.items.map(i => i.p.id).join(",");
       const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}">${tr("Mark as moved")}</button>`
         : g.waterAll ? `<button class="btn primary" data-act="waterAll" data-ids="${ids}">${tr("Mark all watered")}</button>`
+        : g.feedAll ? `<button class="btn primary" data-act="feedAll" data-ids="${ids}">${tr("Mark all fed")}</button>`
         : g.key === "frostOk" || g.key === "waterUnknown" ? ""
         : `<button class="btn primary" data-act="seePlants" data-ids="${ids}">${tr("See plants")}</button>`;
       return `<div class="a-sub">
@@ -171,13 +175,13 @@ function flagsFrom(groups){
   const put = (id, k) => { (f[id] ||= new Set()).add(k); };
   groups.forEach(g => g.items.forEach(i => {
     const k = COLD.includes(g.key) ? "frost" : g.key === "heat" || g.key === "vent" ? "heat" : g.key === "wind" ? "wind"
-      : g.key === "water" ? "water" : g.key === "plan" || g.key === "goOut" ? "move" : null;
+      : g.key === "water" ? "water" : g.key === "feed" ? "feed" : g.key === "plan" || g.key === "goOut" ? "move" : null;
     if(k) put(i.p.id, k);
     if(g.move) put(i.p.id, "move");
   }));
   return f;
 }
-const FLAG_INFO = {frost:["snow",tr("Too cold")], heat:["heat",tr("Too hot")], wind:["wind",tr("Strong wind")], water:["drop",tr("Needs water")], move:["move",tr("Time to move")]};
+const FLAG_INFO = {frost:["snow",tr("Too cold")], heat:["heat",tr("Too hot")], wind:["wind",tr("Strong wind")], water:["drop",tr("Needs water")], move:["move",tr("Time to move")], feed:["feed",tr("Ready for feeding")]};
 const flagIcons = id => [...(plantFlags[id] || [])].sort().map(k => `<span class="flag f-${k}" title="${FLAG_INFO[k][1]}" aria-label="${FLAG_INFO[k][1]}">${ICON[FLAG_INFO[k][0]]}</span>`).join("");
 
 /* ---------- The illustrated scene ---------- */

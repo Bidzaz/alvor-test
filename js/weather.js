@@ -23,6 +23,7 @@ const waterStatus = (p, W) => GA.waterStatus(p, W, ctx(), state.plants);
 const effMin = (p, d) => GA.effMin(p, d, state.settings);
 const coldLimit = p => GA.coldLimit(p, state.settings, {W:wx(), today:today()});
 const buildAlerts = () => GA.compute(state.plants, ctx());
+const feedState = p => GA.feedState(p, ctx()), repotState = p => GA.repotState(p, ctx());
 
 /* Weather codes (WMO) to a sky type */
 function sky(code){
