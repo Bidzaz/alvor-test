@@ -22,6 +22,7 @@ initAuth().then(async () => {
     return;
   }
   fillAccount();
+  render();   // what needs the account (the "+" on Locations' cards, Discoveries in More) appears now, not at the next change
   await pull();
   syncLang();
   loadCircle();

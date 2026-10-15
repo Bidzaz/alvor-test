@@ -77,8 +77,8 @@ alvor-data.json   Todo lo que el servidor de Alvor guarda sobre ti: el correo co
                   que entras, tu perfil, ajustes y ubicación, cada planta con sus notas
                   y cuidados y su diario (también las del Archivo), tus tareas del jardín,
                   tu historial, amigos, solicitudes, bloqueos, invitaciones, los esquejes
-                  que pediste o te pidieron, las reacciones y comentarios que escribiste
-                  y las denuncias que enviaste.
+                  que pediste o te pidieron, las reacciones y comentarios que escribiste,
+                  las denuncias que enviaste y tus descubrimientos.
                   Se abre con cualquier editor de texto.
 photos/           Todas las fotos, a tamaño completo, en una carpeta por planta.
 profile-photo.jpg Tu foto de perfil, si tienes una.
@@ -94,7 +94,7 @@ alvor-data.json   Everything Alvor's server keeps about you: your sign-in email,
                   care details and its journal (those in the Archive too), your garden
                   tasks, your history, friends, requests, blocks, invitations, the
                   cuttings you asked for or were asked for, reactions and comments
-                  you wrote, and reports you sent.
+                  you wrote, reports you sent, and your discoveries.
                   It opens in any text editor.
 photos/           Every photo, at full size, in a folder per plant.
 profile-photo.jpg Your profile photo, if you have one.
@@ -113,6 +113,8 @@ async function downloadMyData(){
     await push(); await syncPhotos();
     st(tr("Collecting your data…"));
     const data = must(await sb.rpc("export_my_data"));
+    // Discoveries (part 11): which ones, when, and what earned them. Left out if the table isn't there yet.
+    try{ const r = await sb.from("discoveries").select("discovery,unlocked_at,qualified_on,evidence,seen_at").eq("owner_id", me.id); if(!r.error && r.data) data.discoveries = r.data; }catch(e){}
     const enc = new TextEncoder(), files = [], now = new Date();
     files.push({name:"README.txt", data:enc.encode(DATA_README), date:now});
     files.push({name:"alvor-data.json", data:enc.encode(JSON.stringify(data, null, 2)), date:now});

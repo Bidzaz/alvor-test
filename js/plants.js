@@ -99,11 +99,12 @@ function renderLog(){
 
 /* ---------- Actions ---------- */
 /* Watering and feedback go through the care engine, which also notes what it had estimated (for learning). */
-function water(ids, single){
+/* fb: given as the answer to one of Alvor's watering suggestions (after checking the soil), not a plain tap. */
+function water(ids, single, fb){
   const c = ctx(), W = wx();
   ids.forEach(id => { const p = state.plants.find(x => x.id === id); if(!p) return;
     const f = GA.feedback(p, "water", W, c, state.plants, {single:!!single});
-    Object.assign(p, f.patch); addLog(id, "water", "Watered", {est:f.log.est, stage:f.log.stage}); });
+    Object.assign(p, f.patch); addLog(id, "water", "Watered", {est:f.log.est, stage:f.log.stage, ...(fb ? {fb:1} : {})}); });
   save(); render(); refreshCareBox(); toast(ids.length > 1 ? tr("{n} plants watered", {n:ids.length}) : tr("Watered"));
 }
 /* Feeding: a "Fed" entry in each plant's journal, with what was used last time (change it in the journal).
@@ -133,7 +134,7 @@ function repotNotYear(id){
   toast(tr("Alvor will ask again next spring."));
 }
 function careFeedback(id, kind){
-  if(kind === "water") return water([id], true);
+  if(kind === "water") return water([id], true, true);
   if(kind === "fed") return feedPlants([id]);
   if(kind === "skip"){ const p = plantById(id); if(!p) return; p.feedSkip = today(); save(); render(); refreshCareBox(); return toast(tr("Skipped. Alvor counts the next feed from today.")); }
   if(kind === "repotted") return openMs(id, null, {k:"repotted"});
@@ -162,15 +163,40 @@ function setZone(p, z, planting){
   jNoteMove(p);   // and in its journal
   return true;
 }
-/* From alert buttons: "inside", "greenhouse" or "outside"; goes back to the plant's usual spot. */
-function moveGroup(ids, to){
+/* From alert buttons: "inside", "greenhouse" or "outside"; goes back to the plant's usual spot.
+   wx: the warning it answered (frost, heat, wind), kept on the move in the history and the journal. */
+function moveGroup(ids, to, wx){
   ids.forEach(id => {
     const p = state.plants.find(x => x.id === id); if(!p) return;
     const z = to === "inside" ? (p.lastInside || "house-window") : to === "greenhouse" ? "greenhouse" : (p.lastOutside || (isApt() ? "balc-sun" : "out-sun"));
-    setZone(p, z, "pot");
+    if(!setZone(p, z, "pot") || !WX_KINDS.includes(wx)) return;
+    const l = state.log[0];
+    if(l && l.plantId === p.id && l.type === "move"){
+      l.wx = wx;
+      const e = (p.journal || []).find(x => x.id === jLogId(l));
+      if(e) jPut(p, {...e, wx});
+    }
   });
   save(); render(); toast(tr("Moved"));
 }
+const WX_KINDS = ["frost", "heat", "wind"];
+/* "Mark as protected" under a frost plan (fleece, wrap the pots, protect the crown…): a "Protected from cold" entry
+   in each plant's journal, saying what was done. Once a day per plant, so a second tap adds nothing. */
+function protectGroup(ids, what, wx){
+  const d = today(); let n = 0;
+  ids.forEach(id => {
+    const p = state.plants.find(x => x.id === id); if(!p) return;
+    n++;
+    if(jEntries(p).some(e => e.k === "protected" && e.d === d)) return;
+    jPut(p, {id:uid(), d, k:"protected", ...(what ? {n:String(what).slice(0, 200)} : {}), ...(WX_KINDS.includes(wx) ? {wx} : {})});
+    addLog(id, "protect", "Protected from cold", WX_KINDS.includes(wx) ? {wx} : null);
+  });
+  if(!n) return;
+  save(); render(); refreshJournal();
+  toast(n > 1 ? tr("{n} plants marked as protected", {n}) : tr("Marked as protected"));
+}
+/* Already protected today (the frost plan then says so instead of offering the button again). */
+const protectedToday = ids => ids.length > 0 && ids.every(id => { const p = state.plants.find(x => x.id === id); return p && jEntries(p).some(e => e.k === "protected" && e.d === today()); });
 
 /* A two-step spot picker: area, then light (and pot or ground outside). Used by Move, Add and Edit. */
 /* The spot picker follows the way people think: where roughly, then the details, then pot or ground only where both are possible. */
@@ -238,7 +264,8 @@ document.addEventListener("click", e => {
   else if(act === "feedAll") feedPlants(ids);
   else if(act === "fedOn"){ const p = plantById(b.dataset.id), last = p && jEntries(p).filter(x => x.k === "fed").sort((x, y) => x.d < y.d ? -1 : 1).pop(); openMs(b.dataset.id, null, {k:"fed", n:(last && last.n) || ""}); }
   else if(act === "move") openMove(b.dataset.id);
-  else if(act === "moveAll") moveGroup(ids, b.dataset.to);
+  else if(act === "moveAll") moveGroup(ids, b.dataset.to, b.dataset.wx);
+  else if(act === "protectAll") protectGroup(ids, b.dataset.what, b.dataset.wx);
   else if(act === "seePlants"){ idsFilter = ids; showTab("plants"); renderPlants(); }
   else if(act === "clearIds"){ idsFilter = null; renderPlants(); }
   else if(act === "sceneBack") goScene("overview");

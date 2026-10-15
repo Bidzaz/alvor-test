@@ -132,6 +132,7 @@ $("#balcRain").addEventListener("change", e => { state.settings.balconyRain = e.
 /* ---------- Settings ---------- */
 function fillSettings(){
   fillHome();
+  renderDiscCard();
   const s = state.settings;
   fillLocation();
   const hours = (a, b) => Array.from({length:b - a + 1}, (_, i) => a + i).map(h => `<option value="${h}">${pad(h)}:00</option>`).join("");
@@ -214,6 +215,9 @@ $("#resetBtn").addEventListener("click", () => {
   if(!confirm(token ? tr("Delete all plants and history, on this phone and in your account? Export a backup first if you might want them back.") : tr("Delete all plants and history on this device? Export a backup first if you might want them back."))) return;
   const s = state.settings, acct = state.account; state = defaults(); state.settings = s; if(acct) state.account = acct; save();
   idb.clear().catch(() => {}); photos = {};
+  // The garden starts again, and so do its discoveries (in the account too).
+  if(token && sb){ sb.rpc("discoveries_reset").then(() => {}, () => {}); }
+  discForget();
   render(); toast(tr("Everything deleted"));
 });
 

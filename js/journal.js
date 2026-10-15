@@ -35,7 +35,7 @@ const JK = {
   repotted:{label:tr("Repotted"), hint:tr("Pot size, the compost you used…")},
   fed:{label:tr("Fed"), hint:tr("What you used, and how strong…")},
   propagated:{label:tr("Propagated"), hint:tr("Cuttings, division, seeds, who got one…")},
-  protected:{label:tr("Protected for winter"), hint:tr("Fleece, wrapped the trunk, mulched the roots…")},
+  protected:{label:tr("Protected from cold"), hint:tr("Fleece, wrapped the trunk, mulched the roots, covered the new growth…")},
   unprotected:{label:tr("Protection off"), hint:tr("Took the fleece or wrapping off…")},
   moved:{label:tr("Moved"), hint:tr("Where to, and why…")},
   issue:{label:tr("Problem noticed"), hint:tr("What you saw, and what you did about it…")},
@@ -144,7 +144,7 @@ function jItemHtml(it, p){
   if(it.type === "ms"){
     const e = it.e, k = JK[e.k] ? e.k : "note", img = e.ph && ph(e.ph);
     return `<button type="button" class="jr-item k-${k}" data-j="edit" data-e="${esc(e.id)}"><span class="jr-ic">${JI[k]}</span>
-      <span class="jr-txt"><b>${JK[k].label}</b><small>${jDate(e.d)}</small>${e.n ? `<span class="jr-note">${esc(e.n)}</span>` : ""}</span>
+      <span class="jr-txt"><b>${JK[k].label}</b><small>${jDate(e.d)}</small>${e.n ? `<span class="jr-note">${esc(e.n)}</span>` : ""}${typeof discMarks === "function" ? discMarks(p, e) : ""}</span>
       ${img ? `<img class="jr-img" src="${img.data}" alt="">` : ""}</button>`;
   }
   if(it.type === "photos") return `<div class="jr-item k-photo"><span class="jr-ic">${JI.photo}</span><span class="jr-txt"><b>${trn(it.list.length, "{n} photo", "{n} photos")}</b><small>${jDate(it.d)}</small>

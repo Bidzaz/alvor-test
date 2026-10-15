@@ -6,7 +6,7 @@
   --frost:#2F7AB0; --frost-bg:#DDECF7; --heat:#A4531D; --heat-bg:#FBE4D0;
   --radius-lg:22px; --radius-sm:12px;
   --shadow:0 1px 2px rgba(40,60,40,.05), 0 6px 20px rgba(40,70,40,.07);
-  --head:"Nunito", "Segoe UI", system-ui, sans-serif; --body:"Nunito", "Segoe UI", system-ui, sans-serif;
+  --head:"Manrope", "Segoe UI", system-ui, sans-serif; --body:"Manrope", "Segoe UI", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#141A16; --surface:#1C241E; --ink:#E6EDE7; --muted:#9DAAA1; --line:#2C3830; --fern:#7CB88E; --fern-soft:#223328; --on-fern:#0E1711; --shadow:none; } }
 :root[data-theme="dark"]{ --bg:#141A16; --surface:#1C241E; --ink:#E6EDE7; --muted:#9DAAA1; --line:#2C3830; --fern:#7CB88E; --fern-soft:#223328; --on-fern:#0E1711; --shadow:none; }

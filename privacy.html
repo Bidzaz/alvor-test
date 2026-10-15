@@ -8,7 +8,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#F5F4EC; --surface:#FFFFFF; --ink:#223127; --muted:#6B7970; --line:#E2E5DA;
@@ -19,14 +19,14 @@
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%}
-body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:500 16px/1.5 "Nunito","Segoe UI",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Manrope","Segoe UI",system-ui,sans-serif;-webkit-text-size-adjust:100%}
 main{max-width:460px;margin:0 auto;padding:28px 18px 40px}
-h1,h2{font-weight:800;line-height:1.15;margin:0;letter-spacing:-.01em}
+h1,h2{font-weight:700;line-height:1.15;margin:0;letter-spacing:-.01em}
 .logo{display:flex;align-items:center;gap:10px;margin-bottom:22px}
 .logo svg{width:44px;height:44px}
-.logo b{font-size:1.5rem;font-weight:800;color:var(--fern)}
+.logo b{font-size:1.5rem;font-weight:700;color:var(--fern)}
 .hero{display:flex;align-items:center;gap:14px;margin-bottom:8px}
-.av{width:60px;height:60px;border-radius:50%;overflow:hidden;background:var(--fern-soft);color:var(--fern);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;flex-shrink:0}
+.av{width:60px;height:60px;border-radius:50%;overflow:hidden;background:var(--fern-soft);color:var(--fern);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.5rem;flex-shrink:0}
 .av img{width:100%;height:100%;object-fit:cover;display:block}
 .hero h1{font-size:1.6rem}
 .lead{color:var(--muted);font-weight:600;margin:6px 0 22px}
@@ -35,11 +35,11 @@ h1,h2{font-weight:800;line-height:1.15;margin:0;letter-spacing:-.01em}
 .num{width:28px;height:28px;border-radius:50%;background:var(--fern);color:var(--on-fern);display:inline-flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
 .step p{margin:0 0 12px;color:var(--muted);font-size:.93rem}
 .step p:last-child{margin-bottom:0}
-.btn{display:flex;align-items:center;justify-content:center;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:13px 16px;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:13px 16px;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
 .btn.primary{background:var(--fern);border-color:var(--fern);color:var(--on-fern);box-shadow:0 3px 10px color-mix(in srgb,var(--fern) 30%,transparent)}
 .btn+.btn{margin-top:10px}
 .small{font-size:.86rem;color:var(--muted)}
-.linkish{background:none;border:0;padding:0;font:inherit;color:var(--fern);font-weight:800;text-decoration:underline;cursor:pointer}
+.linkish{background:none;border:0;padding:0;font:inherit;color:var(--fern);font-weight:700;text-decoration:underline;cursor:pointer}
 .warn{background:var(--fern-soft);border-radius:14px;padding:10px 12px;font-size:.88rem;color:var(--ink);margin:0 0 12px}
 .foot{text-align:center;margin-top:20px}
 [hidden]{display:none!important}
@@ -56,7 +56,7 @@ li{margin:3px 0}
 a{color:var(--fern);font-weight:700}
 .tbl{width:100%;border-collapse:collapse;font-size:.93rem;margin:4px 0 10px}
 .tbl th,.tbl td{text-align:left;vertical-align:top;padding:8px 10px;border-top:1px solid var(--line)}
-.tbl th{font-weight:800;border-top:0;color:var(--fern)}
+.tbl th{font-weight:700;border-top:0;color:var(--fern)}
 .short{background:var(--fern-soft);border-color:transparent}
 .short li{margin:5px 0}
 </style>
@@ -95,6 +95,7 @@ a{color:var(--fern);font-weight:700}
       <li><b>Your circle:</b> your friends, friend requests, the people you block, your friend link, who invited you and who you invited.</li>
       <li><b>What you write:</b> reactions and comments, any report you send, and the cuttings you ask friends for or they ask you for (the plant, the note and the answer).</li>
       <li><b>Notifications:</b> if you turn them on, an address for your phone given by its notification service, so Alvor can send the morning summary and the evening frost check.</li>
+      <li><b>Your discoveries:</b> which of Alvor's small discoveries you've found (a first flower, a plant's first year…), the day, and the plant or journal entry that earned each one. Alvor works them out from what's already in your account; they're never shown to friends or compared with anyone.</li>
       <li><b>Small counters:</b> how many plant identifications you made today, and which daily messages were already sent, to keep within limits.</li>
     </ul>
     <p>Alvor also keeps a copy of your garden and photos on your own phone, so it works without a connection. It doesn't use cookies.</p>
@@ -105,7 +106,7 @@ a{color:var(--fern);font-weight:700}
     <table class="tbl">
       <tr><th>Friends can see</th><th>Nobody else ever sees</th></tr>
       <tr><td>Your name, @username and profile photo; your garden's backdrop and town; and, for each plant you share, its name, species, spot and photos (except photos you hide), its happy moments (when you got it, new growth, flowering and fruiting, with the day and photo, unless you switch that off) and whether it has cuttings to share.</td>
-          <td>Your email, your notes, your plants' journals, your watering and activity history, your care settings, your exact location, and every plant you keep in the Vault.</td></tr>
+          <td>Your email, your notes, your plants' journals, your watering and activity history, your care settings, your exact location, your discoveries, and every plant you keep in the Vault.</td></tr>
     </table>
     <p>A friend who asks you for a cutting, and you, see the request, its note and the answer. Each plant has its own "Visible to" setting. If "Let people find me" is switched on, people can also find your name, @username and profile photo by searching. It's off unless you turn it on.</p>
   </section>
@@ -197,6 +198,7 @@ a{color:var(--fern);font-weight:700}
       <li><b>Tu círculo:</b> tus amigos, las solicitudes de amistad, las personas que bloqueas, tu enlace de amistad, quién te invitó y a quién invitaste.</li>
       <li><b>Lo que escribes:</b> reacciones y comentarios, cualquier denuncia que mandes, y los esquejes que pides a tus amigos o que ellos te piden (la planta, la nota y la respuesta).</li>
       <li><b>Avisos:</b> si los activas, una dirección de tu móvil que da su servicio de notificaciones, para que Alvor pueda mandarte el resumen de la mañana y el aviso de frío de la tarde.</li>
+      <li><b>Tus descubrimientos:</b> cuáles de los pequeños descubrimientos de Alvor has encontrado (una primera flor, el primer año de una planta…), el día y la planta o la entrada del diario que lo consiguió. Alvor los calcula a partir de lo que ya está en tu cuenta; nunca se muestran a tus amistades ni se comparan con nadie.</li>
       <li><b>Pequeños contadores:</b> cuántas identificaciones de plantas has hecho hoy y qué mensajes diarios ya se han enviado, para no pasarse de los límites.</li>
     </ul>
     <p>Alvor también guarda una copia de tu jardín y de tus fotos en tu propio móvil, para que funcione sin conexión. No usa cookies.</p>
@@ -207,7 +209,7 @@ a{color:var(--fern);font-weight:700}
     <table class="tbl">
       <tr><th>Tus amigos pueden ver</th><th>Nadie más ve nunca</th></tr>
       <tr><td>Tu nombre, tu @usuario y tu foto de perfil; el fondo y el pueblo de tu jardín; y, de cada planta que compartes, su nombre, especie, sitio y fotos (salvo las que ocultes), sus buenos momentos (cuándo la conseguiste, brotes nuevos, floraciones y frutos, con el día y la foto, salvo que lo desactives) y si tiene esquejes para compartir.</td>
-          <td>Tu correo, tus notas, el diario de tus plantas, tu historial de riego y de actividad, tus ajustes de cuidados, tu ubicación exacta y todas las plantas que guardas en la Cámara.</td></tr>
+          <td>Tu correo, tus notas, el diario de tus plantas, tu historial de riego y de actividad, tus ajustes de cuidados, tu ubicación exacta, tus descubrimientos y todas las plantas que guardas en la Cámara.</td></tr>
     </table>
     <p>Cuando un amigo te pide un esqueje, los dos veis la petición, su nota y la respuesta. Cada planta tiene su propio ajuste «Visible para». Si «Dejar que me encuentren» está activado, la gente también puede encontrar tu nombre, tu @usuario y tu foto de perfil buscando. Está desactivado salvo que lo actives.</p>
   </section>

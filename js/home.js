@@ -94,6 +94,10 @@ function alertLook(g){
   if(g.key === "goOut") return {type:"info", icon:"move", label:tr("Good news"), title:tr("Safe to move outside"), lead:g.text};
   return {type:"info", icon:"move", label:tr("Heads-up"), title:g.title, lead:g.text};
 }
+/* Which warning a group answers, kept with what you did about it (Weather Wise). */
+const alertWx = g => COLD.includes(g.key) ? "frost" : g.key === "heat" || g.key === "vent" ? "heat" : g.key === "wind" ? "wind" : "";
+/* Frost plans you carry out where the plant stands: they get "Mark as protected" (a journal entry), next to See plants. */
+const PROTECT_KEYS = ["potProtect", "groundProtect", "crownProtect", "mulchRoots", "springGrowth", "ghProtect"];
 /* Feedback on a suggestion, under each plant: what the gardener actually found. */
 const FB = {water:tr("Watered"), wet:tr("Already wet"), fine:tr("Looks fine"), later:tr("Later"), settled:tr("It's used to it"),
   fed:tr("Fed"), skip:tr("Skip this time"), repotted:tr("Repotted…"), notYear:tr("Not this year")};
@@ -136,8 +140,10 @@ function renderAlerts(groups){
     const chip = k.parts.map(x => x.L.chip).find(Boolean) || "";
     const title = k.type === "water" && k.parts.some(x => x.g.key === "water") ? k.parts.find(x => x.g.key === "water").L.title : head.title;
     const parts = k.parts.map(({g, L}) => {
-      const ids = g.items.map(i => i.p.id).join(",");
-      const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}">${tr("Mark as moved")}</button>`
+      const ids = g.items.map(i => i.p.id).join(","), wxk = alertWx(g);
+      const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}"${wxk && g.key !== "goOut" ? ` data-wx="${wxk}"` : ""}>${tr("Mark as moved")}</button>`
+        : PROTECT_KEYS.includes(g.key) ? (protectedToday(g.items.map(i => i.p.id)) ? `<p class="a-done">${ICON.check}${tr("Marked as protected today")}</p>`
+          : `<button class="btn primary" data-act="protectAll" data-ids="${ids}" data-wx="frost" data-what="${esc(g.title || L.title || "")}">${tr("Mark as protected")}</button><button class="btn" data-act="seePlants" data-ids="${ids}">${tr("See plants")}</button>`)
         : g.waterAll ? `<button class="btn primary" data-act="waterAll" data-ids="${ids}">${tr("Mark all watered")}</button>`
         : g.feedAll ? `<button class="btn primary" data-act="feedAll" data-ids="${ids}">${tr("Mark all fed")}</button>`
         : g.key === "frostOk" || g.key === "waterUnknown" ? ""

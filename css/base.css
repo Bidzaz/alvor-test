@@ -8,8 +8,8 @@
   --wind:#4F5A7A; --wind-bg:#E1E4EF;
   --info-bg:#DDEBE1; --house-bg:#E3E5EE;
   --radius-lg:18px; --radius-sm:10px;
-  --head:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --head:"Manrope", "Segoe UI", system-ui, sans-serif;   /* the one font Alvor loads (index.html, Google Fonts, 400 to 700) */
+  --body:"Manrope", "Segoe UI", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -313,3 +313,8 @@ dialog::backdrop{background:color-mix(in srgb,#000 45%,transparent)}
 .kb-card li{margin:2px 0}
 .kb-card p{margin:4px 0 0}
 .kb-card .status{font-size:.78rem}
+/* Reduced motion, everywhere: anything that slides, fades or breathes settles at once. The weather on the backdrop
+   is drawn still (js/home.js), and the Discoveries moment simply appears. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}

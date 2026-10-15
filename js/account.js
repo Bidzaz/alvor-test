@@ -31,6 +31,23 @@ async function callFn(name, body){
 const OFFLINE_MSG = tr("Couldn't reach Alvor. Changes stay on this phone and are saved next time.");
 const isAuthErr = e => e && (e.status === 401 || e.code === "PGRST301" || /jwt|refresh token/i.test(e.message || ""));
 const must = r => { if(r.error) throw r.error; return r.data; };
+/* Every row of a query. The database answers at most 1000 rows at a time, so a garden with more photos (or plants)
+   than that is read in pages: otherwise the photos past the first 1000 would look deleted on another phone.
+   Pages follow the key (id > the last one read), so a row added or deleted elsewhere meanwhile can't shift a page
+   and make another row look missing. */
+async function allRows(make, key){
+  const out = [];
+  let last = null;
+  for(;;){
+    let q = make().order(key).limit(1000);
+    if(last != null) q = q.gt(key, last);
+    const data = must(await q) || [];
+    out.push(...data);
+    if(data.length < 1000) break;
+    last = data[data.length - 1][key];
+  }
+  return out;
+}
 
 async function loadMe(session){
   token = session.access_token;
@@ -115,8 +132,8 @@ async function serverGarden(){
 }
 async function serverPlants(){
   const [priv, rows] = await Promise.all([
-    sb.from("plant_private").select("plant_id,data").eq("owner_id", me.id).then(must),
-    sb.from("plants").select("id,visibility").eq("owner_id", me.id).then(must)
+    allRows(() => sb.from("plant_private").select("plant_id,data").eq("owner_id", me.id), "plant_id"),
+    allRows(() => sb.from("plants").select("id,visibility").eq("owner_id", me.id), "id")
   ]);
   const vis = Object.fromEntries(rows.map(r => [r.id, r.visibility]));
   return priv.filter(r => vis[r.plant_id])
@@ -155,6 +172,7 @@ function syncGarden(){
   if(!token || !me) return Promise.resolve(false);
   if(syncing){ syncAgain = true; return syncing; }
   syncing = (async () => {
+    let sentNow = false;
     try{
       for(let round = 0; round < 3; round++){
         const M = syncMeta(), n0 = M.n || 0;
@@ -170,12 +188,15 @@ function syncGarden(){
         M.gone = m.gone; M.sAt = m.sAt; writeMeta();
         if(m.localChanged) applyMerged(m);
         const newRev = m.serverChanged ? await uploadMerged(m) : rev;
+        if(m.serverChanged) sentNow = true;
         M.seenAt = newRev;
         if((M.n || 0) === n0) M.dirty = false;
         writeMeta();
         break;
       }
-      setSync(tr("Saved to your account at {time}.", {time:hhmm()})); queuePhotoSync(); return true;
+      setSync(tr("Saved to your account at {time}.", {time:hhmm()})); queuePhotoSync();
+      discQueue(sentNow);   // Discoveries: the server looks at what was just saved (never sent from here)
+      return true;
     }catch(e){
       if(isAuthErr(e)){ sessionExpired(); return false; }
       setSync(OFFLINE_MSG); return false;
@@ -215,23 +236,32 @@ async function syncPhotos(){
         writeDels(readDels().filter(id => !dels.includes(id)));
       }
       const plantIds = new Set(allPlants().map(p => p.id));
-      const rows = must(await sb.from("photos").select("id,plant_id,path_large,taken_at,hidden").eq("owner_id", me.id));
+      const rows = await allRows(() => sb.from("photos").select("id,plant_id,path_large,taken_at,hidden").eq("owner_id", me.id), "id");
       const server = new Set(rows.map(r => r.id));
       const local = await idb.all(), localIds = new Set(local.map(p => p.id)), pendingDel = new Set(readDels());
-      // 2. New photos on this phone go up, large and small
+      // 2. New photos on this phone go up, large and small. One that fails (a weak connection, a plant not saved
+      //    to the account yet) waits for next time without holding up the others; the files are written with
+      //    "upsert", so a photo cut off half way is simply sent again, never doubled.
       const uploaded = new Set();
+      let failed = 0;
       for(const ph of local){
         if(ph.synced || !plantIds.has(ph.plantId) || !UUID_RE.test(String(ph.id))) continue;
-        if(!server.has(ph.id)){
-          setSync(tr("Saving photos…"));
-          must(await store.upload(phPath(ph.id, "l"), await dataToBlob(ph.data), {upsert:true, contentType:"image/jpeg"}));
-          must(await store.upload(phPath(ph.id, "s"), await smallJpeg(ph.data), {upsert:true, contentType:"image/jpeg"}));
-          must(await sb.from("photos").upsert({id:ph.id, plant_id:ph.plantId, owner_id:me.id, hidden:!!ph.hidden,
-            path_large:phPath(ph.id, "l"), path_small:phPath(ph.id, "s"), taken_at:new Date(ph.ts || Date.now()).toISOString()}));
-          delete ph.hideDirty; delete ph.dateDirty;
+        try{
+          if(!server.has(ph.id)){
+            setSync(tr("Saving photos…"));
+            must(await store.upload(phPath(ph.id, "l"), await dataToBlob(ph.data), {upsert:true, contentType:"image/jpeg"}));
+            must(await store.upload(phPath(ph.id, "s"), await smallJpeg(ph.data), {upsert:true, contentType:"image/jpeg"}));
+            must(await sb.from("photos").upsert({id:ph.id, plant_id:ph.plantId, owner_id:me.id, hidden:!!ph.hidden,
+              path_large:phPath(ph.id, "l"), path_small:phPath(ph.id, "s"), taken_at:new Date(ph.ts || Date.now()).toISOString()}));
+            delete ph.hideDirty; delete ph.dateDirty;
+          }
+          ph.synced = true; await idb.put(ph); uploaded.add(ph.id);
+        }catch(err){
+          if(isAuthErr(err)) throw err;
+          failed++;
         }
-        ph.synced = true; await idb.put(ph); uploaded.add(ph.id);
       }
+      if(uploaded.size) discQueue(true);   // a new photo can be a discovery (a first record, a season)
       // 2b. "Hide this photo" and "Change date": changes on this phone go up, changes from another phone come down
       const byId = Object.fromEntries(rows.map(r => [r.id, r]));
       for(const ph of local){
@@ -260,7 +290,8 @@ async function syncPhotos(){
         await idb.put({id:r.id, plantId:r.plant_id, date:ymd(at), ts:at.getTime(), data:await blobToData(blob), synced:true, hidden:!!r.hidden});
         changed = true;
       }
-      if(uploaded.size || changed) setSync(tr("Saved to your account at {time}.", {time:hhmm()}));
+      if(failed) setSync(trn(failed, "{n} photo isn't saved to your account yet. Alvor tries again next time.", "{n} photos aren't saved to your account yet. Alvor tries again next time."));
+      else if(uploaded.size || changed) setSync(tr("Saved to your account at {time}.", {time:hhmm()}));
     }catch(e){
       if(isAuthErr(e)) sessionExpired(); else setSync(tr("Some photos aren't saved to your account yet. Alvor tries again next time."));
     }finally{
@@ -428,7 +459,7 @@ async function signOut(){
   }catch(e){}
   try{ await sb.auth.signOut(); }catch(e){}
   token = ""; me = null;
-  circle = null; circleAt = 0; myLink = null; visit = null; cuts = null; cutsAt = 0; fSearch = {q:"", results:null}; admin = null; forgetTalk(); updateBadge(); fillAccount();
+  circle = null; circleAt = 0; myLink = null; visit = null; cuts = null; cutsAt = 0; fSearch = {q:"", results:null}; admin = null; forgetTalk(); discForget(); updateBadge(); fillAccount();
   if(currentTab === "friends" || currentTab === "friend") showTab("today");
   try{ localStorage.removeItem(USER_KEY); }catch(e){}
   const keep = state.settings; state = defaults(); state.settings = keep; saveLocal(); render();

@@ -192,7 +192,7 @@ h1,h2,h3{font-weight:700}
 .toolbar input[type=search]{background:var(--glass);border:1px solid var(--glass-bd);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:11px 16px;color:var(--ink)}
 .viewtog{background:var(--glass);border:1px solid var(--glass-bd)}
 .chip{background:var(--glass);border:1px solid var(--glass-bd);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font-weight:600;padding:7px 14px;color:var(--ink)}
-.chip[aria-pressed=true]{background:var(--fern);border-color:var(--fern);color:#fff}
+.chip[aria-pressed=true]{background:var(--fern);border-color:var(--fern);color:var(--on-fern,#fff)}   /* dark text on the lighter accents of dark mode */
 .plant{border-radius:22px!important;padding:12px!important;margin-bottom:10px}
 .plant .thumb{width:72px;height:72px;border-radius:18px;overflow:hidden}
 .pcard{border-radius:22px!important}
@@ -318,7 +318,9 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .a-body{grid-column:1/-1;margin-top:8px}
 .a-sub + .a-sub{border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent);margin-top:12px;padding-top:12px}
 .a-sub h4{margin:0 0 4px;font-size:.95rem}
-.a-sub .a-act{display:flex;justify-content:flex-end;margin-top:8px}
+.a-sub .a-act{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:8px}
+.a-done{display:flex;align-items:center;gap:6px;margin:0;color:var(--fern);font-weight:700;font-size:.9rem}
+.a-done svg{width:18px;height:18px}
 @media (prefers-reduced-motion: reduce){.a-chev{transition:none}}
 
 /* ===================== Care engine: Garden today, feedback, "why", spot details ===================== */

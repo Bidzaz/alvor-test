@@ -6,7 +6,7 @@
    One entry per genus, with its species under sp. A species adds to its genus and wins over it.
      n     common name in English (other languages: species-es.js…). Entries with a name are offered in the
            species search; entries without one are still used when someone types that plant.
-     f     family (genus only)
+     f     family (genus only; every genus has one, so "About this plant", A World of Leaves and Fern Friend can use it)
      min   lowest temperature (°C) before damage, for an established plant in the ground in a dry, sheltered spot.
            Pots are treated as 1 °C more tender by the care rules. Plants that die back and regrow (hostas, many
            perennials) get the cold their roots take. Typical values from nursery and hardiness references:
@@ -45,7 +45,7 @@
   else root.AlvorKB = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-15.kb-3";
+const VERSION = "2026-10-15.kb-4";
 const DATA = {
 "Abelia":{n:"Abelia", f:"Caprifoliaceae", min:-15, sp:{
   "x grandiflora":{n:"Glossy abelia"}
@@ -64,7 +64,7 @@ const DATA = {
 "Acanthus":{n:"Bear's breeches", f:"Acanthaceae", min:-15, sp:{
   "mollis":{n:"Bear's breeches"}
 }},
-"Acca":{min:-12, sp:{
+"Acca":{f:"Myrtaceae", min:-12, sp:{
   "sellowiana":{min:-12}
 }},
 "Acer":{n:"Maple", f:"Sapindaceae", min:-25, sp:{
@@ -78,8 +78,8 @@ const DATA = {
 "Aconitum":{n:"Monkshood", f:"Ranunculaceae", min:-30, sp:{
   "napellus":{n:"Monkshood"}
 }},
-"Acorus":{min:-25, t:{d:3}},
-"Actinidia":{min:-15, t:{s:-1}, sp:{
+"Acorus":{f:"Acoraceae", min:-25, t:{d:3}},
+"Actinidia":{f:"Actinidiaceae", min:-15, t:{s:-1}, sp:{
   "deliciosa":{min:-12, pat:"o", note:"Spring growth is killed by late frost even when the plant is fine."}
 }},
 "Adiantum":{n:"Maidenhair fern", f:"Pteridaceae", min:-15, t:{f:1,d:3}, sp:{
@@ -92,7 +92,7 @@ const DATA = {
   "arboreum":{n:"Tree aeonium", min:2},
   "haworthii":{n:"Haworth's aeonium", min:0}
 }},
-"Aeschynanthus":{min:13, pat:"i"},
+"Aeschynanthus":{f:"Gesneriaceae", min:13, pat:"i"},
 "Aesculus":{n:"Horse chestnut", f:"Sapindaceae", min:-30, sp:{
   "hippocastanum":{n:"Horse chestnut"}
 }},
@@ -148,20 +148,20 @@ const DATA = {
 "Aloysia":{n:"Lemon verbena", f:"Verbenaceae", min:-6, pat:"o", t:{r:-12}, note:"The top dies back in hard frost and usually regrows from the base.", sp:{
   "citrodora":{n:"Lemon verbena"}
 }},
-"Alpinia":{min:5, pat:"m"},
+"Alpinia":{f:"Zingiberaceae", min:5, pat:"m"},
 "Alstroemeria":{n:"Peruvian lily", f:"Alstroemeriaceae", min:-10},
 "Amaryllis":{n:"Amaryllis", f:"Amaryllidaceae", min:-5, sp:{
   "belladonna":{n:"Belladonna lily", min:-7}
 }},
-"Amorphophallus":{min:10, pat:"m", sp:{
+"Amorphophallus":{f:"Araceae", min:10, pat:"m", sp:{
   "konjac":{min:-8, pat:"o", note:"Tubers survive in dry, well-mulched ground."}
 }},
 "Anemone":{n:"Windflower", f:"Ranunculaceae", min:-25, sp:{
   "x hybrida":{n:"Japanese anemone"},
   "coronaria":{n:"Poppy anemone", min:-10}
 }},
-"Anethum":{min:-5},
-"Annona":{min:-2, pat:"g"},
+"Anethum":{f:"Apiaceae", min:-5},
+"Annona":{f:"Annonaceae", min:-2, pat:"g"},
 "Anthurium":{n:"Flamingo flower", f:"Araceae", min:15, pat:"i", sp:{
   "andraeanum":{n:"Flamingo flower"},
   "clarinervium":{n:"Velvet cardboard anthurium"}
@@ -179,7 +179,7 @@ const DATA = {
 "Arbutus":{n:"Strawberry tree", f:"Ericaceae", min:-15, sp:{
   "unedo":{n:"Strawberry tree"}
 }},
-"Archontophoenix":{min:0, pat:"m"},
+"Archontophoenix":{f:"Arecaceae", min:0, pat:"m"},
 "Argyranthemum":{n:"Marguerite", f:"Asteraceae", min:-2, pat:"m", sp:{
   "frutescens":{n:"Marguerite daisy"}
 }},
@@ -199,8 +199,8 @@ const DATA = {
 "Aruncus":{n:"Goat's beard", f:"Rosaceae", min:-30, sp:{
   "dioicus":{n:"Goat's beard"}
 }},
-"Arundo":{min:-15},
-"Asimina":{min:-25},
+"Arundo":{f:"Poaceae", min:-15},
+"Asimina":{f:"Annonaceae", min:-25},
 "Asparagus":{n:"Asparagus", f:"Asparagaceae", min:-25, sp:{
   "officinalis":{n:"Asparagus"},
   "setaceus":{n:"Asparagus fern", min:2, pat:"m"},
@@ -246,12 +246,12 @@ const DATA = {
 "Beschorneria":{n:"Beschorneria", f:"Asparagaceae", min:-8, t:{w:1,d:1}, sp:{
   "yuccoides":{n:"Mexican lily"}
 }},
-"Beta":{min:-5},
+"Beta":{f:"Amaranthaceae", min:-5},
 "Betula":{n:"Birch", f:"Betulaceae", min:-35, sp:{
   "pendula":{n:"Silver birch"},
   "utilis":{n:"Himalayan birch"}
 }},
-"Blechnum":{min:-10, t:{f:1}, sp:{
+"Blechnum":{f:"Blechnaceae", min:-10, t:{f:1}, sp:{
   "spicant":{min:-20},
   "chilense":{min:-12}
 }},
@@ -266,7 +266,7 @@ const DATA = {
   "armata":{n:"Mexican blue palm", min:-10},
   "edulis":{n:"Guadalupe palm", min:-4}
 }},
-"Brassica":{min:-10},
+"Brassica":{f:"Brassicaceae", min:-10},
 "Brugmansia":{n:"Angel's trumpet", f:"Solanaceae", min:3, pat:"m", ws:2, ww:14, t:{f:3,d:3}, note:"Very thirsty in summer. Keep cool and fairly dry indoors in winter.", list:1, sp:{
   "suaveolens":{n:"Angel's trumpet"},
   "x candida":{n:"Angel's trumpet"},
@@ -303,7 +303,7 @@ const DATA = {
 "Calluna":{n:"Heather", f:"Ericaceae", min:-25, sp:{
   "vulgaris":{n:"Heather"}
 }},
-"Caltha":{min:-30, t:{d:3}},
+"Caltha":{f:"Ranunculaceae", min:-30, t:{d:3}},
 "Camellia":{n:"Camellia", f:"Theaceae", min:-15, sp:{
   "japonica":{n:"Japanese camellia"},
   "sasanqua":{n:"Sasanqua camellia", min:-12},
@@ -329,11 +329,11 @@ const DATA = {
   "oshimensis":{n:"Japanese sedge"},
   "buchananii":{n:"Leatherleaf sedge", min:-15}
 }},
-"Carica":{min:10, pat:"i"},
+"Carica":{f:"Caricaceae", min:10, pat:"i"},
 "Carpinus":{n:"Hornbeam", f:"Betulaceae", min:-30, sp:{
   "betulus":{n:"Hornbeam"}
 }},
-"Castanea":{min:-25},
+"Castanea":{f:"Fagaceae", min:-25},
 "Catalpa":{n:"Catalpa", f:"Bignoniaceae", min:-25, sp:{
   "bignonioides":{n:"Indian bean tree"}
 }},
@@ -359,7 +359,7 @@ const DATA = {
 "Cereus":{n:"Column cactus", f:"Cactaceae", min:-2, pat:"m", t:{d:1}, sp:{
   "peruvianus":{n:"Peruvian apple cactus"}
 }},
-"Ceropegia":{min:7, pat:"i"},
+"Ceropegia":{f:"Apocynaceae", min:7, pat:"i"},
 "Cestrum":{n:"Jessamine", f:"Solanaceae", min:-5, sp:{
   "nocturnum":{n:"Night-blooming jasmine", min:-3, pat:"m"},
   "elegans":{n:"Purple cestrum"}
@@ -383,8 +383,8 @@ const DATA = {
 "Chrysanthemum":{n:"Chrysanthemum", f:"Asteraceae", min:-15, sp:{
   "morifolium":{n:"Florist's chrysanthemum"}
 }},
-"Chusquea":{min:-12},
-"Cissus":{min:7, pat:"i"},
+"Chusquea":{f:"Poaceae", min:-12},
+"Cissus":{f:"Vitaceae", min:7, pat:"i"},
 "Cistus":{n:"Rock rose", f:"Cistaceae", min:-10, t:{d:1}, sp:{
   "x purpureus":{n:"Purple rock rose", min:-8},
   "ladanifer":{n:"Gum rock rose", min:-8}
@@ -404,18 +404,18 @@ const DATA = {
   "armandii":{n:"Evergreen clematis", min:-12},
   "viticella":{n:"Italian clematis"}
 }},
-"Clerodendrum":{min:-15},
+"Clerodendrum":{f:"Lamiaceae", min:-15},
 "Clivia":{n:"Bush lily", f:"Amaryllidaceae", min:2, pat:"m", t:{rp:3}, sp:{
   "miniata":{n:"Natal lily"}
 }},
-"Codiaeum":{min:13, pat:"i"},
-"Coffea":{min:10, pat:"i"},
+"Codiaeum":{f:"Euphorbiaceae", min:13, pat:"i"},
+"Coffea":{f:"Rubiaceae", min:10, pat:"i"},
 "Colocasia":{n:"Taro", f:"Araceae", min:2, pat:"m", ws:3, ww:14, t:{f:3,r:-5,b:1,d:3}, note:"Leaves collapse near 0 °C. Bring pots in, or cut back and mulch tubers heavily in the ground.", sp:{
   "esculenta":{n:"Taro", min:2, pat:"m", ws:3, ww:14, note:"Leaves collapse near 0 °C. Bring pots in, or cut back and mulch tubers heavily in the ground.", list:1},
   "fallax":{n:"Silver dollar taro", min:5, pat:"m"},
   "gigantea":{n:"Giant elephant ear", min:5, pat:"m"}
 }},
-"Columnea":{min:13, pat:"i"},
+"Columnea":{f:"Gesneriaceae", min:13, pat:"i"},
 "Convallaria":{n:"Lily of the valley", f:"Asparagaceae", min:-30, sp:{
   "majalis":{n:"Lily of the valley"}
 }},
@@ -433,7 +433,7 @@ const DATA = {
 "Coreopsis":{n:"Tickseed", f:"Asteraceae", min:-25, sp:{
   "verticillata":{n:"Threadleaf tickseed"}
 }},
-"Coriandrum":{min:-5},
+"Coriandrum":{f:"Apiaceae", min:-5},
 "Cornus":{n:"Dogwood", f:"Cornaceae", min:-25, sp:{
   "alba":{n:"Red-barked dogwood", min:-35},
   "kousa":{n:"Kousa dogwood"},
@@ -486,9 +486,9 @@ const DATA = {
   "sempervirens":{n:"Italian cypress"},
   "macrocarpa":{n:"Monterey cypress", min:-12}
 }},
-"Curcuma":{min:10, pat:"m"},
-"Curio":{min:5, pat:"i", t:{d:1}},
-"Cyathea":{min:0, pat:"g", t:{f:1,c:1,d:3}, sp:{
+"Curcuma":{f:"Zingiberaceae", min:10, pat:"m"},
+"Curio":{f:"Asteraceae", min:5, pat:"i", t:{d:1}},
+"Cyathea":{f:"Cyatheaceae", min:0, pat:"g", t:{f:1,c:1,d:3}, sp:{
   "cooperi":{min:-2, pat:"g"},
   "dealbata":{min:-3, pat:"g"},
   "medullaris":{min:-2, pat:"g"}
@@ -501,10 +501,10 @@ const DATA = {
   "hederifolium":{n:"Ivy-leaved cyclamen", min:-20},
   "coum":{n:"Eastern cyclamen", min:-20}
 }},
-"Cydonia":{min:-25},
-"Cylindropuntia":{min:-15, t:{d:1}},
+"Cydonia":{f:"Rosaceae", min:-25},
+"Cylindropuntia":{f:"Cactaceae", min:-15, t:{d:1}},
 "Cymbidium":{n:"Boat orchid", f:"Orchidaceae", min:3, pat:"m", t:{f:1}},
-"Cymbopogon":{min:5, pat:"m"},
+"Cymbopogon":{f:"Poaceae", min:5, pat:"m"},
 "Cynara":{n:"Artichoke", f:"Asteraceae", min:-12, sp:{
   "cardunculus":{n:"Cardoon"},
   "scolymus":{n:"Globe artichoke"}
@@ -523,7 +523,7 @@ const DATA = {
 "Daphne":{n:"Daphne", f:"Thymelaeaceae", min:-15, sp:{
   "odora":{n:"Winter daphne", min:-10}
 }},
-"Darmera":{min:-25, t:{d:3}},
+"Darmera":{f:"Saxifragaceae", min:-25, t:{d:3}},
 "Dasylirion":{n:"Desert spoon", f:"Asparagaceae", min:-12, t:{w:1,d:1}, sp:{
   "wheeleri":{n:"Desert spoon"},
   "longissimum":{n:"Mexican grass tree", min:-10}
@@ -534,8 +534,8 @@ const DATA = {
 "Daucus":{n:"Carrot", f:"Apiaceae", min:-10, sp:{
   "carota":{n:"Carrot"}
 }},
-"Davallia":{min:10, pat:"i"},
-"Delosperma":{min:-20, t:{d:1}},
+"Davallia":{f:"Davalliaceae", min:10, pat:"i"},
+"Delosperma":{f:"Aizoaceae", min:-20, t:{d:1}},
 "Delphinium":{n:"Larkspur", f:"Ranunculaceae", min:-30, sp:{
   "elatum":{n:"Candle larkspur"}
 }},
@@ -567,7 +567,7 @@ const DATA = {
 "Dionaea":{n:"Venus flytrap", f:"Droseraceae", min:-8, t:{f:0,d:3}, sp:{
   "muscipula":{n:"Venus flytrap"}
 }},
-"Diospyros":{min:-15},
+"Diospyros":{f:"Ebenaceae", min:-15},
 "Dracaena":{n:"Dragon tree", f:"Asparagaceae", min:12, pat:"i", sp:{
   "marginata":{n:"Madagascar dragon tree"},
   "fragrans":{n:"Corn plant"},
@@ -582,7 +582,7 @@ const DATA = {
   "filix-mas":{n:"Male fern"},
   "erythrosora":{n:"Autumn fern", min:-25}
 }},
-"Dypsis":{min:5, pat:"i", sp:{
+"Dypsis":{f:"Arecaceae", min:5, pat:"i", sp:{
   "lutescens":{min:10, pat:"i"},
   "decaryi":{min:0, pat:"m"}
 }},
@@ -599,13 +599,13 @@ const DATA = {
 "Echinops":{n:"Globe thistle", f:"Asteraceae", min:-30, sp:{
   "ritro":{n:"Globe thistle"}
 }},
-"Echinopsis":{min:0, pat:"m", t:{d:1}},
+"Echinopsis":{f:"Cactaceae", min:0, pat:"m", t:{d:1}},
 "Echium":{n:"Echium", f:"Boraginaceae", min:-3, pat:"g", t:{c:1}, sp:{
   "candicans":{n:"Pride of Madeira"},
   "pininana":{n:"Giant viper's bugloss"},
   "wildpretii":{n:"Tower of jewels", min:-5, pat:"g"}
 }},
-"Edgeworthia":{min:-12},
+"Edgeworthia":{f:"Thymelaeaceae", min:-12},
 "Elaeagnus":{n:"Oleaster", f:"Elaeagnaceae", min:-20, sp:{
   "x ebbingei":{n:"Ebbinge's silverberry"}
 }},
@@ -663,7 +663,7 @@ const DATA = {
   "tirucalli":{n:"Pencil cactus", min:5, pat:"m"},
   "mellifera":{n:"Honey spurge", min:-7}
 }},
-"Farfugium":{min:-12},
+"Farfugium":{f:"Asteraceae", min:-12},
 "Fargesia":{n:"Umbrella bamboo", f:"Poaceae", min:-25, sp:{
   "murielae":{n:"Umbrella bamboo"},
   "rufa":{n:"Chinese fountain bamboo"}
@@ -671,7 +671,7 @@ const DATA = {
 "Fascicularia":{n:"Fascicularia", f:"Bromeliaceae", min:-10, sp:{
   "bicolor":{n:"Crimson bromeliad"}
 }},
-"Fatshedera":{min:-12},
+"Fatshedera":{f:"Araliaceae", min:-12},
 "Fatsia":{n:"Japanese aralia", f:"Araliaceae", min:-12, pat:"o", ws:7, ww:21, note:"Very hardy. Keep pots from freezing solid.", sp:{
   "japonica":{n:"Japanese aralia", min:-12, pat:"o", ws:7, ww:21, note:"Very hardy. Keep pots from freezing solid.", list:1},
   "polycarpa":{n:"Taiwanese fatsia"}
@@ -696,7 +696,7 @@ const DATA = {
 "Forsythia":{n:"Forsythia", f:"Oleaceae", min:-25, sp:{
   "x intermedia":{n:"Border forsythia"}
 }},
-"Fortunella":{min:-7, pat:"g"},
+"Fortunella":{f:"Rutaceae", min:-7, pat:"g"},
 "Fragaria":{n:"Strawberry", f:"Rosaceae", min:-20, sp:{
   "x ananassa":{n:"Garden strawberry"},
   "vesca":{n:"Wild strawberry"}
@@ -714,7 +714,7 @@ const DATA = {
 "Gardenia":{n:"Gardenia", f:"Rubiaceae", min:5, pat:"i", sp:{
   "jasminoides":{n:"Cape jasmine"}
 }},
-"Gasteria":{min:3, pat:"m", t:{d:1}},
+"Gasteria":{f:"Asphodelaceae", min:3, pat:"m", t:{d:1}},
 "Gaura":{n:"Gaura", f:"Onagraceae", min:-15, sp:{
   "lindheimeri":{n:"White gaura"}
 }},
@@ -735,8 +735,8 @@ const DATA = {
 "Gladiolus":{n:"Gladiolus", f:"Iridaceae", min:-5, sp:{
   "communis":{n:"Common gladiolus", min:-15}
 }},
-"Goeppertia":{min:15, pat:"i", t:{d:3}},
-"Grevillea":{min:-8, sp:{
+"Goeppertia":{f:"Marantaceae", min:15, pat:"i", t:{d:3}},
+"Grevillea":{f:"Proteaceae", min:-8, sp:{
   "rosmarinifolia":{min:-12}
 }},
 "Gunnera":{n:"Gunnera", f:"Gunneraceae", min:-10, pat:"o", t:{f:3,c:1,b:1,d:3}, note:"Leaves die at the first frost. Fold them over the crown and add straw before winter.", sp:{
@@ -746,8 +746,8 @@ const DATA = {
 "Guzmania":{n:"Guzmania", f:"Bromeliaceae", min:12, pat:"i", t:{f:1}, sp:{
   "lingulata":{n:"Scarlet star"}
 }},
-"Gymnocalycium":{min:0, pat:"m", t:{d:1}},
-"Gynura":{min:12, pat:"i"},
+"Gymnocalycium":{f:"Cactaceae", min:0, pat:"m", t:{d:1}},
+"Gynura":{f:"Asteraceae", min:12, pat:"i"},
 "Hakonechloa":{n:"Japanese forest grass", f:"Poaceae", min:-25, sp:{
   "macra":{n:"Japanese forest grass"}
 }},
@@ -759,7 +759,7 @@ const DATA = {
   "attenuata":{n:"Zebra haworthia"},
   "cooperi":{n:"Cooper's haworthia"}
 }},
-"Haworthiopsis":{min:5, pat:"i", t:{d:1}},
+"Haworthiopsis":{f:"Asphodelaceae", min:5, pat:"i", t:{d:1}},
 "Hebe":{n:"Hebe", f:"Plantaginaceae", min:-10, sp:{
   "pinguifolia":{n:"Disc-leaved hebe", min:-15},
   "x franciscana":{n:"Hebe", min:-7}
@@ -782,7 +782,7 @@ const DATA = {
   "italicum":{n:"Curry plant"},
   "petiolare":{n:"Licorice plant", min:-2, pat:"m"}
 }},
-"Heliconia":{min:12, pat:"i"},
+"Heliconia":{f:"Heliconiaceae", min:12, pat:"i"},
 "Helleborus":{n:"Hellebore", f:"Ranunculaceae", min:-25, sp:{
   "niger":{n:"Christmas rose"},
   "x hybridus":{n:"Lenten rose"},
@@ -791,8 +791,8 @@ const DATA = {
 "Hemerocallis":{n:"Daylily", f:"Asphodelaceae", min:-30, sp:{
   "fulva":{n:"Orange daylily"}
 }},
-"Hesperaloe":{min:-18, t:{w:1,d:1}},
-"Hesperoyucca":{min:-10},
+"Hesperaloe":{f:"Asparagaceae", min:-18, t:{w:1,d:1}},
+"Hesperoyucca":{f:"Asparagaceae", min:-10},
 "Heuchera":{n:"Coral bells", f:"Saxifragaceae", min:-30, sp:{
   "micrantha":{n:"Coral bells"}
 }},
@@ -808,7 +808,7 @@ const DATA = {
   "sieboldiana":{n:"Siebold's plantain lily"},
   "plantaginea":{n:"August lily"}
 }},
-"Howea":{min:5, pat:"i"},
+"Howea":{f:"Arecaceae", min:5, pat:"i"},
 "Hoya":{n:"Wax plant", f:"Apocynaceae", min:10, pat:"i", t:{rp:3}, sp:{
   "carnosa":{n:"Wax plant"},
   "kerrii":{n:"Sweetheart plant"},
@@ -828,7 +828,7 @@ const DATA = {
 "Hypericum":{n:"St John's wort", f:"Hypericaceae", min:-20, sp:{
   "calycinum":{n:"Rose of Sharon"}
 }},
-"Hypoestes":{min:10, pat:"i"},
+"Hypoestes":{f:"Acanthaceae", min:10, pat:"i"},
 "Iberis":{n:"Candytuft", f:"Brassicaceae", min:-25, sp:{
   "sempervirens":{n:"Perennial candytuft"}
 }},
@@ -852,9 +852,9 @@ const DATA = {
   "nudiflorum":{n:"Winter jasmine", min:-20},
   "sambac":{n:"Arabian jasmine", min:7, pat:"i"}
 }},
-"Jubaea":{min:-12, t:{c:1}},
-"Juglans":{min:-25, t:{s:-1}},
-"Juncus":{min:-25, t:{d:3}},
+"Jubaea":{f:"Arecaceae", min:-12, t:{c:1}},
+"Juglans":{f:"Juglandaceae", min:-25, t:{s:-1}},
+"Juncus":{f:"Juncaceae", min:-25, t:{d:3}},
 "Juniperus":{n:"Juniper", f:"Cupressaceae", min:-30, sp:{
   "communis":{n:"Common juniper"},
   "horizontalis":{n:"Creeping juniper"}
@@ -865,12 +865,12 @@ const DATA = {
   "tomentosa":{n:"Panda plant"},
   "thyrsiflora":{n:"Paddle plant", min:5, pat:"i"}
 }},
-"Kalopanax":{min:-25},
+"Kalopanax":{f:"Araliaceae", min:-25},
 "Kniphofia":{n:"Red hot poker", f:"Asphodelaceae", min:-15, sp:{
   "uvaria":{n:"Red hot poker"},
   "caulescens":{n:"Tree poker", min:-12}
 }},
-"Lactuca":{min:-5},
+"Lactuca":{f:"Asteraceae", min:-5},
 "Lagerstroemia":{n:"Crape myrtle", f:"Lythraceae", min:-15, sp:{
   "indica":{n:"Crape myrtle"}
 }},
@@ -886,12 +886,12 @@ const DATA = {
   "x intermedia":{n:"Lavandin", min:-18},
   "dentata":{n:"Fringed lavender", min:-5, pat:"m"}
 }},
-"Leucadendron":{min:-3, pat:"g"},
+"Leucadendron":{f:"Proteaceae", min:-3, pat:"g"},
 "Leucanthemum":{n:"Shasta daisy", f:"Asteraceae", min:-30, sp:{
   "x superbum":{n:"Shasta daisy"},
   "vulgare":{n:"Oxeye daisy"}
 }},
-"Levisticum":{min:-30},
+"Levisticum":{f:"Apiaceae", min:-30},
 "Ligularia":{n:"Leopard plant", f:"Asteraceae", min:-30, t:{d:3}, sp:{
   "dentata":{n:"Summer ragwort"},
   "przewalskii":{n:"Przewalski's leopard plant"}
@@ -915,7 +915,7 @@ const DATA = {
   "muscari":{n:"Big blue lilyturf"}
 }},
 "Lithops":{n:"Living stones", f:"Aizoaceae", min:5, pat:"i", t:{d:1}},
-"Livistona":{min:-4, pat:"m", t:{c:1}, sp:{
+"Livistona":{f:"Arecaceae", min:-4, pat:"m", t:{c:1}, sp:{
   "chinensis":{min:-5, pat:"o"},
   "australis":{min:-6}
 }},
@@ -932,7 +932,7 @@ const DATA = {
 "Lupinus":{n:"Lupin", f:"Fabaceae", min:-30, sp:{
   "polyphyllus":{n:"Garden lupin"}
 }},
-"Lysichiton":{min:-25, t:{d:3}},
+"Lysichiton":{f:"Araceae", min:-25, t:{d:3}},
 "Magnolia":{n:"Magnolia", f:"Magnoliaceae", min:-20, sp:{
   "grandiflora":{n:"Southern magnolia", min:-15},
   "stellata":{n:"Star magnolia", min:-25},
@@ -953,12 +953,12 @@ const DATA = {
 "Malva":{n:"Mallow", f:"Malvaceae", min:-20, sp:{
   "sylvestris":{n:"Common mallow"}
 }},
-"Mammillaria":{min:3, pat:"m", t:{d:1}},
+"Mammillaria":{f:"Cactaceae", min:3, pat:"m", t:{d:1}},
 "Mandevilla":{n:"Mandevilla", f:"Apocynaceae", min:7, pat:"m", sp:{
   "sanderi":{n:"Brazilian jasmine"},
   "laxa":{n:"Chilean jasmine", min:-5}
 }},
-"Mangifera":{min:5, pat:"g"},
+"Mangifera":{f:"Anacardiaceae", min:5, pat:"g"},
 "Maranta":{n:"Prayer plant", f:"Marantaceae", min:15, pat:"i", t:{d:3}, sp:{
   "leuconeura":{n:"Prayer plant"}
 }},
@@ -976,7 +976,7 @@ const DATA = {
   "x piperita":{n:"Peppermint"},
   "suaveolens":{n:"Apple mint"}
 }},
-"Mespilus":{min:-20},
+"Mespilus":{f:"Rosaceae", min:-20},
 "Metasequoia":{n:"Dawn redwood", f:"Cupressaceae", min:-30, sp:{
   "glyptostroboides":{n:"Dawn redwood"}
 }},
@@ -988,7 +988,7 @@ const DATA = {
   "adansonii":{n:"Swiss cheese vine", min:13, pat:"i"},
   "obliqua":{n:"Monstera obliqua", min:15, pat:"i"}
 }},
-"Morus":{min:-25},
+"Morus":{f:"Moraceae", min:-25},
 "Musa":{n:"Banana", f:"Musaceae", min:5, pat:"m", ws:4, ww:21, t:{f:3,b:1,d:3}, sp:{
   "basjoo":{n:"Japanese banana", min:-3, pat:"o", ws:4, ww:21, t:{r:-10}, note:"The trunk is damaged around −3 °C; the roots survive to about −10 °C under thick mulch. Wrap the trunk or cut it back and mulch before hard frost.", list:1},
   "acuminata":{n:"Dwarf banana", min:5, pat:"m"},
@@ -1001,7 +1001,7 @@ const DATA = {
 "Muscari":{n:"Grape hyacinth", f:"Asparagaceae", min:-30, sp:{
   "armeniacum":{n:"Grape hyacinth"}
 }},
-"Musella":{min:-5, pat:"o", t:{r:-10,b:1}, note:"Roots survive about −10 °C under thick mulch."},
+"Musella":{f:"Musaceae", min:-5, pat:"o", t:{r:-10,b:1}, note:"Roots survive about −10 °C under thick mulch."},
 "Myosotis":{n:"Forget-me-not", f:"Boraginaceae", min:-25, sp:{
   "sylvatica":{n:"Wood forget-me-not"}
 }},
@@ -1015,7 +1015,7 @@ const DATA = {
   "pseudonarcissus":{n:"Wild daffodil"},
   "tazetta":{n:"Paperwhite", min:-10}
 }},
-"Nelumbo":{min:-10, pat:"o", note:"Survives if the tubers sit below the ice."},
+"Nelumbo":{f:"Nelumbonaceae", min:-10, pat:"o", note:"Survives if the tubers sit below the ice."},
 "Nepenthes":{n:"Pitcher plant", f:"Nepenthaceae", min:12, pat:"i", t:{f:0,d:3}},
 "Nepeta":{n:"Catmint", f:"Lamiaceae", min:-30, sp:{
   "x faassenii":{n:"Catmint"},
@@ -1031,8 +1031,8 @@ const DATA = {
   "alata":{n:"Jasmine tobacco"},
   "sylvestris":{n:"Woodland tobacco", min:-5}
 }},
-"Nolina":{min:-12, t:{d:1}},
-"Nymphaea":{min:-30},
+"Nolina":{f:"Asparagaceae", min:-12, t:{d:1}},
+"Nymphaea":{f:"Nymphaeaceae", min:-30},
 "Ocimum":{n:"Basil", f:"Lamiaceae", min:8, pat:"m", sp:{
   "basilicum":{n:"Sweet basil"}
 }},
@@ -1052,14 +1052,14 @@ const DATA = {
   "fragrans":{n:"Sweet osmanthus", min:-8},
   "x burkwoodii":{n:"Burkwood osmanthus", min:-20}
 }},
-"Osmunda":{min:-30, t:{f:1}},
+"Osmunda":{f:"Osmundaceae", min:-30, t:{f:1}},
 "Osteospermum":{n:"African daisy", f:"Asteraceae", min:-5, sp:{
   "ecklonis":{n:"Cape daisy"}
 }},
 "Oxalis":{n:"Wood sorrel", f:"Oxalidaceae", min:-10, sp:{
   "triangularis":{n:"False shamrock", min:0, pat:"m"}
 }},
-"Pachira":{min:10, pat:"i"},
+"Pachira":{f:"Malvaceae", min:10, pat:"i"},
 "Pachysandra":{n:"Pachysandra", f:"Buxaceae", min:-30, sp:{
   "terminalis":{n:"Japanese spurge"}
 }},
@@ -1110,7 +1110,7 @@ const DATA = {
 "Persicaria":{n:"Knotweed", f:"Polygonaceae", min:-30, sp:{
   "amplexicaulis":{n:"Red bistort"}
 }},
-"Petasites":{min:-25},
+"Petasites":{f:"Asteraceae", min:-25},
 "Petroselinum":{n:"Parsley", f:"Apiaceae", min:-10, sp:{
   "crispum":{n:"Parsley"}
 }},
@@ -1120,7 +1120,7 @@ const DATA = {
 "Phalaenopsis":{n:"Moth orchid", f:"Orchidaceae", min:15, pat:"i", t:{f:1}, sp:{
   "amabilis":{n:"Moth orchid"}
 }},
-"Phaseolus":{min:5},
+"Phaseolus":{f:"Fabaceae", min:5},
 "Philadelphus":{n:"Mock orange", f:"Hydrangeaceae", min:-30, sp:{
   "coronarius":{n:"Sweet mock orange"}
 }},
@@ -1176,7 +1176,7 @@ const DATA = {
   "sylvestris":{n:"Scots pine"},
   "thunbergii":{n:"Japanese black pine", min:-25}
 }},
-"Pisum":{min:-5},
+"Pisum":{f:"Fabaceae", min:-5},
 "Pittosporum":{n:"Pittosporum", f:"Pittosporaceae", min:-10, sp:{
   "tobira":{n:"Japanese cheesewood"},
   "tenuifolium":{n:"Kohuhu"}
@@ -1191,7 +1191,7 @@ const DATA = {
   "scutellarioides":{n:"Coleus"},
   "verticillatus":{n:"Swedish ivy"}
 }},
-"Pleioblastus":{min:-20},
+"Pleioblastus":{f:"Poaceae", min:-20},
 "Plumbago":{n:"Leadwort", f:"Plumbaginaceae", min:-2, pat:"m", sp:{
   "auriculata":{n:"Cape leadwort"}
 }},
@@ -1201,18 +1201,18 @@ const DATA = {
 "Polygonatum":{n:"Solomon's seal", f:"Asparagaceae", min:-30, sp:{
   "x hybridum":{n:"Solomon's seal"}
 }},
-"Polypodium":{min:-15},
+"Polypodium":{f:"Polypodiaceae", min:-15},
 "Polystichum":{n:"Shield fern", f:"Dryopteridaceae", min:-25, t:{f:1}, sp:{
   "setiferum":{n:"Soft shield fern"},
   "polyblepharum":{n:"Japanese tassel fern", min:-20}
 }},
-"Pontederia":{min:-20, t:{d:3}},
+"Pontederia":{f:"Pontederiaceae", min:-20, t:{d:3}},
 "Primula":{n:"Primrose", f:"Primulaceae", min:-25, sp:{
   "vulgaris":{n:"Primrose"},
   "veris":{n:"Cowslip"},
   "obconica":{n:"German primrose", min:5, pat:"i"}
 }},
-"Protea":{min:-3, pat:"g"},
+"Protea":{f:"Proteaceae", min:-3, pat:"g"},
 "Prunus":{n:"Cherry", f:"Rosaceae", min:-25, sp:{
   "avium":{n:"Wild cherry", min:-30},
   "persica":{n:"Peach", min:-20, pat:"o", t:{s:-2}, note:"Blossom is killed by frost below about −2 °C."},
@@ -1227,14 +1227,14 @@ const DATA = {
   "crassifolius":{n:"Lancewood"},
   "lessonii":{n:"Houpara", min:-5}
 }},
-"Psidium":{min:0, pat:"g"},
+"Psidium":{f:"Myrtaceae", min:0, pat:"g"},
 "Pulmonaria":{n:"Lungwort", f:"Boraginaceae", min:-30, sp:{
   "officinalis":{n:"Common lungwort"}
 }},
 "Punica":{n:"Pomegranate", f:"Lythraceae", min:-12, sp:{
   "granatum":{n:"Pomegranate"}
 }},
-"Puya":{min:-8, t:{w:1,d:1}},
+"Puya":{f:"Bromeliaceae", min:-8, t:{w:1,d:1}},
 "Pyracantha":{n:"Firethorn", f:"Rosaceae", min:-20, sp:{
   "coccinea":{n:"Scarlet firethorn"}
 }},
@@ -1251,9 +1251,9 @@ const DATA = {
 "Ranunculus":{n:"Buttercup", f:"Ranunculaceae", min:-25, sp:{
   "asiaticus":{n:"Persian buttercup", min:-5, pat:"m"}
 }},
-"Ravenala":{min:10, pat:"i"},
-"Rhaphidophora":{min:13, pat:"i"},
-"Rhapidophyllum":{min:-18},
+"Ravenala":{f:"Strelitziaceae", min:10, pat:"i"},
+"Rhaphidophora":{f:"Araceae", min:13, pat:"i"},
+"Rhapidophyllum":{f:"Arecaceae", min:-18},
 "Rhapis":{n:"Lady palm", f:"Arecaceae", min:-4, pat:"m", t:{rp:3}, sp:{
   "excelsa":{n:"Lady palm"}
 }},
@@ -1261,7 +1261,7 @@ const DATA = {
   "rhabarbarum":{n:"Rhubarb"},
   "palmatum":{n:"Ornamental rhubarb", min:-25}
 }},
-"Rhipsalis":{min:7, pat:"i"},
+"Rhipsalis":{f:"Cactaceae", min:7, pat:"i"},
 "Rhododendron":{n:"Rhododendron", f:"Ericaceae", min:-20, sp:{
   "ponticum":{n:"Common rhododendron"},
   "simsii":{n:"Indoor azalea", min:0, pat:"m"},
@@ -1280,7 +1280,7 @@ const DATA = {
 "Ricinus":{n:"Castor oil plant", f:"Euphorbiaceae", min:2, t:{b:1}, sp:{
   "communis":{n:"Castor oil plant"}
 }},
-"Rodgersia":{min:-25, t:{d:3}},
+"Rodgersia":{f:"Saxifragaceae", min:-25, t:{d:3}},
 "Rosa":{n:"Rose", f:"Rosaceae", min:-20, t:{f:3}, sp:{
   "banksiae":{n:"Banksian rose", min:-10},
   "canina":{n:"Dog rose"},
@@ -1305,7 +1305,7 @@ const DATA = {
   "minor":{n:"Dwarf palmetto", min:-15},
   "palmetto":{n:"Cabbage palmetto", min:-10}
 }},
-"Sagittaria":{min:-20, t:{d:3}},
+"Sagittaria":{f:"Alismataceae", min:-20, t:{d:3}},
 "Saintpaulia":{n:"African violet", f:"Gesneriaceae", min:15, pat:"i", sp:{
   "ionantha":{n:"African violet"}
 }},
@@ -1336,7 +1336,7 @@ const DATA = {
   "confusa":{n:"Sweet box"},
   "hookeriana":{n:"Himalayan sweet box"}
 }},
-"Sasa":{min:-25},
+"Sasa":{f:"Poaceae", min:-25},
 "Saxifraga":{n:"Saxifrage", f:"Saxifragaceae", min:-20, sp:{
   "x urbium":{n:"London pride"},
   "stolonifera":{n:"Strawberry begonia", min:-10}
@@ -1355,7 +1355,7 @@ const DATA = {
 "Scilla":{n:"Squill", f:"Asparagaceae", min:-30, sp:{
   "siberica":{n:"Siberian squill"}
 }},
-"Scindapsus":{min:13, pat:"i"},
+"Scindapsus":{f:"Araceae", min:13, pat:"i"},
 "Sedum":{n:"Stonecrop", f:"Crassulaceae", min:-25, t:{d:1}, sp:{
   "spectabile":{n:"Ice plant", min:-30},
   "morganianum":{n:"Burro's tail", min:5, pat:"i"},
@@ -1382,7 +1382,7 @@ const DATA = {
   "crispum":{n:"Chilean potato tree", min:-10},
   "rantonnetii":{n:"Blue potato bush", min:0, pat:"m"}
 }},
-"Soleirolia":{min:-10},
+"Soleirolia":{f:"Urticaceae", min:-10},
 "Solenostemon":{n:"Coleus", f:"Lamiaceae", min:8, pat:"m", sp:{
   "scutellarioides":{n:"Coleus"}
 }},
@@ -1402,7 +1402,7 @@ const DATA = {
 "Stachys":{n:"Lamb's ears", f:"Lamiaceae", min:-30, sp:{
   "byzantina":{n:"Lamb's ears"}
 }},
-"Stevia":{min:0, pat:"m"},
+"Stevia":{f:"Asteraceae", min:0, pat:"m"},
 "Stipa":{n:"Feather grass", f:"Poaceae", min:-20, sp:{
   "gigantea":{n:"Giant feather grass"},
   "tenuissima":{n:"Mexican feather grass", min:-15}
@@ -1414,7 +1414,7 @@ const DATA = {
 "Streptocarpus":{n:"Cape primrose", f:"Gesneriaceae", min:10, pat:"i", sp:{
   "saxorum":{n:"False African violet"}
 }},
-"Stromanthe":{min:13, pat:"i"},
+"Stromanthe":{f:"Marantaceae", min:13, pat:"i"},
 "Syngonium":{n:"Arrowhead vine", f:"Araceae", min:13, pat:"i", sp:{
   "podophyllum":{n:"Arrowhead plant"}
 }},
@@ -1432,7 +1432,7 @@ const DATA = {
 "Tetrapanax":{n:"Rice paper plant", f:"Araliaceae", min:-8, pat:"o", ws:5, ww:21, t:{r:-15,b:1}, note:"Top can die back in hard frost and regrows from the roots. Mulch the base.", sp:{
   "papyrifer":{n:"Rice paper plant", min:-8, pat:"o", ws:5, ww:21, note:"Top can die back in hard frost and regrows from the roots. Mulch the base.", list:1}
 }},
-"Thalia":{min:-10, t:{d:3}},
+"Thalia":{f:"Marantaceae", min:-10, t:{d:3}},
 "Thuja":{n:"Arborvitae", f:"Cupressaceae", min:-35, sp:{
   "occidentalis":{n:"White cedar"},
   "plicata":{n:"Western red cedar"}
@@ -1463,15 +1463,15 @@ const DATA = {
   "fluminensis":{n:"Wandering Jew", min:0, pat:"m"},
   "spathacea":{n:"Moses-in-the-cradle", min:10, pat:"i"}
 }},
-"Trochodendron":{min:-15},
+"Trochodendron":{f:"Trochodendraceae", min:-15},
 "Tropaeolum":{n:"Nasturtium", f:"Tropaeolaceae", min:0, sp:{
   "majus":{n:"Nasturtium"}
 }},
 "Tulipa":{n:"Tulip", f:"Liliaceae", min:-30, sp:{
   "gesneriana":{n:"Garden tulip"}
 }},
-"Typha":{min:-30, t:{d:3}},
-"Vaccinium":{min:-25},
+"Typha":{f:"Typhaceae", min:-30, t:{d:3}},
+"Vaccinium":{f:"Ericaceae", min:-25},
 "Verbena":{n:"Verbena", f:"Verbenaceae", min:-10, sp:{
   "bonariensis":{n:"Purpletop vervain"},
   "officinalis":{n:"Vervain", min:-20}
@@ -1510,10 +1510,10 @@ const DATA = {
   "sinensis":{n:"Chinese wisteria"},
   "floribunda":{n:"Japanese wisteria"}
 }},
-"Woodwardia":{min:-8, sp:{
+"Woodwardia":{f:"Blechnaceae", min:-8, sp:{
   "unigemmata":{min:-10}
 }},
-"Xanthosoma":{min:10, pat:"m"},
+"Xanthosoma":{f:"Araceae", min:10, pat:"m"},
 "Yucca":{n:"Yucca", f:"Asparagaceae", min:-10, t:{w:1,d:1}, sp:{
   "elephantipes":{n:"Spineless yucca", min:2, pat:"m"},
   "gloriosa":{n:"Spanish dagger", min:-15},
@@ -1527,7 +1527,7 @@ const DATA = {
 "Zantedeschia":{n:"Calla lily", f:"Araceae", min:-10, t:{d:3}, sp:{
   "aethiopica":{n:"Arum lily"}
 }},
-"Zea":{min:2},
+"Zea":{f:"Poaceae", min:2},
 "Zingiber":{n:"Ginger", f:"Zingiberaceae", min:5, pat:"m", sp:{
   "officinale":{n:"Ginger"},
   "mioga":{n:"Japanese ginger", min:-15}
@@ -1696,5 +1696,13 @@ const starting = () => Object.values(IDX).filter(x => x.e.list).map(x => x.name)
 /* Every care note, for the language tests. */
 const notes = () => Object.values(IDX).map(x => x.e.note).filter(Boolean);
 
-return {VERSION, DATA, PROFILE, NEED, DEFAULT_WATER, speciesKey, traits, intervals, feeding, profile, find, ownOf, apply, names, starting, notes};
+/* Ferns, by family (the Pteridophyte Phylogeny Group's fern families, horsetails left out: gardeners don't call
+   them ferns). Read from a plant's family, so a plant Alvor doesn't know is never counted as one. */
+const FERN_FAMILIES = new Set(["Aspleniaceae","Athyriaceae","Blechnaceae","Cyatheaceae","Cystopteridaceae","Davalliaceae",
+  "Dennstaedtiaceae","Dicksoniaceae","Dryopteridaceae","Gleicheniaceae","Hymenophyllaceae","Lindsaeaceae","Lomariopsidaceae",
+  "Lygodiaceae","Marattiaceae","Marsileaceae","Nephrolepidaceae","Onocleaceae","Ophioglossaceae","Osmundaceae","Polypodiaceae",
+  "Psilotaceae","Pteridaceae","Salviniaceae","Schizaeaceae","Tectariaceae","Thelypteridaceae","Woodsiaceae"]);
+const isFern = family => FERN_FAMILIES.has(String(family || ""));
+
+return {VERSION, DATA, PROFILE, NEED, DEFAULT_WATER, speciesKey, traits, intervals, feeding, profile, find, ownOf, apply, names, starting, notes, isFern, FERN_FAMILIES};
 });
