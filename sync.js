@@ -11,7 +11,9 @@
    - Settings are merged as one block (newer wins). History is merged by adding up both sides.
    - A plant's journal (p.journal) is merged entry by entry, so entries added on two phones both survive:
      each entry has an id and m (when it last changed); the newer m wins, and a deleted entry stays as
-     {id, del:1, m} so it can't come back from a phone that still has it. */
+     {id, del:1, m} so it can't come back from a phone that still has it.
+   - Your own garden tasks (settings.tasks) are merged the same way, task by task, so a task added on one phone
+     and another added on a second phone both stay, and a task ticked off or deleted on one phone stays that way. */
 (function(root){
   "use strict";
 
@@ -50,6 +52,18 @@
       if(!o || (+e.m || 0) > (+o.m || 0)) by.set(e.id, e);
     }
     return [...by.values()].sort((x, y) => x.d < y.d ? 1 : x.d > y.d ? -1 : (+y.m || 0) - (+x.m || 0) || (x.id < y.id ? -1 : 1));
+  }
+
+  /* The same for any list of {id, m} entries (garden tasks): the newer change of each, deleted markers kept
+     for 6 months, then dropped. Sorted by id, so every phone ends up with the same list. */
+  function mergeEntries(a, b, now){
+    const by = new Map();
+    for(const e of [...(a || []), ...(b || [])]){
+      if(!e || e.id == null) continue;
+      const o = by.get(e.id);
+      if(!o || (+e.m || 0) > (+o.m || 0)) by.set(e.id, e);
+    }
+    return [...by.values()].filter(e => !(e.del && now && now - (+e.m || 0) > KEEP_GONE)).sort((x, y) => x.id < y.id ? -1 : x.id > y.id ? 1 : 0);
   }
 
   const KEEP_GONE = 180 * 86400000;   // deleted markers are kept 6 months
@@ -117,6 +131,11 @@
 
     const serverSettingsNewer = !!S.settings && (+S.sAt || 0) > (+local.sAt || 0);
     const settings = serverSettingsNewer ? syncSettings(S.settings) : syncSettings(local.settings);
+    const lt = (local.settings || {}).tasks, st = (S.settings || {}).tasks;
+    if(lt || st){
+      const tasks = mergeEntries(lt, st, now);
+      if(tasks.length) settings.tasks = tasks; else delete settings.tasks;
+    }
     const sAt = serverSettingsNewer ? +S.sAt : (+local.sAt || 0);
 
     const seen = new Set(), log = [];
@@ -140,5 +159,5 @@
     return {plants, gone, settings, sAt, log, upsert, removeFromServer, localChanged, serverChanged};
   }
 
-  root.GS = {mergeJournal, canon, sig, plantSig, syncSettings, fresh, rebase, stamp, merge, LOG_SERVER};
+  root.GS = {mergeJournal, mergeEntries, canon, sig, plantSig, syncSettings, fresh, rebase, stamp, merge, LOG_SERVER};
 })(typeof window !== "undefined" ? window : globalThis);

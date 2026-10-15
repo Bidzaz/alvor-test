@@ -265,6 +265,7 @@ function forgetTalk(){
 
 /* Links from notifications: #talk=<owner>.<plant|area|garden>.<id> */
 function openFromHash(h){
+  if(openCutFromHash(h)) return true;   // a cutting asked for, agreed or given (js/cuttings.js)
   const m = String(h || "").match(/talk=([0-9a-f-]{36})\.(plant|area|garden)\.([A-Za-z0-9-]{1,40})/);
   if(!m) return false;
   if(location.hash.includes("talk=")) history.replaceState(null, "", location.pathname);
@@ -277,7 +278,7 @@ if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("messa
 /* ---------- What's new: reactions and comments for you, and friends' new photos ---------- */
 let feed = null, feedAt = 0, feedBusy = null, feedMore = false, feedFreshAfter = null;
 const seenTime = () => me && me.activitySeen ? new Date(me.activitySeen).getTime() : 0;
-const counts4Badge = f => f.kind !== "photo";
+const counts4Badge = f => f.kind !== "photo" && f.kind !== "moment";   // friends' news doesn't need you; reactions, comments and cuttings do
 const unseenCount = () => feed ? feed.filter(f => counts4Badge(f) && new Date(f.happened_at).getTime() > seenTime()).length : 0;
 async function loadFeed(force){
   if(!online || !token || !me) return null;
@@ -314,6 +315,10 @@ function feedLine(f){
   const plant = f.target_type === "plant", T = {type:f.target_type, id:f.target_id, name:f.target_name, home:f.owner_home};
   const word = plant ? `<b>${esc(f.target_name || tr("a plant"))}</b>` : null, say = (form, who) => thingSay(T, form, who, word);
   if(f.kind === "photo") return trn(f.n, "{actor} added a photo of {thing}", "{actor} added {n} photos of {thing}", {actor, thing:say("plain")});
+  if(f.kind === "moment") return {flower:tr("{actor}'s {thing} is flowering", {actor, thing:word}), fruit:tr("{actor}'s {thing} is fruiting", {actor, thing:word}),
+    growth:tr("New growth on {actor}'s {thing}", {actor, thing:word}), acquired:tr("{actor} has a new plant: {thing}", {actor, thing:word})}[f.detail] || tr("News from {actor}'s {thing}", {actor, thing:word});
+  if(f.kind === "cutting") return {asked:tr("{actor} would like a cutting of your {thing}", {actor, thing:word}), yes:tr("{actor} said yes to a cutting of {thing}", {actor, thing:word}),
+    given:tr("{actor} gave you a cutting of {thing}", {actor, thing:word})}[f.detail] || "";
   if(f.kind === "reaction") return tr("{actor} reacted {emoji} to {thing}", {actor, emoji:(f.detail || "").split(",").map(k => REACT[k] ? REACT[k].e : "").join(""), thing:say("your")});
   if(f.kind === "comment") return tr("{actor} commented on {thing}", {actor, thing:say("your")});
   return f.actor_id === f.garden_owner ? tr("{actor} replied on {thing}", {actor, thing:say("their")})
@@ -327,7 +332,7 @@ function feedRow(f, i){
 }
 function feedHtml(){
   if(!feed) return `<p class="f-empty">${tr("Loading…")}</p>`;
-  if(!feed.length) return `<p class="f-empty">${tr("Nothing yet. Reactions and comments on your plants, replies to your comments and friends' new photos show up here.")}</p>`;
+  if(!feed.length) return `<p class="f-empty">${tr("Nothing yet. Reactions and comments on your plants, replies to your comments, cuttings, and friends' new photos and flowers show up here.")}</p>`;
   const list = feedMore ? feed : feed.slice(0, 6);
   return `<div class="feed">${list.map(feedRow).join("")}</div>${feed.length > list.length ? `<button class="linkish" data-fact="feedMore">${tr("Show more")}</button>` : ""}`;
 }
@@ -335,7 +340,8 @@ function drawFeed(){ const el = $("#feedBox"); if(el) el.innerHTML = feedHtml();
 async function openFeedItem(i){
   const f = feed && feed[i]; if(!f) return;
   const ownerName = f.garden_owner === me.id ? tr("You") : f.owner_name;
-  if(f.kind === "photo"){
+  if(f.kind === "cutting"){ await loadCuttings(true); const r = document.querySelector(`#cutCard [data-cutid]`); if(r) r.scrollIntoView({block:"center", behavior:"smooth"}); return; }
+  if(f.kind === "photo" || f.kind === "moment"){
     await openFriend(f.garden_owner);
     if(visit && visit.plants && visit.plants.some(x => x.id === f.target_id)) openFriendPlant(f.target_id, 0);
   }else openTalk({owner:f.garden_owner, type:f.target_type, id:f.target_id, name:f.target_name, home:f.owner_home, ownerName});

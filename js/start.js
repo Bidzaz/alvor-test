@@ -28,10 +28,11 @@ initAuth().then(async () => {
   loadAdmin(true);
   await joinFromLink();
   loadFeed();
+  loadCuttings();
   openFromHash(location.hash);
   ensurePush();
   maybeOnboard();
   maybeShareIntro();
 });
 refreshCurrent(false);
-document.addEventListener("visibilitychange", () => { if(!document.hidden){ fetchWeather(false); refreshCurrent(false); if(token){ pull(); loadCircle(); loadFeed(); } } });
+document.addEventListener("visibilitychange", () => { if(!document.hidden){ fetchWeather(false); refreshCurrent(false); if(token){ pull(); loadCircle(); loadFeed(); loadCuttings(); } } });

@@ -586,7 +586,14 @@ function fillPrivacy(){
   $("#defVisHint").textContent = v === "friends" ? tr("Friends see new plants as soon as you add them.") : tr("New plants go to your Vault. Only you see them until you share them.");
   $("#chooseShareBtn").hidden = !state.plants.length;
   $("#findable").checked = !!me.findable;
+  $("#shareMoments").checked = state.settings.shareMoments !== false;
 }
+/* Happy moments (got it, new growth, flowering, fruiting) on plants friends can see: on unless switched off. */
+$("#shareMoments").addEventListener("change", async e => {
+  if(e.target.checked) delete state.settings.shareMoments; else state.settings.shareMoments = false;
+  save(); await pushSharedRows();
+  toast(e.target.checked ? tr("Friends see your plants' happy moments") : tr("Your plants' moments stay in your journal"));
+});
 $("#defVisSeg").addEventListener("click", async e => {
   const b = e.target.closest("[data-defvis]"); if(!b || b.dataset.defvis === defaultVis()) return;
   if(await setDefaultVis(b.dataset.defvis)) toast(tr("Saved"));

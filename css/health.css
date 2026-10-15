@@ -1,0 +1,43 @@
+/* Alvor · "Something wrong?" (likely causes), the care card after identification, and toxicity. */
+:root{--issue:#8E3B46;--issue-bg:#F6E1E3}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--issue:#F09AA5;--issue-bg:#3A2024}}
+:root[data-theme="dark"]{--issue:#F09AA5;--issue-bg:#3A2024}
+.k-issue{--jk:var(--issue)}
+.hl-box .status{margin:0 0 8px}
+.hl-sym{display:flex;flex-wrap:wrap;gap:6px}
+.hl-sym .chip{white-space:normal;text-align:left}
+.hl-picked{margin:0 0 12px;font-weight:600;font-size:.9rem;color:var(--muted)}
+.hl-cause{border-radius:16px;padding:12px 14px;margin-bottom:10px;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.hl-cause.hl-first.s-likely{border:2px solid var(--issue);background:color-mix(in srgb,var(--issue-bg) 70%,var(--surface))}
+.hl-cause h3{font-size:1.05rem;margin:2px 0 4px}
+.hl-cause ul{margin:4px 0 6px;padding-left:18px;font-size:.88rem;color:var(--muted)}
+.hl-cause p{margin:4px 0 0;font-size:.92rem}
+.hl-sure{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.s-likely .hl-sure{color:var(--issue)}
+.hl-note{font-size:.8rem}
+.hl-dlg .dlg-f{justify-content:flex-end}
+/* Identification: how sure, look-alikes, the care card */
+.conf b{display:block;font-size:.72rem;font-weight:700;font-family:var(--body);white-space:nowrap}
+.conf.c-hi b{color:var(--fern)} .conf.c-lo b{color:var(--muted)}
+.id-opt b{display:block;line-height:1.2}
+.id-opt b + i{font-weight:500;font-size:.9rem}
+.id-list.alts .id-opt{padding:6px;grid-template-columns:48px 1fr auto}
+.id-list.alts img,.id-list.alts .noimg{width:48px;height:48px}
+#wiz .pick-h{margin:16px 0 6px;font-family:var(--body);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.care-card{display:flex;flex-direction:column;gap:2px;border-radius:16px;padding:10px 12px;background:color-mix(in srgb,var(--fern-soft) 55%,var(--surface))}
+.care-card.unknown p{margin:0;font-size:.9rem}
+.cc-row{display:flex;gap:10px;align-items:flex-start;padding:4px 0}
+.cc-ic{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--surface);color:var(--fern)}
+.cc-ic svg{width:16px;height:16px}
+.cc-row > span:last-child{display:flex;flex-direction:column;line-height:1.3}
+.cc-row b{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.cc-row small{font-size:.92rem;font-weight:600}
+.cc-row.t-toxic .cc-ic{background:var(--issue-bg);color:var(--issue)} .cc-row.t-toxic small{color:var(--issue)}
+.cc-row.t-safe .cc-ic{color:var(--fern)}
+.cc-note{margin:6px 0 0;font-size:.88rem}
+.kb-tox{font-weight:600}
+.kb-tox.t-toxic{color:var(--issue)}
+.wiz-look{display:block;margin:16px auto 0}
+.wiz-more{margin:14px 0 6px}
+.wiz-more summary{cursor:pointer;font-weight:700;font-size:.92rem}
+.wiz-more .field{margin-top:8px}

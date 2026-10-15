@@ -99,13 +99,15 @@ const FB = {water:tr("Watered"), wet:tr("Already wet"), fine:tr("Looks fine"), l
   fed:tr("Fed"), skip:tr("Skip this time"), repotted:tr("Repotted…"), notYear:tr("Not this year")};
 const fbRow = (g, p) => g.feedback ? `<span class="fb" role="group" aria-label="${tr("What did you find?")}">${g.feedback.map(k => `<button class="fb-b" data-act="fb" data-kind="${k}" data-id="${p.id}">${FB[k]}</button>`).join("")}</span>` : "";
 /* Garden today: what matters now, in a few lines, then plainly "nothing else is urgent". */
-const GT_ICON = {frost:"snow", heat:"heat", wind:"wind", sun:"sun", water:"drop", rain:"drop", soon:"drop", feed:"feed", repot:"repot", move:"move", unknown:"drop"};
+const GT_ICON = {frost:"snow", heat:"heat", wind:"wind", sun:"sun", water:"drop", rain:"drop", soon:"drop", feed:"feed", repot:"repot", move:"move", task:"calendar", unknown:"drop"};
+/* Your own tasks open the tasks list; every other line opens its plants. */
+const gtAttrs = l => l.kind === "task" ? `data-task="all"` : `data-act="seePlants" data-ids="${l.ids.join(",")}"`;
 function gardenTodayHtml(groups){
   const G = GA.gardenToday(groups, state.plants, ctx());
   return `<div class="acard gtoday ${G.lines.length ? "" : "t-calm"}">
     <div class="a-ic">${ICON.leaf}</div>
     <div class="a-main"><span class="a-lab">${esc(G.greet)}</span><h3>${esc(G.head)}</h3>
-      ${G.lines.length ? `<ul class="gt-lines">${G.lines.map(l => `<li><button class="gt-line k-${l.kind} ${l.urgent ? "urgent" : ""}" data-act="seePlants" data-ids="${l.ids.join(",")}"><span class="gt-ic">${ICON[GT_ICON[l.kind]]}</span><span>${esc(l.text)}</span><span class="chev">›</span></button></li>`).join("")}</ul>
+      ${G.lines.length ? `<ul class="gt-lines">${G.lines.map(l => `<li><button class="gt-line k-${l.kind} ${l.urgent ? "urgent" : ""}" ${gtAttrs(l)}><span class="gt-ic">${ICON[GT_ICON[l.kind]]}</span><span>${esc(l.text)}</span><span class="chev">›</span></button></li>`).join("")}</ul>
       <p class="gt-calm">${esc(G.calm)}</p>` : ""}
       ${G.stale ? `<p class="gt-stale">${esc(G.stale)}</p>` : ""}</div>
   </div>`;
@@ -117,8 +119,8 @@ function renderAlerts(groups){
     el.innerHTML = `<div class="acard t-info"><div class="a-ic">${ICON.sprout}</div><div class="a-main"><h3>${tr("Start with your plants")}</h3><p class="a-lead">${tr("Add each plant once. Alerts and watering reminders then appear here every day.")}</p></div><div class="a-act"><button class="btn primary" data-act="add">${tr("Add plant")}</button></div></div>`;
     return;
   }
-  const today = gardenTodayHtml(groups);
-  if(!groups.length){ el.innerHTML = today; return; }
+  const today = gardenTodayHtml(groups), mine = tasksCardHtml() + snapCardHtml();   // your own tasks and the month's snapshot follow Alvor's cards
+  if(!groups.length){ el.innerHTML = today + mine; return; }
   // One card per kind of alert (frost, heat, wind, watering…), closed by default: the count first, the plants on a tap.
   const kinds = [];
   groups.forEach(g => {
@@ -158,7 +160,7 @@ function renderAlerts(groups){
       </button>
       <div class="a-body" ${open ? "" : "hidden"}>${parts}</div>
     </div>`;
-  }).join("");
+  }).join("") + mine;
 }
 $("#alerts").addEventListener("click", e => {
   const h = e.target.closest("[data-atype]"); if(!h) return;

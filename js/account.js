@@ -61,10 +61,39 @@ async function initAuth(){
   });
 }
 
-/* A plant is stored in two parts: what friends may see (by its visibility) and everything else, owner only. */
-const sharedRow = p => ({id:p.id, owner_id:me.id, name:String(p.name || "").trim().slice(0, 80) || "Plant",
+/* A plant is stored in two parts: what friends may see (by its visibility) and everything else, owner only.
+   What friends may see includes its happy moments (got it, new growth, flowering, fruiting: the day and a photo,
+   never a note) unless "Show friends my plants' happy moments" is off, and whether it has cuttings to share.
+   Those two columns come with part 10 of the database: until it's run, the plant is saved without them. */
+const MOMENT_KINDS = ["acquired", "growth", "flower", "fruit"];
+const shareMoments = () => state.settings.shareMoments !== false;
+function momentsOf(p){
+  if(!shareMoments() || !["friends", "everyone"].includes(p.visibility) || p.archived) return null;
+  const mine = new Map((photos[p.id] || []).map(ph => [ph.id, ph]));
+  const list = jEntries(p).filter(e => MOMENT_KINDS.includes(e.k) && /^\d{4}-\d\d-\d\d$/.test(e.d)).sort((a, b) => a.d < b.d ? 1 : a.d > b.d ? -1 : 0).slice(0, 12)
+    .map(e => ({k:e.k, d:e.d, ...(e.ph && mine.has(e.ph) && !mine.get(e.ph).hidden ? {ph:e.ph} : {})}));
+  return list.length ? list : null;
+}
+let extCols = true;   // false once the database said it has no moments/cuttings columns yet (part 10 not run)
+const sharedRow = (p, ext) => ({id:p.id, owner_id:me.id, name:String(p.name || "").trim().slice(0, 80) || "Plant",
   species:p.species ? String(p.species).slice(0, 120) : null, area:p.area ? String(p.area).slice(0, 40) : null,
-  visibility:["friends","everyone","vault"].includes(p.visibility) ? p.visibility : "vault"});
+  visibility:["friends","everyone","vault"].includes(p.visibility) ? p.visibility : "vault",
+  ...(ext ? {moments:momentsOf(p), cuttings:!!p.cuttings && ["friends", "everyone"].includes(p.visibility) && !p.archived} : {})});
+const missingColumn = e => e && (e.code === "42703" || e.code === "PGRST204" || /column .* does not exist|could not find the .* column/i.test(e.message || ""));
+async function upsertShared(list){
+  if(extCols){
+    const r = await sb.from("plants").upsert(list.map(p => sharedRow(p, true)));
+    if(!r.error) return;
+    if(!missingColumn(r.error)) throw r.error;
+    extCols = false;
+  }
+  must(await sb.from("plants").upsert(list.map(p => sharedRow(p, false))));
+}
+/* After "Show friends my plants' happy moments" changes: every plant's shared part again. */
+async function pushSharedRows(){
+  if(!token || !me) return;
+  try{ const list = allPlants(); if(list.length) await upsertShared(list); }catch(e){ if(isAuthErr(e)) sessionExpired(); }
+}
 
 /* Puts a merged garden on this phone (see syncGarden). */
 function applyMerged(m){
@@ -100,7 +129,7 @@ async function serverPlants(){
 async function uploadMerged(m){
   const order = new Map(m.plants.map((p, i) => [p.id, i]));
   if(m.upsert.length){
-    must(await sb.from("plants").upsert(m.upsert.map(sharedRow)));
+    await upsertShared(m.upsert);
     must(await sb.from("plant_private").upsert(m.upsert.map(p => ({plant_id:p.id, owner_id:me.id, data:{...p, _i:order.get(p.id)}}))));
   }
   const gone = m.removeFromServer.filter(id => UUID_RE.test(String(id)));
@@ -381,6 +410,7 @@ async function signedIn(session){
   syncLang();
   loadCircle(true);
   loadAdmin(true);
+  loadCuttings(true);
   await joinFromLink();
   queuePhotoSync();
   ensurePush();
@@ -398,7 +428,7 @@ async function signOut(){
   }catch(e){}
   try{ await sb.auth.signOut(); }catch(e){}
   token = ""; me = null;
-  circle = null; circleAt = 0; myLink = null; visit = null; fSearch = {q:"", results:null}; admin = null; forgetTalk(); updateBadge(); fillAccount();
+  circle = null; circleAt = 0; myLink = null; visit = null; cuts = null; cutsAt = 0; fSearch = {q:"", results:null}; admin = null; forgetTalk(); updateBadge(); fillAccount();
   if(currentTab === "friends" || currentTab === "friend") showTab("today");
   try{ localStorage.removeItem(USER_KEY); }catch(e){}
   const keep = state.settings; state = defaults(); state.settings = keep; saveLocal(); render();

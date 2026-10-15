@@ -15,6 +15,8 @@
    - Frost: a plan per plant (bring inside, shelter the pot, protect the crown, mulch the roots, fleece, cover new
      growth, or nothing to do), from its limit, pot or ground, the spot, the species and how long the cold lasts.
    - Garden today: what matters now, in a few lines, and plainly when nothing else is urgent.
+   - Your own tasks (settings.tasks: buy compost, plant bulbs…) sit next to Alvor's: due ones join Garden today and the
+     morning notification.
    Every number is in RULES, so a rule that an experienced gardener disagrees with is one edit.
    Texts are English in the code and Spanish in ES below (the server has no other tables). */
 (function(root, factory){
@@ -23,7 +25,7 @@
   else root.GardenAlerts = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-14.care-7";
+const VERSION = "2026-10-15.care-8";
 
 /* What Alvor knows about each kind of plant (lowest temperature, traits, watering) lives in plant-kb.js:
    in the browser it is loaded before this file, in notify it is copied in above it, in the tests it is required. */
@@ -173,6 +175,7 @@ const ES = {
   "usually every year":"normalmente cada año", "usually every {n} years":"normalmente cada {n} años", "spring {y}":"primavera de {y}",
   "1 plant is ready for feeding":"1 planta pide abono", "{n} plants are ready for feeding":"{n} plantas piden abono",
   "1 pot could be repotted this spring":"1 maceta se podría trasplantar esta primavera", "{n} pots could be repotted this spring":"{n} macetas se podrían trasplantar esta primavera",
+  "Your task for today: {t}":"Tu tarea de hoy: {t}", "{n} of your tasks are due today":"Hoy tienes {n} tareas tuyas", "Your tasks":"Tus tareas",
   "Tell Alvor when 1 plant was last watered":"Dile a Alvor cuándo regaste 1 planta", "Tell Alvor when {n} plants were last watered":"Dile a Alvor cuándo regaste {n} plantas"
 };
 const TABLES = {es:ES}, LOCALES = {en:"en-GB", es:"es-ES"};
@@ -767,6 +770,39 @@ function repotState(p, ctx){
   return r;
 }
 
+/* ---------- Your own garden tasks ---------- */
+/* settings.tasks: [{id, t (what), d (the day it's due, "YYYY-MM-DD", or none: "some day"), rep (repeats: "week",
+   "2weeks", "month", "year" or none), ids (plants it's about), n (a note), done (a one-off ticked off that day),
+   last (a repeating task last done that day), a (the day of the month it started on), m (when it last changed), del (deleted)}].
+   A repeating task keeps one due day, moved on each time it's done. Merged task by task between phones (sync.js). */
+const TASK_REP = {week:[7, "d"], "2weeks":[14, "d"], month:[1, "m"], year:[12, "m"]};
+const taskList = s => ((s && s.tasks) || []).filter(x => x && !x.del && x.t);
+/* The same day n months later; the 31st becomes the month's last day. */
+function addMonths(d, n, anchor){
+  const [y, m, d0] = d.split("-").map(Number), day = anchor || d0, t = new Date(Date.UTC(y, m - 1 + n, 1));
+  const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), Math.min(day, last))).toISOString().slice(0, 10);
+}
+/* a: the day of the month a monthly or yearly task started on, so the 31st stays the month's last day each month. */
+const stepTask = (d, rep, a) => { const R = TASK_REP[rep]; return !R ? d : R[1] === "d" ? addDays(d, R[0]) : addMonths(d, R[0], a); };
+/* overdue, today, soon (within a week), later, someday (no day) or done (a one-off already ticked off). */
+function taskState(x, today){
+  if(!TASK_REP[x.rep] && x.done) return {stage:"done", days:null};
+  if(!x.d) return {stage:"someday", days:null};
+  const n = daysBetween(today, x.d);
+  return {stage:n < 0 ? "overdue" : n === 0 ? "today" : n <= 7 ? "soon" : "later", days:n};
+}
+/* Ticking a task off: a one-off is done that day; a repeating one moves to its next day after today. */
+function completeTask(x, today){
+  if(!TASK_REP[x.rep] || !x.d) return {done:today};
+  const a = +x.a || +x.d.slice(8, 10);
+  let d = stepTask(x.d, x.rep, a);
+  while(d <= today) d = stepTask(d, x.rep, a);
+  return TASK_REP[x.rep][1] === "m" ? {d, last:today, a} : {d, last:today};
+}
+/* Due today or earlier, oldest first. */
+const tasksDue = (s, today) => taskList(s).filter(x => ["overdue", "today"].includes(taskState(x, today).stage)).sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
+
 /* ---------- All alerts ---------- */
 const ORDER = [...COLD_KEYS, "heater", "frostOk", "vent", "heat", "wind", "settleSun", "water", "rainWill", "waterUnknown", "feed", "repot", "plan", "goOut"];
 const RANK = {danger:0, warn:1, heat:2, wind:3, water:4, info:5};
@@ -961,7 +997,8 @@ function compute(plants, ctx){
 }
 
 /* ---------- Garden today: what matters now ---------- */
-/* lines: {kind:"frost"|"heat"|"wind"|"sun"|"water"|"rain"|"soon"|"feed"|"repot"|"move"|"unknown", text, ids, urgent}. */
+/* lines: {kind:"frost"|"heat"|"wind"|"sun"|"water"|"rain"|"soon"|"feed"|"repot"|"move"|"task"|"unknown", text, ids, urgent}
+   ("task" lines carry tasks: the ids of your own tasks due today). */
 function gardenToday(groups, plants, ctx){
   plants = inGarden(plants);
   if(ctx.lang) setLang(ctx.lang);
@@ -999,6 +1036,9 @@ function gardenToday(groups, plants, ctx){
   const plan = by("plan"); if(plan.length){ const n = ids(plan).length; lines.push({kind:"move", urgent:false, ids:ids(plan), text:P(n, "Get 1 plant ready to move this week", "Get {n} plants ready to move this week")}); }
   const feed = by("feed"); if(feed.length){ const n = ids(feed).length; lines.push({kind:"feed", urgent:false, ids:ids(feed), text:P(n, "1 plant is ready for feeding", "{n} plants are ready for feeding")}); }
   const repot = by("repot"); if(repot.length){ const n = ids(repot).length; lines.push({kind:"repot", urgent:false, ids:ids(repot), text:P(n, "1 pot could be repotted this spring", "{n} pots could be repotted this spring")}); }
+  const due = tasksDue(s, ctx.today);
+  if(due.length) lines.push({kind:"task", urgent:false, ids:[], tasks:due.map(x => x.id),
+    text:due.length === 1 ? T("Your task for today: {t}", {t:due[0].t}) : T("{n} of your tasks are due today", {n:due.length})});
   const unk = by("waterUnknown"); if(unk.length){ const n = ids(unk).length; lines.push({kind:"unknown", urgent:false, ids:ids(unk), text:P(n, "Tell Alvor when 1 plant was last watered", "Tell Alvor when {n} plants were last watered")}); }
 
   const urgent = lines.some(l => l.urgent);
@@ -1027,6 +1067,12 @@ function summarize(groups, ctx){
     const list = names.length > 4 ? T("{list} and {n} more", {list:names.slice(0, 4).join(", "), n:names.length - 4}) : names.join(", ");
     return `${g.title}: ${list}`;
   });
+  // Your own tasks due today join the morning message (never the evening cold check).
+  const due = evening ? [] : tasksDue(ctx.settings, ctx.today);
+  if(due.length){
+    const names = due.map(x => x.t);
+    lines.push(`${T("Your tasks")}: ${names.length > 4 ? T("{list} and {n} more", {list:names.slice(0, 4).join(", "), n:names.length - 4}) : names.join(", ")}`);
+  }
   const cold = loud.filter(g => COLD_KEYS.includes(g.key));
   const lowest = cold.length ? Math.min(...cold.flatMap(g => g.items.map(i => i.t))) : null;
   const heaterG = loud.find(g => g.key === "heater");
@@ -1038,9 +1084,10 @@ function summarize(groups, ctx){
   }
   const t = W && W.next[0];
   const wLine = t ? (t.rain >= 0.5 ? T("{lo} to {hi}, {rain} mm rain", {lo:deg(t.min), hi:deg(t.max), rain:Math.round(t.rain)}) : T("{lo} to {hi}, dry", {lo:deg(t.min), hi:deg(t.max)})) : "";
-  if(!loud.length) return {title:T("Nothing to do in the garden today"), body:wLine, tag:"garden-morning"};
+  const things = loud.length + (due.length ? 1 : 0);
+  if(!things) return {title:T("Nothing to do in the garden today"), body:wLine, tag:"garden-morning"};
   const title = cold.length ? T(lowest <= 0 ? "Frost warning: down to {t}" : "Low temperature warning: down to {t}", {t:degCold(lowest)})
-    : loud.length === 1 ? T("1 thing to do in the garden") : T("{n} things to do in the garden", {n:loud.length});
+    : things === 1 ? T("1 thing to do in the garden") : T("{n} things to do in the garden", {n:things});
   return {title, body:[...lines, wLine].filter(Boolean).join("\n"), tag:"garden-morning"};
 }
 
@@ -1048,5 +1095,5 @@ return {VERSION, inGarden, RULES, KB, setLang, ES, LOC, ALLOWED, deg, degCold, n
   weatherUrl, metUrl, fetchForecast, fromMet, withPast, sunTimes, localTime, WX, splitWeather, hargreaves, nightHours, seasonMonth, interval, placeOf, rainReach, frostBonus,
   waterState, waterStatus, feedback, learned, STAGES, STAGE_TEXT, effMin, spotLow, ghLow, roomLow, coldLimit, coldOn, frostAction, dayRisks, heatHit,
   compute, gardenToday, summarize, COLD_KEYS, moveRecord, settling, softness, sunnyDay, zoneArea,
-  feedPlan, feedState, repotState, everyText, monthName};
+  feedPlan, feedState, repotState, everyText, monthName, TASK_REP, taskList, taskState, completeTask, tasksDue, stepTask, addMonths};
 });

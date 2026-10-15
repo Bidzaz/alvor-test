@@ -20,6 +20,7 @@ const JI = {
   unprotected:ICON.sun,
   moved:ICON.move,
   note:SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  issue:SV('<path d="M12 3.5 21 19.5H3z"/><path d="M12 10v4.5"/><circle cx="12" cy="17" r=".9" fill="currentColor"/>'),
   photo:ICON.camera, care:ICON.drop, start:ICON.leaf,
   gone:SV('<rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"/><path d="M10 13h4"/>'),
   back:SV('<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/><path d="M12 16v-4.5"/><path d="M12 12.5c0-2 1.3-3.3 3.3-3.3 0 2-1.3 3.3-3.3 3.3z"/>')
@@ -37,9 +38,10 @@ const JK = {
   protected:{label:tr("Protected for winter"), hint:tr("Fleece, wrapped the trunk, mulched the roots…")},
   unprotected:{label:tr("Protection off"), hint:tr("Took the fleece or wrapping off…")},
   moved:{label:tr("Moved"), hint:tr("Where to, and why…")},
+  issue:{label:tr("Problem noticed"), hint:tr("What you saw, and what you did about it…")},
   note:{label:tr("Note"), hint:tr("Anything worth remembering…")}
 };
-const JK_ORDER = ["acquired","planted","growth","flower","fruit","pruned","repotted","fed","propagated","protected","unprotected","moved","note"];
+const JK_ORDER = ["acquired","planted","growth","flower","fruit","pruned","repotted","fed","propagated","protected","unprotected","moved","issue","note"];
 
 /* ---------- Dates and ages ---------- */
 const jDate = (d, year = true) => parseDay(d).toLocaleDateString(LOCALE, year ? {day:"numeric", month:"short", year:"numeric"} : {day:"numeric", month:"short"});

@@ -41,7 +41,9 @@ const ICON = {
   eyeOff:SV('<path d="M3 3l18 18"/><path d="M10.6 5.6A10.5 10.5 0 0 1 12 5.5c5.5 0 9 6.5 9 6.5a17 17 0 0 1-2.7 3.4M6.6 6.7C4.2 8.3 3 12 3 12s3.5 6.5 9 6.5a8.6 8.6 0 0 0 4.3-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'),
   check:SV('<path d="M4.5 12.5l5 5 10-11"/>'),
   feed:SV('<path d="M10 2.8h4v3l2.2 2.6V20a1.2 1.2 0 0 1-1.2 1.2H9A1.2 1.2 0 0 1 7.8 20V8.4L10 5.8z"/><path d="M7.8 12h8.4"/><path d="M12 14.4c-1.2 1.4-1.2 2.9 0 3.6 1.2-.7 1.2-2.2 0-3.6z"/>'),
-  repot:SV('<path d="M5 11h14l-1.6 9H6.6z"/><path d="M4 11h16"/><path d="M12 8V2.8M9.5 5.2 12 2.8l2.5 2.4"/>')
+  repot:SV('<path d="M5 11h14l-1.6 9H6.6z"/><path d="M4 11h16"/><path d="M12 8V2.8M9.5 5.2 12 2.8l2.5 2.4"/>'),
+  warn:SV('<path d="M12 3.5 21 19.5H3z"/><path d="M12 10v4.5"/><circle cx="12" cy="17" r=".9" fill="currentColor"/>'),
+  cutting:SV('<path d="M7 21c0-6 2.5-10 7-12"/><path d="M14 9c-.5-3.5 1.5-6 5.5-6.5.3 4-1.7 6.6-5.5 6.5z"/><path d="M9.8 14.5C7 13.6 5.5 11.4 5.6 8.3c3 .3 4.7 2.6 4.2 6.2z"/><path d="M4 21h7"/>')
 };
 /* Who sees a plant. "Everyone" comes later, when Alvor opens up. */
 const VIS = {
@@ -204,11 +206,29 @@ function kbSourceHtml(f){
   }
   return out.join("");
 }
+/* Light, growth and toxicity for a genus (plant-kb.js PROFILE), in words. Light depends on where it lives:
+   "full sun" outdoors is "bright, some direct sun" indoors. */
+const LIGHT_WORD = {
+  out:{S:tr("Full sun"), P:tr("Partial shade"), H:tr("Shade")},
+  in:{S:tr("Bright light, some direct sun"), P:tr("Bright light, out of harsh sun"), H:tr("Copes with low light")}
+};
+const GROWTH_WORD = {1:tr("Slow-growing"), 2:tr("Grows at a steady pace"), 3:tr("Fast-growing")};
+const TOX_WORD = {"0":tr("Not known to be toxic to people or pets"), "1":tr("Mildly toxic: can upset the stomach or irritate the skin"),
+  "2":tr("Toxic if eaten: keep it away from children and pets"), "3":tr("Very toxic: dangerous if eaten, even a little"),
+  c:tr("Very toxic to cats, even the pollen; mildly to people and dogs"), a:tr("Toxic to cats and dogs, though people eat it"),
+  "?":tr("Toxicity not known: keep it away from pets and children to be safe")};
+const toxLevel = t => t === "0" ? "safe" : t === "1" ? "mild" : t === "?" ? "unknown" : "toxic";
+function kbProfile(r){
+  const pr = r && KB.profile(r.s, "");
+  if(!pr) return null;
+  return {light:LIGHT_WORD[r.pat === "indoor" ? "in" : "out"][pr.light], lightCode:pr.light, growth:GROWTH_WORD[pr.growth], tox:TOX_WORD[pr.tox], toxCode:pr.tox};
+}
 /* "About this plant": what Alvor knows about the species, kept apart from your plant. */
 function kbCardHtml(r){
   if(!r) return "";
-  const t = r.traits || {}, li = [];
+  const t = r.traits || {}, li = [], pf = kbProfile(r);
   li.push(tr("Takes about {t}", {t:deg(r.min)}) + (r.sure < 2 ? ` (${tr("rough guess")})` : ""));
+  if(pf) li.push(pf.light, pf.growth);
   if(t.r != null) li.push(tr("Roots survive to about {t} under a thick mulch", {t:deg(t.r)}));
   if(t.c) li.push(tr("Protect the growing point in hard frost"));
   if(t.s != null) li.push(tr("New growth is damaged below {t} in spring", {t:deg(t.s)}));
@@ -218,8 +238,25 @@ function kbCardHtml(r){
   if(t.d === 3) li.push(tr("Likes the soil kept moist"));
   const name = plantName(r.s, r.n);
   return `<div class="kb-head"><b>${esc(name || r.s)}</b>${name && name !== r.s ? ` <i>${esc(r.s)}</i>` : ""}${r.family ? `<small>${esc(r.family)}</small>` : ""}</div>
-    <ul>${li.map(x => `<li>${esc(x)}</li>`).join("")}</ul>${r.note ? `<p>${esc(tr(r.note))}</p>` : ""}
+    <ul>${li.map(x => `<li>${esc(x)}</li>`).join("")}</ul>${pf ? `<p class="kb-tox t-${toxLevel(pf.toxCode)}">${esc(pf.tox)}</p>` : ""}${r.note ? `<p>${esc(tr(r.note))}</p>` : ""}
     <p class="status">${tr("From Alvor's plant knowledge. What you set for your plant comes first.")}</p>`;
+}
+/* The care card after identification: cold, where it lives, water, light, growth, toxicity, at a glance. */
+const PAT_WORD = {indoor:tr("Inside all year"), outdoor:tr("Outside all year"), mover:tr("Outside in summer, inside in winter"), greenhouse:tr("Outside in summer, greenhouse in winter")};
+function careCardHtml(r){
+  if(!r) return `<div class="care-card unknown"><p>${tr("Alvor doesn't know this plant yet. You set its cold limit and watering yourself; you can change them any time.")}</p></div>`;
+  const pf = kbProfile(r), t = r.traits || {};
+  const water = t.d === 1 ? tr("Likes to dry out between waterings") : t.d === 3 ? tr("Likes the soil kept moist") : tr("Water when the top of the soil is dry");
+  const row = (icon, head, text, cls) => `<div class="cc-row ${cls || ""}"><span class="cc-ic">${icon}</span><span><b>${head}</b><small>${esc(text)}</small></span></div>`;
+  const pat = isApt() && r.pat === "greenhouse" ? "mover" : r.pat;
+  return `<div class="care-card">
+    ${row(ICON.snow, tr("Cold"), tr("Takes about {t}", {t:deg(r.min)}) + (r.sure < 2 && r.range ? " · " + tr("its species take {lo} to {hi}", {lo:deg(r.range[0]), hi:deg(r.range[1])}) : "") + " · " + (isApt() && pat !== "indoor" ? {outdoor:tr("On the balcony all year"), mover:tr("Balcony in summer, inside in winter")}[pat] : PAT_WORD[pat]))}
+    ${row(ICON.drop, tr("Water"), water + (r.ws ? " · " + tr("about every {s} days in summer, {w} in winter", {s:r.ws, w:r.ww}) : ""))}
+    ${pf ? row(ICON.sun, tr("Light it likes"), pf.light) : ""}
+    ${pf ? row(ICON.sprout, tr("Growth"), pf.growth) : ""}
+    ${pf ? row(ICON.warn, tr("Toxicity"), pf.tox, "t-" + toxLevel(pf.toxCode)) : ""}
+    ${r.note ? `<p class="cc-note">${esc(tr(r.note))}</p>` : ""}
+  </div>`;
 }
 /* How Alvor words its watering estimate. It has no soil sensor, so it says "likely", never "needs 2 litres". */
 const STAGE_WORD = {ok:tr("No need"), soon:tr("Probably not yet"), consider:tr("Consider watering"), likely:tr("Likely needs water"), urgent:tr("Needs attention"), unknown:tr("Not sure yet")};

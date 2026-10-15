@@ -25,6 +25,16 @@
      note  a care note shown with the plant (translated in js/lang-es.js)
      list  1: one of the plants Alvor started with; its values are the ones the care tests check.
 
+   PROFILE (below DATA): for the care card after identification and "About this plant", one code per genus:
+     light   S full sun (outdoors) or bright with some direct sun (indoors), P partial shade or bright without harsh
+             sun, H shade or low light
+     toxic   0 not known to be toxic, 1 mildly (upsets the stomach or irritates the skin), 2 toxic if eaten,
+             3 very toxic, c very toxic to cats (lilies, daylilies), a toxic to cats and dogs but eaten by people
+             (onions, grapes, avocado), ? not known: Alvor says so rather than guess
+     growth  1 slow, 2 moderate, 3 fast
+   From the usual references (ASPCA's lists, poison centres, nursery guides), for the genus as a whole: a species can
+   differ, and the card says so.
+
    Where a value comes from and how sure Alvor is (find() gives both):
      list     Alvor's starting list                        species  typical for that species
      genus    typical for the genus (only the genus given)  related  the species isn't here, so from its genus
@@ -35,7 +45,7 @@
   else root.AlvorKB = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-14.kb-2";
+const VERSION = "2026-10-15.kb-3";
 const DATA = {
 "Abelia":{n:"Abelia", f:"Caprifoliaceae", min:-15, sp:{
   "x grandiflora":{n:"Glossy abelia"}
@@ -1527,6 +1537,67 @@ const DATA = {
 }}
 };
 
+const PROFILE = (
+  "Abelia:S02 Abies:S?1 Abutilon:S03 Acacia:S?3 Acanthus:P02 Acca:S02 Acer:S?2 Achillea:S13 Aconitum:P32 Acorus:P12 " +
+  "Actinidia:S03 Adiantum:H02 Aechmea:P02 Aeonium:S02 Aeschynanthus:P02 Aesculus:S22 Agapanthus:S12 Agave:S11 " +
+  "Aglaonema:P21 Ajuga:P03 Akebia:S?3 Albizia:S?3 Alcea:S02 Alchemilla:P02 Allium:Sa2 Alocasia:P23 Aloe:S12 Aloysia:S03 " +
+  "Alpinia:P03 Alstroemeria:S12 Amaryllis:S22 Amorphophallus:P22 Anemone:P22 Anethum:S03 Annona:S?2 Anthurium:P22 " +
+  "Antirrhinum:S02 Aquilegia:P12 Araucaria:S11 Arbutus:S02 Archontophoenix:S03 Argyranthemum:S13 Arisaema:H22 Armeria:S02 " +
+  "Artemisia:S12 Arum:H22 Aruncus:P02 Arundo:S03 Asimina:S?2 Asparagus:P13 Aspidistra:H01 Asplenium:H01 Aster:S02 " +
+  "Astilbe:H02 Aucuba:H12 Azalea:P31 Bambusa:S03 Beaucarnea:S01 Begonia:P12 Berberis:S12 Bergenia:P02 Beschorneria:S?2 " +
+  "Beta:S03 Betula:S?3 Blechnum:H02 Bougainvillea:S13 Brachychiton:S?2 Brahea:S01 Brassica:S03 Brugmansia:S33 " +
+  "Brunnera:H02 Buddleja:S?3 Butia:S01 Buxus:P21 Caladium:P22 Calathea:P02 Calendula:S03 Callistemon:S02 Calluna:S?2 " +
+  "Caltha:P22 Camellia:P02 Campanula:S02 Campsis:S13 Canna:S03 Capsicum:S12 Carex:P02 Carica:S?3 Carpinus:S02 " +
+  "Castanea:S02 Catalpa:S?3 Ceanothus:S?3 Cedrus:S?2 Centaurea:S03 Ceratostigma:S?2 Cercis:S02 Cereus:S02 Ceropegia:P02 " +
+  "Cestrum:S33 Chaenomeles:S12 Chamaedorea:P01 Chamaerops:S01 Chlorophytum:P03 Choisya:S12 Chrysanthemum:S12 Chusquea:P03 " +
+  "Cissus:P03 Cistus:S02 Citrus:S12 Clematis:S13 Clerodendrum:P?3 Clivia:P22 Codiaeum:S12 Coffea:P12 Colocasia:P23 " +
+  "Columnea:P02 Convallaria:H32 Convolvulus:S?3 Coprosma:S?2 Cordyline:S12 Coreopsis:S02 Coriandrum:S03 Cornus:P?2 " +
+  "Cortaderia:S03 Corylus:S02 Cosmos:S03 Cotinus:S?2 Cotoneaster:S12 Crassula:S11 Crinum:S22 Crocosmia:S?3 Crocus:S12 " +
+  "Ctenanthe:P02 Cucumis:S03 Cucurbita:S03 Cupressus:S?2 Curcuma:P02 Curio:S12 Cyathea:P02 Cycas:S31 Cyclamen:P22 " +
+  "Cydonia:S12 Cylindropuntia:S02 Cymbidium:P02 Cymbopogon:S13 Cynara:S03 Cyperus:P03 Cyrtomium:H02 Dahlia:S13 Daphne:P31 " +
+  "Darmera:P02 Dasylirion:S01 Datura:S33 Daucus:S03 Davallia:P02 Delosperma:S03 Delphinium:S32 Dendrobium:P02 Deutzia:S02 " +
+  "Dianthus:S12 Dicentra:H22 Dicksonia:P01 Dieffenbachia:P22 Digitalis:P32 Dionaea:S01 Diospyros:S02 Dracaena:P12 " +
+  "Drosera:S01 Dryopteris:H12 Dypsis:P02 Echeveria:S02 Echinacea:S02 Echinocactus:S01 Echinops:S02 Echinopsis:S02 " +
+  "Echium:S23 Edgeworthia:P?2 Elaeagnus:S02 Ensete:S03 Epimedium:H02 Epipremnum:P23 Equisetum:P13 Erica:S?2 Erigeron:S03 " +
+  "Eriobotrya:S12 Eryngium:S02 Erysimum:S22 Escallonia:S03 Eucalyptus:S13 Eucomis:S?2 Euonymus:P22 Euphorbia:S22 " +
+  "Farfugium:H?2 Fargesia:P03 Fascicularia:S02 Fatshedera:P12 Fatsia:H12 Feijoa:S02 Festuca:S02 Ficus:P12 Fittonia:P02 " +
+  "Forsythia:S03 Fortunella:S12 Fragaria:S03 Freesia:S02 Fuchsia:P03 Gaillardia:S02 Galanthus:P22 Gardenia:P12 " +
+  "Gasteria:P01 Gaura:S03 Gazania:S02 Geranium:P02 Gerbera:S02 Ginkgo:S12 Gladiolus:S22 Goeppertia:P02 Grevillea:S12 " +
+  "Gunnera:P?3 Guzmania:P02 Gymnocalycium:S01 Gynura:P03 Hakonechloa:P02 Hamamelis:P02 Haworthia:P01 Haworthiopsis:P01 " +
+  "Hebe:S02 Hedera:H23 Hedychium:P03 Helianthus:S03 Helichrysum:S02 Heliconia:P03 Helleborus:H22 Hemerocallis:Sc3 " +
+  "Hesperaloe:S02 Hesperoyucca:S?2 Heuchera:P02 Hibiscus:S?3 Hippeastrum:S22 Hosta:H13 Howea:P01 Hoya:P02 Hyacinthus:S22 " +
+  "Hydrangea:P12 Hypericum:S12 Hypoestes:P03 Iberis:S02 Ilex:P22 Impatiens:H03 Iris:S22 Jasminum:S03 Jubaea:S01 " +
+  "Juglans:S12 Juncus:P02 Juniperus:S11 Kalanchoe:S22 Kalopanax:S?2 Kniphofia:S02 Lactuca:S03 Lagerstroemia:S02 " +
+  "Lantana:S23 Laurus:S12 Lavandula:S12 Leucadendron:S?2 Leucanthemum:S12 Levisticum:P03 Ligularia:H?3 Ligustrum:S23 " +
+  "Lilium:Sc2 Liquidambar:S?2 Liriodendron:S?3 Liriope:P02 Lithops:S01 Livistona:P01 Lobelia:S22 Lonicera:S13 Lupinus:S22 " +
+  "Lysichiton:P22 Magnolia:S02 Mahonia:P02 Malus:S12 Malva:S03 Mammillaria:S01 Mandevilla:S13 Mangifera:S12 Maranta:P02 " +
+  "Matteuccia:H03 Melianthus:S23 Melissa:P03 Mentha:P13 Mespilus:S02 Metasequoia:S03 Miscanthus:S03 Monstera:P23 " +
+  "Morus:S12 Musa:S03 Muscari:S12 Musella:S03 Myosotis:P02 Myrtus:S02 Nandina:P22 Narcissus:S22 Nelumbo:S03 Nepenthes:P02 " +
+  "Nepeta:S03 Nephrolepis:P03 Nerium:S32 Nicotiana:S33 Nolina:S01 Nymphaea:S02 Ocimum:S03 Olea:S01 Opuntia:S02 " +
+  "Origanum:S12 Osmanthus:P02 Osmunda:P02 Osteospermum:S02 Oxalis:P13 Pachira:P02 Pachysandra:H12 Paeonia:S12 Papaver:S22 " +
+  "Parthenocissus:P13 Passiflora:S13 Paulownia:S03 Pelargonium:S12 Pennisetum:S03 Penstemon:S02 Peperomia:P02 " +
+  "Perovskia:S02 Persea:Sa3 Persicaria:P?3 Petasites:H?3 Petroselinum:S13 Petunia:S03 Phalaenopsis:P01 Phaseolus:S13 " +
+  "Philadelphus:S02 Philodendron:P23 Phlomis:S02 Phlox:S02 Phoenix:S01 Phormium:S02 Photinia:S12 Phyllostachys:S03 " +
+  "Picea:S?1 Pieris:P32 Pilea:P03 Pinus:S12 Pisum:S03 Pittosporum:S?2 Platanus:S?3 Platycerium:P01 Plectranthus:P03 " +
+  "Pleioblastus:P03 Plumbago:S13 Podocarpus:P22 Polygonatum:H22 Polypodium:H02 Polystichum:H02 Pontederia:S02 Primula:P12 " +
+  "Protea:S?2 Prunus:S22 Pseudopanax:S?2 Psidium:S03 Pulmonaria:H02 Punica:S02 Puya:S01 Pyracantha:S12 Pyrus:S12 " +
+  "Quercus:S21 Ranunculus:S22 Ravenala:S03 Rhaphidophora:P23 Rhapidophyllum:P01 Rhapis:H01 Rheum:S22 Rhipsalis:P02 " +
+  "Rhododendron:P32 Rhus:S13 Ribes:S02 Ricinus:S33 Rodgersia:H02 Rosa:S02 Rosmarinus:S02 Rubus:S03 Rudbeckia:S12 " +
+  "Ruscus:H11 Sabal:S01 Sagittaria:S?3 Saintpaulia:P02 Salix:S?3 Salvia:S02 Sambucus:S23 Sansevieria:P11 Santolina:S?2 " +
+  "Sarcococca:H?1 Sasa:P03 Saxifraga:P02 Schefflera:P13 Schlumbergera:P02 Scilla:S22 Scindapsus:P22 Sedum:S02 " +
+  "Sempervivum:S01 Senecio:S22 Skimmia:P11 Solanum:S23 Soleirolia:H03 Solenostemon:P13 Sorbus:S12 Spathiphyllum:H22 " +
+  "Spinacia:S03 Spiraea:S02 Stachys:S02 Stevia:S02 Stipa:S02 Strelitzia:S12 Streptocarpus:P02 Stromanthe:P02 " +
+  "Syngonium:P23 Syringa:S02 Tagetes:S13 Taxus:H31 Tetrapanax:S13 Thalia:S?2 Thuja:S12 Thymus:S02 Tillandsia:P01 " +
+  "Trachelospermum:S02 Trachycarpus:S01 Tradescantia:P13 Trochodendron:P?1 Tropaeolum:S03 Tulipa:S22 Typha:S03 " +
+  "Vaccinium:S02 Verbena:S03 Veronica:S02 Viburnum:P12 Vinca:P23 Viola:P02 Vitis:Sa3 Washingtonia:S02 Weigela:S02 " +
+  "Wisteria:S23 Woodwardia:P02 Xanthosoma:P23 Yucca:S12 Zamioculcas:H21 Zantedeschia:P22 Zea:S03 Zingiber:P02 Zinnia:S03 "
+).trim().split(" ").reduce((o, x) => { const [g, c] = x.split(":"); o[g.toLowerCase()] = c; return o; }, {});
+/* Light, toxicity and growth for what someone typed (its genus), or null. */
+function profile(species, genus){
+  const c = PROFILE[genusKey(species, genus)];
+  return c ? {light:c[0], tox:c[1], growth:+c[2]} : null;
+}
+
 /* Watering for a new plant with no interval of its own, by water need (summer, winter). */
 const NEED = {1:{ws:14, ww:30}, 2:{ws:7, ww:14}, 3:{ws:3, ww:10}};
 const PAT = {o:"outdoor", m:"mover", g:"greenhouse", i:"indoor"};
@@ -1625,5 +1696,5 @@ const starting = () => Object.values(IDX).filter(x => x.e.list).map(x => x.name)
 /* Every care note, for the language tests. */
 const notes = () => Object.values(IDX).map(x => x.e.note).filter(Boolean);
 
-return {VERSION, DATA, NEED, DEFAULT_WATER, speciesKey, traits, intervals, feeding, find, ownOf, apply, names, starting, notes};
+return {VERSION, DATA, PROFILE, NEED, DEFAULT_WATER, speciesKey, traits, intervals, feeding, profile, find, ownOf, apply, names, starting, notes};
 });

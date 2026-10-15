@@ -449,7 +449,8 @@ function onVisClick(e, st, el){
   if(st.visOpen) el.scrollIntoView({block:"nearest", behavior:"smooth"});
 }
 let editVis = {visibility:"vault", visOpen:false};
-$("#fVis").addEventListener("click", e => onVisClick(e, editVis, $("#fVis")));
+$("#fVis").addEventListener("click", e => { onVisClick(e, editVis, $("#fVis")); if(dlg.open && editingId) drawCutBox(plantById(editingId)); });
+$("#healthBtn").addEventListener("click", () => { if(editingId) openHealth(editingId); });
 const drawEditPick = () => { $("#fZonePick").innerHTML = pickerHtml(editSel); drawMicro(); if(dlg.open && editingId) drawFeedChoices(plantById(editingId)); };
 /* About this spot: only what changes Alvor's advice (frost, rain, drying, wind). Outdoors only. */
 let editMicro = {};
@@ -602,6 +603,9 @@ function openDialog(id){
   $("#fVis").hidden = !online;
   $("#fVis").innerHTML = visBlock(editVis.visibility, false);
   renderJBox();
+  renderPlantTasks();
+  $("#healthBox").hidden = !p || !!p.archived;
+  drawCutBox(p);
   if(p) drawFeedChoices(p);
   dlg.showModal();
   if(!p) $("#fName").focus();
@@ -640,10 +644,12 @@ $("#dlgSave").addEventListener("click", async () => {
     ws:Math.max(1, parseInt($("#fWs").value) || 7), ww:Math.max(1, parseInt($("#fWw").value) || 14),
     lastWatered:$("#fLast").value || null, notes:$("#fNotes").value.trim(), visibility:editVis.visibility, micro:cleanMicro(editMicro)
   };
+  if(!$("#cutBox").hidden){ if($("#fCut").checked && data.visibility !== "vault") data.cuttings = true; }
   if(editingId){
     const p = state.plants.find(x => x.id === editingId);
     if(online && visOf(p) !== data.visibility) addLog(p.id, "share", data.visibility === "vault" ? "Moved to the Vault" : "Shared with friends");
     Object.assign(p, data);
+    if(!data.cuttings && !$("#cutBox").hidden) delete p.cuttings;   // offered only on plants friends can see
     p.own = KB.ownOf(p);
     /* Feeding and repotting: empty follows Alvor, so the key is left out. */
     const setOwn = (k, v) => { if(v === "" || v == null) delete p[k]; else p[k] = +v; };

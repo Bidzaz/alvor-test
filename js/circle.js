@@ -34,6 +34,17 @@ function circleStatus(id){
   return null;
 }
 
+/* Friends' shared plants. With part 10 of the database they also carry their happy moments and cuttings to share;
+   before it, the same without them. q adds the filter. */
+async function plantsOf(q, cols){
+  if(extCols){
+    const r = await q(sb.from("plants").select(cols + ",moments,cuttings"));
+    if(!r.error) return r.data || [];
+    if(!missingColumn(r.error)) throw r.error;
+    extCols = false;
+  }
+  return must(await q(sb.from("plants").select(cols)));
+}
 async function loadCircle(force){
   if(!online || !token || !me) return null;
   if(!force && circle && Date.now() - circleAt < 60000) return circle;
@@ -48,16 +59,24 @@ async function loadCircle(force){
       const other = r => r.user_a === me.id ? r.user_b : r.user_a;
       const friendIds = fr.map(other);
       const ids = [...new Set([...friendIds, ...rq.map(r => r.from_id === me.id ? r.to_id : r.from_id), ...bl.map(b => b.blocked_id)])];
-      const [profs, shared] = await Promise.all([
+      const seenAll = Object.entries(state.settings.visits || {}).filter(([id]) => friendIds.includes(id)).map(([, t]) => t).sort()[0];
+      const [profs, shared, newPh] = await Promise.all([
         ids.length ? sb.from("profiles").select("id,username,display_name,avatar_path").in("id", ids).then(must) : [],
-        friendIds.length ? sb.from("plants").select("owner_id").in("owner_id", friendIds).then(must) : []
+        friendIds.length ? plantsOf(q => q.in("owner_id", friendIds), "owner_id,created_at") : [],
+        friendIds.length && seenAll ? sb.from("photos").select("owner_id,created_at").in("owner_id", friendIds).gt("created_at", seenAll).then(must).catch(() => []) : []
       ]);
       notePeople(profs);
-      const P = Object.fromEntries(profs.map(p => [p.id, p])), count = {};
+      const P = Object.fromEntries(profs.map(p => [p.id, p])), count = {}, fresh = {};
       shared.forEach(r => count[r.owner_id] = (count[r.owner_id] || 0) + 1);
+      /* What's new in each friend's garden since you last visited it: new plants, photos and happy moments. */
+      const since = id => (state.settings.visits || {})[id];
+      shared.forEach(r => { const t = since(r.owner_id); if(!t) return;
+        if(r.created_at && r.created_at > t) fresh[r.owner_id] = (fresh[r.owner_id] || 0) + 1;
+        (r.moments || []).forEach(m => { if(m.d > t.slice(0, 10) && m.k !== "acquired") fresh[r.owner_id] = (fresh[r.owner_id] || 0) + 1; }); });
+      newPh.forEach(r => { const t = since(r.owner_id); if(t && r.created_at > t) fresh[r.owner_id] = (fresh[r.owner_id] || 0) + 1; });
       const byName = (a, b) => personName(a).localeCompare(personName(b));
       circle = {
-        friends:fr.filter(r => P[other(r)]).map(r => ({...P[other(r)], since:r.created_at, shared:count[other(r)] || 0})).sort(byName),
+        friends:fr.filter(r => P[other(r)]).map(r => ({...P[other(r)], since:r.created_at, shared:count[other(r)] || 0, fresh:fresh[other(r)] || 0})).sort(byName),
         incoming:rq.filter(r => r.to_id === me.id && P[r.from_id]).map(r => ({...P[r.from_id], at:r.created_at})).sort((a, b) => b.at.localeCompare(a.at)),
         outgoing:rq.filter(r => r.from_id === me.id && P[r.to_id]).map(r => ({...P[r.to_id], at:r.created_at})).sort(byName),
         blocked:bl.map(b => P[b.blocked_id] || {id:b.blocked_id, username:"", display_name:tr("Someone")}).sort(byName)
@@ -102,7 +121,7 @@ async function shareText(text){
 }
 
 function personRow(p, acts, kind){
-  const sub = kind === "friend" ? `@${esc(p.username)} · ${p.shared ? trn(p.shared, "{n} plant shared", "{n} plants shared") : tr("nothing shared yet")}`
+  const sub = kind === "friend" ? `@${esc(p.username)} · ${p.shared ? trn(p.shared, "{n} plant shared", "{n} plants shared") : tr("nothing shared yet")}${p.fresh ? ` <i class="f-new">${trn(p.fresh, "1 new", "{n} new")}</i>` : ""}`
     : p.username ? "@" + esc(p.username) : "";
   const who = `<b>${esc(personName(p))}</b><span>${sub}</span>`;
   return `<div class="person">${personAv(p)}${kind === "friend" || kind === "result-friend"
@@ -148,6 +167,7 @@ function renderFriends(){
   if(C && C.incoming.length) h += `<div class="card f-card"><h2>${tr("Friend requests")} <small>${C.incoming.length}</small></h2>
     <div class="people">${C.incoming.map(p => personRow(p, `<button class="btn small primary" data-fact="accept" data-id="${p.id}">${tr("Accept")}</button>${moreBtn(p)}`, "request")).join("")}</div></div>`;
   h += `<div class="card f-card"><h2>${tr("What's new")}</h2><div id="feedBox">${feedHtml()}</div></div>`;
+  h += cuttingsCardHtml() || `<div id="cutCard" hidden></div>`;
   h += `<div class="card f-card"><h2>${tr("Your friend link")}</h2>
     <p class="f-lead">${tr("Send it to people you know. Whoever opens it becomes your friend straight away, and if they don't have Alvor yet, it's their invitation too.")}</p>
     <div class="f-btns"><button class="btn primary" data-fact="shareLink" ${link ? "" : "disabled"}>${tr("Share my link")}</button>
@@ -178,6 +198,7 @@ function openFriends(){
   loadMyLink();
   loadCircle(true);
   loadFeed(true).then(markFeedSeen);
+  loadCuttings(true);
 }
 
 $("#friendsBody").addEventListener("input", e => {
@@ -277,7 +298,7 @@ async function personMenu(id){
 let visit = null;
 async function openFriend(id){
   if(!online || !token || !me || !id) return;
-  visit = {id, loading:true, filter:"all", prof:findPerson(id)};
+  visit = {id, loading:true, filter:"all", prof:findPerson(id), since:(state.settings.visits || {})[id] || null};
   showTab("friend");
   friendLook(id).then(F => { if(visit && visit.id === id){ visit.bgSpec = F.spec; visit.style = F.style; visit.locUrls = F.locs || {}; if(currentTab === "friend"){ applyLook(); renderFriend(); } } }).catch(() => {});
   try{
@@ -285,7 +306,7 @@ async function openFriend(id){
     const [prof, garden, plants, phs] = await Promise.all([
       sb.from("profiles").select("id,username,display_name,avatar_path").eq("id", id).maybeSingle().then(must),
       sb.from("gardens").select("home,town").eq("owner_id", id).maybeSingle().then(must),
-      sb.from("plants").select("id,name,species,area").eq("owner_id", id).then(must),
+      plantsOf(q => q.eq("owner_id", id), "id,name,species,area,created_at"),
       sb.from("photos").select("id,plant_id,path_small,taken_at,created_at").eq("owner_id", id).then(must)
     ]);
     if(!visit || visit.id !== id) return;
@@ -302,6 +323,8 @@ async function openFriend(id){
     if(!visit || visit.id !== id) return;
     Object.assign(visit, {loading:false, error:false, prof:prof || visit.prof, garden, plants:plants.sort((a, b) => a.name.localeCompare(b.name)),
       byPlant, urls, isFriend:circleStatus(id) === "friend"});
+    if(visit.isFriend) noteVisit(id);
+    loadCuttings();
   }catch(e){
     if(isAuthErr(e)){ sessionExpired(); return; }
     if(visit && visit.id === id){ visit.loading = false; visit.error = true; }
@@ -329,6 +352,7 @@ function friendCard(x, V){
     <div class="pc-body"><button class="nm" data-gact="plant" data-id="${x.id}">${esc(x.name)}</button>
       ${x.species ? `<div class="sp">${esc(x.species)}</div>` : ""}
       ${n > 1 ? `<div class="sp" style="font-style:normal">${tr("{n} photos", {n})}</div>` : ""}
+      ${plantBadges(x)}
       <div class="tkc" data-tkc="${x.id}">${miniCounts({owner:V.id, type:"plant", id:x.id})}</div></div>
   </div>`;
 }
@@ -349,6 +373,7 @@ function renderFriend(){
     if(V.isFriend) mountFriendTalk({...V, filter:"all"}, home);
     return;
   }
+  h += sinceVisitHtml(V) + cuttingsToShareHtml(V);
   h += friendGardenTalkHtml();
   const areas = ALL_AREAS.filter(a => V.plants.some(x => x.area === a));
   if(V.filter !== "all" && !areas.includes(V.filter)) V.filter = "all";
@@ -392,6 +417,8 @@ function openFriendPlant(pid, idx){
     <div class="fp-meta">${x.species ? `<div class="sp">${esc(x.species)}</div>` : ""}
       <div class="where">${zi(x.area)}<span>${esc(fAreaLabel(x.area, home))}</span></div>
       <small>${cur ? tr("Photo from {date}", {date:esc(longDate(cur.taken_at || cur.created_at))}) : tr("No photos shared yet")}${phs.length > 1 ? ` · ${tr("{n} photos", {n:phs.length})}` : ""}</small></div>
+    ${momentsHtml(x, V)}
+    ${x.cuttings ? `<div class="fp-cut" id="fpCut">${cutAskHtml(V.id, x)}</div>` : ""}
     <div class="fp-talk" id="fpTalk"></div>
     <div class="fp-report">${tr("Something wrong?")} <button class="linkish" data-rep="plant">${tr("Report this plant")}</button>${cur ? ` · <button class="linkish" data-rep="photo" data-id="${esc(cur.id)}">${tr("Report this photo")}</button>` : ""}</div>`;
   mountTalk($("#fpTalk"), {owner:V.id, type:"plant", id:pid, name:x.name, home, ownerName:personName(V.prof || {})}, "full");
@@ -406,6 +433,53 @@ $("#fpBody").addEventListener("click", e => {
     else openReport({type:"photo", id:r.dataset.id, person:who, what:tr("this photo of \"{name}\"", {name:x ? x.name : ""})});
     return;
   }
+  const m = e.target.closest("[data-fpm]");
+  if(m && visit){ const list = visit.byPlant[fplant.dataset.pid] || [], i = list.findIndex(ph => ph.id === m.dataset.fpm); if(i >= 0) openFriendPlant(fplant.dataset.pid, i); return; }
   const b = e.target.closest("[data-fpi]"); if(b) openFriendPlant(fplant.dataset.pid, +b.dataset.fpi);
 });
 $("#fpClose").addEventListener("click", () => fplant.close());
+
+/* ---------- Garden visit: what changed since you last came ----------
+   settings.visits: {friend id: when you last opened their garden}, kept with your settings (same on every phone). */
+function noteVisit(id){
+  const v = {...(state.settings.visits || {}), [id]:new Date().toISOString()};
+  const keep = Object.entries(v).sort((a, b) => a[1] < b[1] ? 1 : -1).slice(0, 150);   // the 150 most recent are plenty
+  state.settings.visits = Object.fromEntries(keep);
+  save();
+  const f = circle && circle.friends.find(p => p.id === id); if(f) f.fresh = 0;
+}
+const MOMENT_WORD = {flower:tr("Flowering"), fruit:tr("Fruiting"), growth:tr("New growth"), acquired:tr("New in the garden")};
+const recentMoment = (x, days) => (x.moments || []).filter(m => m.k !== "acquired" && daysBetween(m.d, today()) <= days).sort((a, b) => a.d < b.d ? 1 : -1)[0];
+function plantBadges(x){
+  const m = recentMoment(x, 30);
+  return (m || x.cuttings) ? `<div class="fp-badges">${m ? `<span class="fpb k-${m.k}">${JI[m.k]}${MOMENT_WORD[m.k]}</span>` : ""}${x.cuttings ? `<span class="fpb k-cut">${ICON.cutting}${tr("Cuttings")}</span>` : ""}</div>` : "";
+}
+function visitChanges(V){
+  if(!V.since) return null;
+  const t = V.since, d = t.slice(0, 10), later = s => s && s > t;
+  const newPlants = V.plants.filter(x => later(x.created_at));
+  const moments = V.plants.flatMap(x => (x.moments || []).filter(m => m.d > d && m.d <= today() && !(m.k === "acquired" && newPlants.includes(x))).map(m => ({x, m})))
+    .sort((a, b) => a.m.d < b.m.d ? 1 : -1);
+  const photos = V.plants.map(x => ({x, n:(V.byPlant[x.id] || []).filter(ph => later(ph.created_at)).length})).filter(o => o.n);
+  return {newPlants, moments, photos};
+}
+function sinceVisitHtml(V){
+  const C = visitChanges(V); if(!C) return "";
+  const lines = [];
+  C.moments.slice(0, 5).forEach(({x, m}) => lines.push(`<button class="sv-line k-${m.k}" data-gact="plant" data-id="${x.id}"><span class="jr-ic">${JI[m.k]}</span><span><span><b>${esc(x.name)}</b> · ${esc(MOMENT_WORD[m.k])}</span><small>${esc(jDate(m.d, false))}</small></span></button>`));
+  if(C.newPlants.length) lines.push(`<button class="sv-line k-acquired" data-gact="plant" data-id="${C.newPlants[0].id}"><span class="jr-ic">${JI.acquired}</span><span>${esc(trn(C.newPlants.length, "{n} new plant: {names}", "{n} new plants: {names}", {names:C.newPlants.slice(0, 4).map(x => x.name).join(", ")}))}</span></button>`);
+  const nph = C.photos.reduce((a, o) => a + o.n, 0);
+  if(nph) lines.push(`<button class="sv-line k-photo" data-gact="plant" data-id="${C.photos.sort((a, b) => b.n - a.n)[0].x.id}"><span class="jr-ic">${JI.photo}</span><span>${esc(trn(nph, "{n} new photo of {names}", "{n} new photos of {names}", {names:C.photos.slice(0, 3).map(o => o.x.name).join(", ")}))}</span></button>`);
+  return `<div class="card sv-card"><h3 class="tk-card-h">${tr("Since your last visit")} <small>${esc(ago(V.since))}</small></h3>
+    ${lines.length ? `<div class="sv-lines">${lines.join("")}</div>` : `<p class="status" style="margin:0">${tr("Nothing new since then.")}</p>`}</div>`;
+}
+/* A shared plant's happy moments, oldest first, with their photo when friends can see it. */
+function momentsHtml(x, V){
+  const list = (x.moments || []).slice().sort((a, b) => a.d < b.d ? -1 : 1);
+  if(!list.length) return "";
+  const phs = V.byPlant[x.id] || [];
+  return `<div class="fp-moments"><h3 class="pick-h">${tr("Milestones")}</h3><div class="jr-list mini">${list.map(m => {
+    const ph = m.ph && phs.find(p => p.id === m.ph), url = ph && V.urls[ph.path_small];
+    return `<div class="jr-item k-${m.k}"><span class="jr-ic">${JI[m.k]}</span><span class="jr-txt"><b>${m.k === "acquired" ? tr("Got it") : esc(MOMENT_WORD[m.k])}</b><small>${esc(jDate(m.d))}</small></span>${url ? `<button type="button" class="fp-mph" data-fpm="${esc(ph.id)}"><img class="jr-img" src="${esc(url)}" alt=""></button>` : ""}</div>`;
+  }).join("")}</div></div>`;
+}
