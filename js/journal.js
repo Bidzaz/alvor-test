@@ -231,7 +231,7 @@ function renderMs(){
   const sel = MS.newPh ? MS.newPh.data : MS.ph && ((photos[p.id] || []).find(x => x.id === MS.ph) || {}).data;
   const own = (photos[p.id] || []);
   $("#msBody").innerHTML = (MS.auto ? `<p class="jr-movetxt">${ICON.move} ${esc(logText(MS.txt))}</p><p class="status">${tr("Alvor wrote this when you moved it. Add a note if you like.")}</p>`
-      : `<div class="ms-kinds" role="radiogroup" aria-label="${tr("What happened?")}">${JK_ORDER.map(k => `<button type="button" class="ms-k k-${k}" role="radio" data-mk="${k}" aria-pressed="${MS.k === k}"><span class="jr-ic">${JI[k]}</span>${JK[k].label}</button>`).join("")}</div>`) +
+      : `<div class="ms-kinds" role="group" aria-label="${tr("What happened?")}">${JK_ORDER.map(k => `<button type="button" class="ms-k k-${k}" data-mk="${k}" aria-pressed="${MS.k === k}"><span class="jr-ic">${JI[k]}</span>${JK[k].label}</button>`).join("")}</div>`) +
     `<div class="row2"><div class="field"><label for="msDate">${tr("When")}</label><input id="msDate" type="date" max="${today()}" value="${esc(MS.d)}"></div></div>
      <div class="field"><label for="msNote">${tr("Note")}</label><textarea id="msNote" rows="2" placeholder="${esc(MS.k && JK[MS.k] ? JK[MS.k].hint : tr("Anything worth remembering…"))}">${esc(MS.n)}</textarea></div>
      <div class="field"><label>${tr("Photo")}</label>
@@ -319,7 +319,7 @@ function renderCompare(){
       ${CMP.mode === "slide" ? `<span class="cmp-line"></span><input type="range" class="cmp-range" min="0" max="100" value="${CMP.x}" aria-label="${tr("Slide between before and after")}">` : ""}
       <span class="cmp-lab l">${jDate(A.date)}</span><span class="cmp-lab r">${jDate(B.date)}</span></div>
     <p class="cmp-gap">${gap}</p>
-    <div class="seg small" role="radiogroup" aria-label="${tr("How to compare")}"><button type="button" data-cmode="slide" aria-pressed="${CMP.mode === "slide"}">${tr("Slider")}</button><button type="button" data-cmode="side" aria-pressed="${CMP.mode === "side"}">${tr("Side by side")}</button></div>
+    <div class="seg small" role="group" aria-label="${tr("How to compare")}"><button type="button" data-cmode="slide" aria-pressed="${CMP.mode === "slide"}">${tr("Slider")}</button><button type="button" data-cmode="side" aria-pressed="${CMP.mode === "side"}">${tr("Side by side")}</button></div>
     <h3 class="pick-h">${tr("Before")}</h3>${strip("a")}<h3 class="pick-h">${tr("After")}</h3>${strip("b")}`;
   const r = $("#cmpBody .cmp-range");
   if(r) r.addEventListener("input", () => { CMP.x = +r.value; $("#cmpBody .cmp-frame").style.setProperty("--x", CMP.x + "%"); });

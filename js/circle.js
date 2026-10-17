@@ -93,7 +93,7 @@ function updateBadge(){
   const r = circle ? circle.incoming.length : 0, a = typeof unseenCount === "function" ? unseenCount() : 0, n = r + a, b = $("#reqBadge");
   b.hidden = !n; b.textContent = n > 9 ? "9+" : n;
   const parts = [r ? trn(r, "{n} new request", "{n} new requests") : "", a ? trn(a, "{n} new reaction or comment", "{n} new reactions and comments") : ""].filter(Boolean);
-  $("#friendsBtn").setAttribute("aria-label", parts.length ? `${tr("Community")}, ${parts.join(", ")}` : tr("Community"));
+  $("#friendsBtn").setAttribute("aria-label", parts.length ? `${tr("Circle")}, ${parts.join(", ")}` : tr("Circle"));
 }
 async function loadMyLink(){
   if(myLink || !token) return;
@@ -160,33 +160,34 @@ async function runSearch(){
 
 function renderFriends(){
   const el = $("#friendsBody");
-  if(!online || !me){ el.innerHTML = `<div class="fg-msg"><h3>${tr("Sign in first")}</h3><p>${tr("Friends need an Alvor account.")}</p></div>`; return; }
+  if(!online || !me || !token){ el.innerHTML = `<div class="empty circle-empty"><span class="ce-ic" aria-hidden="true">${ICON.people}</span><h2>${tr("Your circle starts with an account")}</h2><p>${tr("Friends visit each other's gardens, react to plants and swap cuttings. Your own garden works without it.")}</p>${online ? `<button class="btn primary" data-fact="signin">${tr("Sign in or create an account")}</button>` : ""}</div>`; return; }
   const C = circle, link = myLink ? friendLinkUrl(myLink) : "";
   const focused = document.activeElement && document.activeElement.id === "fSearch";
-  let h = "";
+  let h = navigator.onLine === false ? `<p class="f-offline">${ICON.warn}${tr("You're offline. What you see here may be out of date, and changes need a connection.")}</p>` : "";
+  /* Circle, in order: who's asking to join, what's new, your friends' gardens, cuttings, then growing the circle. */
   if(C && C.incoming.length) h += `<div class="card f-card"><h2>${tr("Friend requests")} <small>${C.incoming.length}</small></h2>
     <div class="people">${C.incoming.map(p => personRow(p, `<button class="btn small primary" data-fact="accept" data-id="${p.id}">${tr("Accept")}</button>${moreBtn(p)}`, "request")).join("")}</div></div>`;
   h += `<div class="card f-card"><h2>${tr("What's new")}</h2><div id="feedBox">${feedHtml()}</div></div>`;
-  h += cuttingsCardHtml() || `<div id="cutCard" hidden></div>`;
-  h += `<div class="card f-card"><h2>${tr("Your friend link")}</h2>
-    <p class="f-lead">${tr("Send it to people you know. Whoever opens it becomes your friend straight away, and if they don't have Alvor yet, it's their invitation too.")}</p>
-    <div class="f-btns"><button class="btn primary" data-fact="shareLink" ${link ? "" : "disabled"}>${tr("Share my link")}</button>
-      <button class="btn" data-fact="qr" ${link ? "" : "disabled"} aria-expanded="${showQr}">${showQr ? tr("Hide QR code") : tr("QR code")}</button></div>
-    ${showQr && link ? `<div class="qr-box"><div class="qr" role="img" aria-label="${tr("QR code of your friend link")}">${qrSvg(link)}</div><p>${tr("Your friend scans it with their phone's camera.")}</p></div>` : ""}
-    <p class="f-note">${link ? "" : esc(myLinkErr || tr("Getting your link…")) + " "}${tr("Sent it to the wrong person?")} <button class="linkish" data-fact="resetLink" ${link ? "" : "disabled"}>${tr("Reset my link")}</button> ${tr("and the old one stops working.")}</p>
-  </div>`;
-  h += `<div class="card f-card"><h2>${tr("Find people")}</h2>
-    <input type="search" class="f-search" id="fSearch" placeholder="${tr("Name or @username")}" aria-label="${tr("Find people by name or @username")}" autocomplete="off" autocapitalize="none" spellcheck="false" value="${esc(fSearch.q)}">
-    <div id="fResults">${searchResultsHtml()}</div>
-    ${me.findable ? "" : `<p class="f-note">${tr("You're hidden from search: only people with your link can add you.")} <button class="linkish" data-fact="findable">${tr("Let people find me")}</button></p>`}
-  </div>`;
   const fr = C ? C.friends : [];
-  h += `<div class="card f-card"><h2>${tr("Your friends")} ${fr.length ? `<small>${fr.length}</small>` : ""}</h2>
+  h += `<div class="card f-card"><h2>${tr("Your friends' gardens")} ${fr.length ? `<small>${fr.length}</small>` : ""}</h2>
     ${!C ? `<p class="f-empty">${tr("Loading…")}</p>` : fr.length ? `<div class="people">${fr.map(p => personRow(p, moreBtn(p), "friend")).join("")}</div>`
       : `<p class="f-empty">${tr("No friends yet. Share your link to start your circle.")}</p>`}
     ${C && C.outgoing.length ? `<h3 class="group-h" style="font-size:1rem">${tr("Waiting for an answer")}</h3>
       <div class="people">${C.outgoing.map(p => personRow(p, `<button class="btn small" data-fact="cancel" data-id="${p.id}">${tr("Cancel")}</button>`, "sent")).join("")}</div>` : ""}
   </div>`;
+  h += cuttingsCardHtml() || `<div id="cutCard" hidden></div>`;
+  h += `<div class="card f-card"><h2>${tr("Grow your circle")}</h2>
+    <p class="f-lead">${tr("Send your friend link to people you know. Whoever opens it becomes your friend straight away, and if they don't have Alvor yet, it's their invitation too.")}</p>
+    <div class="f-btns"><button class="btn primary" data-fact="shareLink" ${link ? "" : "disabled"}>${tr("Share my link")}</button>
+      <button class="btn" data-fact="qr" ${link ? "" : "disabled"} aria-expanded="${showQr}">${showQr ? tr("Hide QR code") : tr("QR code")}</button></div>
+    ${showQr && link ? `<div class="qr-box"><div class="qr" role="img" aria-label="${tr("QR code of your friend link")}">${qrSvg(link)}</div><p>${tr("Your friend scans it with their phone's camera.")}</p></div>` : ""}
+    <p class="f-note">${link ? "" : esc(myLinkErr || tr("Getting your link…")) + " "}${tr("Sent it to the wrong person?")} <button class="linkish" data-fact="resetLink" ${link ? "" : "disabled"}>${tr("Reset my link")}</button> ${tr("and the old one stops working.")}</p>
+    <h3 class="f-sub">${tr("Find people")}</h3>
+    <input type="search" class="f-search" id="fSearch" placeholder="${tr("Name or @username")}" aria-label="${tr("Find people by name or @username")}" autocomplete="off" autocapitalize="none" spellcheck="false" value="${esc(fSearch.q)}">
+    <div id="fResults">${searchResultsHtml()}</div>
+    ${me.findable ? "" : `<p class="f-note">${tr("You're hidden from search: only people with your link can add you.")} <button class="linkish" data-fact="findable">${tr("Let people find me")}</button></p>`}
+  </div>`;
+  h += `<div class="f-prefs"><button class="chip" data-fact="prefs">${ICON.gear}${tr("Notifications from friends")}</button><button class="chip" data-fact="privacy">${ICON.lock}${tr("Sharing and privacy")}</button></div>`;
   if(C && C.blocked.length) h += `<details class="card f-blocked"><summary>${tr("Blocked ({n})", {n:C.blocked.length})}</summary>
     <div class="people">${C.blocked.map(p => personRow(p, `<button class="btn small" data-fact="unblock" data-id="${p.id}">${tr("Unblock")}</button>`, "blocked")).join("")}</div></details>`;
   el.innerHTML = h;
@@ -211,6 +212,8 @@ $("#friendsBody").addEventListener("click", async e => {
   const b = e.target.closest("[data-fact]"); if(!b || b.disabled) return;
   const act = b.dataset.fact, id = b.dataset.id;
   if(act === "visit") return openFriend(id);
+  if(act === "signin") return showAuth();
+  if(act === "prefs" || act === "privacy"){ showTab("settings"); const c = $(act === "prefs" ? "#notifCard" : "#privCard"); if(c && !c.hidden) requestAnimationFrame(() => c.scrollIntoView({block:"start"})); return; }
   if(act === "more") return personMenu(id);
   if(act === "feed") return openFeedItem(+b.dataset.i);
   if(act === "feedMore"){ feedMore = true; drawFeed(); return; }

@@ -45,8 +45,8 @@ function renderArchive(){
   $("#arcSave").textContent = AD.edit ? tr("Save") : tr("Move to the Archive");
   const R = ARC[AD.why];
   $("#arcBody").innerHTML = (AD.edit ? "" : `<p class="status arc-intro">${tr("It leaves your garden, the alerts and what friends see. Its photos, journal and history stay in the Archive, only for you, and you can bring it back.")}</p>`) +
-    `<div class="arc-why" role="radiogroup" aria-label="${tr("What happened?")}">${ARC_ORDER.map(k =>
-      `<button type="button" class="arc-w w-${k}" role="radio" data-aw="${k}" aria-pressed="${AD.why === k}"><b>${ARC[k].label}</b>${ARC[k].hint ? `<small>${ARC[k].hint}</small>` : ""}</button>`).join("")}</div>` +
+    `<div class="arc-why" role="group" aria-label="${tr("What happened?")}">${ARC_ORDER.map(k =>
+      `<button type="button" class="arc-w w-${k}" data-aw="${k}" aria-pressed="${AD.why === k}"><b>${ARC[k].label}</b>${ARC[k].hint ? `<small>${ARC[k].hint}</small>` : ""}</button>`).join("")}</div>` +
     (AD.why === "died" ? `<div class="field"><label>${tr("What probably happened?")}</label><div class="chips arc-cause">${Object.entries(ARC_CAUSE).map(([k, l]) =>
       `<button type="button" class="chip" data-ac="${k}" aria-pressed="${AD.cause === k}">${l}</button>`).join("")}</div></div>` : "") +
     (R && R.to ? `<div class="field"><label for="arcTo">${R.to}</label><input id="arcTo" maxlength="60" value="${esc(AD.to)}" placeholder="${esc(R.toPh)}"></div>` : "") +

@@ -487,8 +487,7 @@ function fillAccount(){
   if(!online){ $("#acctLine").textContent = tr("Accounts work once the app is opened from your site."); $("#accountCard").querySelectorAll("button").forEach(b => b.hidden = true); return; }
   $("#acctLine").textContent = me ? tr("Signed in as {who}.", {who:`@${me.user}${me.email ? " (" + me.email + ")" : ""}${me.owner ? tr(", owner of Alvor") : ""}`}) : tr("Not signed in.");
   $("#inviteBtn").hidden = !(me && me.owner);
-  $("#friendsBtn").hidden = !(me && token);
-  $("#heroAcct").hidden = !(me && token);
+  fillMeButtons();
   let off = $("#acctOff");
   if(me && me.disabled){
     if(!off){ off = document.createElement("p"); off.id = "acctOff"; off.className = "acct-off"; $("#acctLine").after(off); }

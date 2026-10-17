@@ -196,7 +196,7 @@ async function discMarkSeen(ids){
 }
 document.addEventListener("keydown", e => { if(e.key === "Escape" && $("#discMoment") && !document.querySelector("dialog[open]")) discDismiss(); });
 
-/* ---------- More → Your garden's story ---------- */
+/* ---------- Journal → Discoveries (and the moments switch in Settings) ---------- */
 function renderDiscCard(){
   const box = $("#discEntry"); if(!box) return;
   const show = online && !!token && DISC.ready !== false && (DISC.ready === true || discMine());
@@ -206,6 +206,7 @@ function renderDiscCard(){
   $("#discDot").hidden = !fresh;
   $("#discMomentsOn").checked = discMomentsOn();
   $("#discMomentsRow").hidden = !show;
+  const card = $("#discCard"); if(card) card.hidden = !show;   // Settings: the moments switch, only once Discoveries are on
 }
 $("#discMomentsOn").addEventListener("change", e => { state.settings.discMoments = e.target.checked ? undefined : false; if(e.target.checked) delete state.settings.discMoments; save(); });
 

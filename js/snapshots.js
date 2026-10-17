@@ -103,7 +103,7 @@ function renderSnap(){
   const stat = (n, one, many) => n ? `<span class="snap-stat"><b>${n}</b>${esc(trn(n, one, many).replace(/^\S+\s/, ""))}</span>` : "";
   const msLine = x => `<li class="k-${x.e.k}"><span class="jr-ic">${JI[x.e.k] || JI.note}</span><span><span><b>${esc(x.p.name)}</b> · ${esc((JK[x.e.k] || JK.note).label)}${x.first ? ` <em>${tr("first time")}</em>` : ""}</span><small>${snapDay(x.e.d)}${x.e.n ? " · " + esc(x.e.n) : ""}</small></span></li>`;
   let h = `<div class="snap-nav">
-      <div class="seg small" role="radiogroup" aria-label="${tr("Month or season")}"><button type="button" data-snap="kind" data-k="month" aria-pressed="${P.kind === "month"}">${tr("Month")}</button><button type="button" data-snap="kind" data-k="season" aria-pressed="${P.kind === "season"}">${tr("Season")}</button></div>
+      <div class="seg small" role="group" aria-label="${tr("Month or season")}"><button type="button" data-snap="kind" data-k="month" aria-pressed="${P.kind === "month"}">${tr("Month")}</button><button type="button" data-snap="kind" data-k="season" aria-pressed="${P.kind === "season"}">${tr("Season")}</button></div>
       <div class="snap-step"><button type="button" class="round-back" data-snap="prev" aria-label="${tr("Earlier")}">${ICON.back}</button><h3>${esc(snapTitle(P))}</h3><button type="button" class="round-back fwd" data-snap="next" aria-label="${tr("Later")}" ${atNow ? "disabled" : ""}>${ICON.back}</button></div>
     </div>`;
   if(D.empty){ $("#snapBody").innerHTML = h + `<p class="status jr-empty" style="text-align:center;margin:30px 0">${tr("Nothing noted in this period. Photos and journal milestones make the snapshot.")}</p>`; return; }

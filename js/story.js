@@ -61,20 +61,27 @@ function storyItemHtml(it){
   if(it.type === "disc") return `<button type="button" class="jr-item quiet st-disc" data-disc="see" data-id="${esc(it.r.discovery)}"><span class="jr-ic st-seal">${discSeal(it.r.discovery, true, 34)}</span><span class="jr-txt"><span>${alvor}${esc(tr("Discovery: {name}", {name:discName(it.r.discovery)}))}</span><small>${jDate(it.d)}</small></span></button>`;
   return "";
 }
-function renderStory(){
-  if(!ST) return;
-  const all = storyItems(ST.f);
+/* The timeline as HTML, for the Journal page and the garden journal sheet. S = {f, months, q (plant or note), place}. */
+const STORY_PLACE = p => p.archived ? "archive" : p.area === "porch" || p.area === "outside" ? "garden" : p.area;
+function storyHtml(S, page){
+  const q = fold(String(S.q || "").trim().toLowerCase());
+  const hit = it => (!S.place || (it.p && STORY_PLACE(it.p) === S.place)) &&
+    (!q || (it.p && fold([it.p.name, it.p.species, it.p.genus, it.e && it.e.n, it.e && JK[it.e.k] && JK[it.e.k].label].join(" ").toLowerCase()).includes(q)));
+  const all = storyItems(S.f).filter(it => it.type === "disc" ? !S.place && !q : hit(it));
   const months = [...new Set(all.map(it => it.d.slice(0, 7)))];
-  const shown = new Set(months.slice(0, ST.months));
+  const shown = new Set(months.slice(0, S.months));
   const items = all.filter(it => shown.has(it.d.slice(0, 7)));
   const plants = allPlants(), nph = plants.reduce((n, p) => n + (photos[p.id] || []).length, 0);
   const nms = plants.reduce((n, p) => n + jEntries(p).filter(e => STORY_KINDS.includes(e.k) && !e.auto && !e.task).length, 0);
   const first = all.length ? all[all.length - 1].d : null;
   const F = {all:tr("Everything"), ms:tr("Milestones"), photos:tr("Photos")};
-  let h = first ? `<p class="st-sum">${[tr("Since {date}", {date:jMonth(first)}), trn(plants.length, "{n} plant", "{n} plants"), nms ? trn(nms, "{n} milestone", "{n} milestones") : "", nph ? trn(nph, "{n} photo", "{n} photos") : ""].filter(Boolean).join(" · ")}</p>` : "";
-  h += `<div class="chips jr-chips">${Object.keys(F).map(k => `<button type="button" class="chip" data-stf="${k}" aria-pressed="${ST.f === k}">${F[k]}</button>`).join("")}</div>`;
+  const filtered = !!(q || S.place);
+  let h = !page && first ? `<p class="st-sum">${[tr("Since {date}", {date:jMonth(first)}), trn(plants.length, "{n} plant", "{n} plants"), nms ? trn(nms, "{n} milestone", "{n} milestones") : "", nph ? trn(nph, "{n} photo", "{n} photos") : ""].filter(Boolean).join(" · ")}</p>` : "";
+  h += `<div class="chips jr-chips" role="group" aria-label="${tr("Show")}">${Object.keys(F).map(k => `<button type="button" class="chip" data-stf="${k}" aria-pressed="${S.f === k}">${F[k]}</button>`).join("")}</div>`;
   if(!items.length){
-    h += `<p class="status jr-empty st-empty">${plants.length ? tr("Nothing recorded yet. When a plant flowers, gets repotted or you take its photo, add it to its journal: it all comes together here.") : tr("Your garden's story starts with your first plant.")}</p>`;
+    h += `<div class="jr-empty-box"><p class="status jr-empty st-empty">${filtered ? tr("Nothing recorded matches. Your journal is all still there: clear the search to see it.")
+      : plants.length ? tr("Nothing recorded yet. When a plant flowers, gets repotted or you take its photo, add it to its journal: it all comes together here.") : tr("Your garden's story starts with your first plant.")}</p>
+      ${filtered ? `<button type="button" class="btn small" data-jp="clear">${tr("Clear the search")}</button>` : page && plants.length ? "" : page ? `<button type="button" class="btn small primary" data-hub="add">${tr("Add plant")}</button>` : ""}</div>`;
   }else{
     let month = "";
     for(const it of items){
@@ -83,21 +90,50 @@ function renderStory(){
       h += storyItemHtml(it);
     }
     h += `</div>`;
-    if(months.length > ST.months) h += `<div class="jr-acts st-more"><button type="button" class="btn small" data-story="more">${tr("Show earlier")}</button></div>`;
+    if(months.length > S.months) h += `<div class="jr-acts st-more"><button type="button" class="btn small" data-story="more">${tr("Show earlier")}</button></div>`;
   }
   h += `<p class="status st-key"><span class="st-alvor">${tr("Alvor")}</span>${tr("marks what Alvor noticed: a plant's years with you, a discovery. Everything else is what you recorded.")}</p>
     <p class="status jr-private">${ICON.lock}${tr("Only you see your garden's story. Friends see your shared plants' photos and happy moments, as before.")}</p>`;
-  $("#storyBody").innerHTML = h;
+  return h;
 }
+function renderStory(){ if(ST) $("#storyBody").innerHTML = storyHtml(ST, false); }
+
+/* ---------- The Journal page (the Compass's third place) ---------- */
+let JP = {f:"all", months:12, q:"", place:""};
+function renderJournalPage(){
+  const plants = allPlants(), nph = plants.reduce((n, p) => n + (photos[p.id] || []).length, 0);
+  const nms = plants.reduce((n, p) => n + jEntries(p).filter(e => STORY_KINDS.includes(e.k) && !e.auto && !e.task).length, 0);
+  $("#jpSum").textContent = plants.length ? [trn(state.plants.length, "{n} plant", "{n} plants"), nms ? trn(nms, "{n} milestone", "{n} milestones") : "", nph ? trn(nph, "{n} photo", "{n} photos") : ""].filter(Boolean).join(" · ") : tr("Your garden's story");
+  const arc = (state.archive || []).length;
+  $("#arcEntry").hidden = !arc;
+  $("#arcCount").textContent = arc ? trn(arc, "{n} plant that left your garden", "{n} plants that left your garden") : "";
+  if(typeof renderDiscCard === "function") renderDiscCard();
+  /* Where: only the places that have plants (and the Archive when it has some). */
+  const places = [...new Set(plants.map(STORY_PLACE))];
+  const PL = {house:areaLabel("house"), garden:tr("Garden"), greenhouse:tr("Greenhouse"), balcony:tr("Balcony"), archive:tr("Archive")};
+  const order = ["house", "garden", "greenhouse", "balcony", "archive"].filter(k => places.includes(k));
+  if(JP.place && !order.includes(JP.place)) JP.place = "";
+  $("#jpPlaces").innerHTML = order.length > 1 ? [`<button type="button" class="chip" data-jpp="" aria-pressed="${!JP.place}">${tr("All places")}</button>`, ...order.map(k => `<button type="button" class="chip" data-jpp="${k}" aria-pressed="${JP.place === k}">${PL[k]}</button>`)].join("") : "";
+  $("#jpSearch").value = JP.q;
+  $("#journalBody").innerHTML = storyHtml(JP, true);
+}
+$("#jpSearch").addEventListener("input", e => { JP.q = e.target.value; JP.months = 12; $("#journalBody").innerHTML = storyHtml(JP, true); });
+$("#jpPlaces").addEventListener("click", e => { const b = e.target.closest("[data-jpp]"); if(!b) return; JP.place = b.dataset.jpp; JP.months = 12; renderJournalPage(); });
+$("#view-journal").addEventListener("click", e => {
+  const b = e.target.closest("[data-jp]"); if(!b) return;
+  if(b.dataset.jp === "clear"){ JP.q = ""; JP.place = ""; renderJournalPage(); $("#jpSearch").focus(); }
+});
 $("#storyClose").addEventListener("click", () => storyDlg.close());
+/* The same buttons work in the sheet and on the Journal page: whichever the button is in. */
+const storyOn = el => el.closest("#journalBody") ? "page" : "sheet";
 document.addEventListener("click", e => {
   const f = e.target.closest("[data-stf]");
+  if(f && storyOn(f) === "page"){ JP.f = f.dataset.stf; JP.months = 12; $("#journalBody").innerHTML = storyHtml(JP, true); return; }
   if(f && ST){ ST.f = f.dataset.stf; ST.months = 12; renderStory(); return; }
   const b = e.target.closest("[data-story]"); if(!b) return;
   const a = b.dataset.story;
   if(a === "open") return openStory();
-  if(!ST) return;
-  if(a === "more"){ ST.months += 12; renderStory(); }
+  if(a === "more"){ if(storyOn(b) === "page"){ JP.months += 12; $("#journalBody").innerHTML = storyHtml(JP, true); } else if(ST){ ST.months += 12; renderStory(); } }
   else if(a === "plant"){ if(plantById(b.dataset.id)) openJournal(b.dataset.id); }
   else if(a === "photo"){
     const p = plantById(b.dataset.id); if(!p) return;

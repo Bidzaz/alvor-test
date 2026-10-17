@@ -314,9 +314,9 @@ function save(){
   GS.stamp(syncMeta(), allPlants(), state.settings, Date.now()); writeMeta();
   saveLocal(); queueSync();
 }
-function toast(msg){
+function toast(msg, ms){
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2200);
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), ms || 2200);
 }
 /* extra: what Alvor estimated at that moment (for feedback), kept so the rules can be checked against this garden later. */
 function addLog(plantId, type, detail, extra){

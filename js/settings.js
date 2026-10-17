@@ -143,6 +143,7 @@ function fillSettings(){
   fillProfileCard(); fillPrivacy(); fillLook(); fillLang();
   refreshNotifyStatus();
   if(me && me.owner && token) loadAdmin();
+  fillSetIndex();
   renderColdPick();
   $("#sMargin").value = s.margin; $("#sHeat").value = s.heat; $("#sWind").value = s.wind; $("#sRain").value = s.rain;
 }
@@ -228,7 +229,7 @@ $("#resetBtn").addEventListener("click", () => {
 function fillLang(){
   const c = state.settings.lang || "auto";
   $("#langSeg").innerHTML = [["auto", tr("Automatic")], ...Object.entries(LANGS)].map(([k, l]) =>
-    `<button role="radio" data-lang="${k}" aria-pressed="${k === c}" ${k !== "auto" ? `lang="${k}"` : ""}>${esc(l)}</button>`).join("");
+    `<button data-lang="${k}" aria-pressed="${k === c}" ${k !== "auto" ? `lang="${k}"` : ""}>${esc(l)}</button>`).join("");
   $("#langHint").textContent = (c === "auto" ? tr("Follows the phone: {lang}.", {lang:LANGS[phoneLang()]}) + " " : "")
     + tr("Notifications and emails from Alvor use it too.");
 }
@@ -586,7 +587,7 @@ function fillPrivacy(){
   $("#privCard").hidden = !show;
   if(!show) return;
   const v = defaultVis();
-  $("#defVisSeg").innerHTML = ["friends","vault"].map(k => `<button role="radio" data-defvis="${k}" aria-pressed="${k === v}">${VIS[k].icon}${VIS[k].short}</button>`).join("");
+  $("#defVisSeg").innerHTML = ["friends","vault"].map(k => `<button data-defvis="${k}" aria-pressed="${k === v}">${VIS[k].icon}${VIS[k].short}</button>`).join("");
   $("#defVisHint").textContent = v === "friends" ? tr("Friends see new plants as soon as you add them.") : tr("New plants go to your Vault. Only you see them until you share them.");
   $("#chooseShareBtn").hidden = !state.plants.length;
   $("#findable").checked = !!me.findable;

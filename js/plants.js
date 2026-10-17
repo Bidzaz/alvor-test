@@ -4,8 +4,28 @@
 /* ---------- Plants: list or grid ---------- */
 let plantView = (() => { try{ const v = localStorage.getItem("garden-view"); return ["list","grid","tiles"].includes(v) ? v : "list"; }catch(e){ return "list"; } })();
 let idsFilter = null;
+/* At the top of a place's plants: its picture, how it's doing right now, and adding a plant right there. */
+const ctxLoc = f => ["house","house-window","house-low","house-cabinet"].includes(f) ? "house" : f === "greenhouse" ? "greenhouse"
+  : f === "balcony" || /^balc-/.test(f) ? "balcony" : f === "garden" || f === "outside" || f === "porch" || /^(out|porch)-/.test(f) ? "garden" : null;
+function renderPlantsCtx(){
+  const el = $("#plantsCtx"); if(!el) return;
+  const k = !idsFilter && ctxLoc(plantFilter), L = k && LOCS().find(x => x.k === k);
+  if(!L){ el.innerHTML = ""; return; }
+  const list = state.plants.filter(p => L.areas.includes(p.area));
+  const risk = list.filter(p => (plantFlags[p.id] || new Set()).has("frost")).length, thirsty = list.filter(p => (plantFlags[p.id] || new Set()).has("water")).length;
+  const temp = tempChip(L.k), mine = locPicSrc(L.k);
+  el.innerHTML = `<div class="pctx loc-${L.k} ${mine ? "has-img" : ""}" style="${mine ? `--img:url('${mine}')` : locStyle(look().style, L.k)}">
+      <span class="pctx-ic" aria-hidden="true">${ICON[L.icon]}</span>
+      <div class="pctx-st">${risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk from the cold", {n:risk})}</span>` : ""}${thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : ""}
+        ${temp ? `<button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button>` : ""}
+        ${!risk && !thirsty && list.length ? `<span class="lchip calm">${ICON.leaf}${tr("Nothing needs doing here")}</span>` : ""}</div>
+    </div>
+    <div class="pctx-acts"><button class="btn primary small" data-hub="add">${ICON.plus}${tr("Add a plant here")}</button></div>`;
+}
+$("#plantsCtx").addEventListener("click", e => { const th = e.target.closest("[data-loctemp]"); if(th) openLocTemp(th.dataset.loctemp); });
 function renderPlants(){
   const pt = $("#plantsTitle"); if(pt) pt.textContent = plantsTitle();
+  renderPlantsCtx();
   const counts = {all:state.plants.length};
   ALL_AREAS.forEach(a => counts[a] = state.plants.filter(p => p.area === a).length);
   counts.vault = online ? state.plants.filter(p => visOf(p) === "vault").length : 0;
@@ -29,10 +49,11 @@ function renderPlants(){
   if(plantFilter === "archive" && !idsFilter){ renderArchiveList(el, q); return; }
   el.className = "plist v-" + plantView;
   if(!state.plants.length){
-    el.innerHTML = `<div class="empty"><h3>${tr("No plants yet")}</h3><p>${tr("Tap Add plant and take a photo; the app suggests the species for you.")}</p><button class="btn primary" data-act="add">${tr("Add plant")}</button></div>`;
+    el.innerHTML = `<div class="empty"><h3>${tr("No plants yet")}</h3><p>${tr("Tap Add plant and take a photo; the app suggests the species for you.")}</p><button class="btn primary" data-hub="add">${tr("Add plant")}</button></div>`;
     return;
   }
-  if(!list.length){ el.innerHTML = `<p style="color:var(--muted)">${tr("No plants match. Clear the search or pick another filter.")}</p>`; return; }
+  if(!list.length){ const searching = q || idsFilter || plantFilter === "vault";
+    el.innerHTML = `<div class="empty slim"><p>${searching ? tr("No plants match. Clear the search or pick another filter.") : tr("No plants here yet.")}</p>${searching ? `<button class="btn small" data-act="clearFind">${tr("Clear search and filters")}</button>` : ""}</div>`; return; }
   const by = Object.fromEntries(ALL_AREAS.map(a => [a, []]));
   list.sort((a, b) => a.name.localeCompare(b.name)).forEach(p => by[p.area].push(p));
   el.innerHTML = ALL_AREAS.filter(a => by[a].length).map(a => `
@@ -163,6 +184,16 @@ function setZone(p, z, planting){
   jNoteMove(p);   // and in its journal
   return true;
 }
+/* After a move: where it went, and only when the move matters (just out of the house, into full sun, brought
+   inside) what Alvor does about it, from the same settling-in rules as the alerts. Any other move is just confirmed. */
+function moveToast(p){
+  const st = GA.settling(p, today()), where = tr("Moved to: {spot}", {spot:zoneLabel(p)});
+  if(!st || st.days !== 0) return toast(where);
+  const why = st.kind === "in" ? tr("A few yellow leaves in the first weeks are normal.")
+    : st.cold ? tr("For {n} days Alvor treats it as a little more tender to cold and wind.", {n:GA.RULES.settle.days})
+    : tr("Shade it around midday for the first week or so.");
+  toast(`${where}. ${why}`, 6500);
+}
 /* From alert buttons: "inside", "greenhouse" or "outside"; goes back to the plant's usual spot.
    wx: the warning it answered (frost, heat, wind), kept on the move in the history and the journal. */
 function moveGroup(ids, to, wx){
@@ -218,7 +249,7 @@ function pickerHtml(sel){
   else if(top === "outside") html += `<p class="pick-lead">${TOPS.outside.lead}</p><div class="zone-pick"><h3 class="pick-h">${tr("In the garden")}</h3>${AREAS.outside.zones.map(opt).join("")}<h3 class="pick-h">${tr("On the porch")} <span>${tr("covered, rain doesn't reach")}</span></h3>${AREAS.porch.zones.map(opt).join("")}</div>`;
   else if(top === "balcony") html += `<p class="pick-lead">${TOPS.balcony.lead}</p><div class="zone-pick">${AREAS.balcony.zones.map(opt).join("")}</div>`;
   if(sel.zone && canGround(sel.zone) && top === topOf(ZONES[sel.zone].area))
-    html += `<p class="pick-lead">${tr("How is it planted?")}</p><div class="seg small plant-seg" role="radiogroup" aria-label="${tr("Planted")}"><button data-pplant="pot" aria-pressed="${sel.planting !== "ground"}">${ICON.pot} ${tr("In a pot")}</button><button data-pplant="ground" aria-pressed="${sel.planting === "ground"}">${ICON.ground} ${tr("In the ground")}</button></div>`;
+    html += `<p class="pick-lead">${tr("How is it planted?")}</p><div class="seg small plant-seg" role="group" aria-label="${tr("Planted")}"><button data-pplant="pot" aria-pressed="${sel.planting !== "ground"}">${ICON.pot} ${tr("In a pot")}</button><button data-pplant="ground" aria-pressed="${sel.planting === "ground"}">${ICON.ground} ${tr("In the ground")}</button></div>`;
   return html;
 }
 function pickerClick(e, sel){
@@ -246,7 +277,10 @@ $("#zonePick").addEventListener("click", e => {
   const p = state.plants.find(x => x.id === movingId);
   const done = (what === "zone" && !canGround(moveSel.zone)) || (what === "plant" && moveSel.zone);
   if(done && p){
-    if(setZone(p, moveSel.zone, moveSel.planting)){ save(); render(); toast(zoneLabel(p)); }
+    if(setZone(p, moveSel.zone, moveSel.planting)){
+      if(dlg.open && editingId === p.id){ editSel = {area:p.area, zone:p.zone, planting:p.planting}; drawEditPick(); }   // the sheet's own picker follows, so Save doesn't move it back
+      save(); render(); moveToast(p);
+    }
     moveDlg.close(); return;
   }
   $("#zonePick").innerHTML = pickerHtml(moveSel);
@@ -264,9 +298,13 @@ document.addEventListener("click", e => {
   else if(act === "feedAll") feedPlants(ids);
   else if(act === "fedOn"){ const p = plantById(b.dataset.id), last = p && jEntries(p).filter(x => x.k === "fed").sort((x, y) => x.d < y.d ? -1 : 1).pop(); openMs(b.dataset.id, null, {k:"fed", n:(last && last.n) || ""}); }
   else if(act === "move") openMove(b.dataset.id);
+  else if(act === "health") openHealth(b.dataset.id);
   else if(act === "moveAll") moveGroup(ids, b.dataset.to, b.dataset.wx);
   else if(act === "protectAll") protectGroup(ids, b.dataset.what, b.dataset.wx);
   else if(act === "seePlants"){ idsFilter = ids; showTab("plants"); renderPlants(); }
+  else if(act === "allPlants") openAllPlants(b.dataset.focus === "search");
+  else if(act === "clearFind"){ idsFilter = null; plantFilter = "all"; $("#search").value = ""; renderPlants(); }
+  else if(act === "openArchiveList"){ idsFilter = null; plantFilter = "archive"; showTab("plants"); renderPlants(); }
   else if(act === "clearIds"){ idsFilter = null; renderPlants(); }
   else if(act === "sceneBack") goScene("overview");
   else if(act === "viewPhoto") viewPhoto(b.dataset.ph);
@@ -274,34 +312,42 @@ document.addEventListener("click", e => {
   else if(act === "filter"){ idsFilter = null; plantFilter = b.dataset.f; renderPlants(); }
 });
 
-/* ---------- The round menu ---------- */
+/* ---------- The Living Compass: the four places, and pages opened from them ----------
+   Today, Garden (locations), Journal and Circle (friends) are roots: the dock lights the one you're in.
+   Any other page (a place's plants, a friend's garden, Settings…) remembers where it was opened from (NAV, js/compass.js),
+   and its back arrow returns there. */
 const dial = $("#dial");
+const ROOTS = ["today", "locations", "journal", "friends"];
+const NAV = [];
+let rootTab = "today";
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-tab]"); if(!b) return;
-  if(b.dataset.all){ idsFilter = null; plantFilter = "all"; }   // the Plants button always opens the whole list
-  showTab(b.dataset.tab, b.dataset.all ? "plants" : "");
-  if(b.dataset.all) renderPlants();
+  if(b.classList.contains("round-back")) return navBack(b.dataset.tab);
+  if(b.closest("#dial") && b.dataset.tab === currentTab && ROOTS.includes(currentTab)){ window.scrollTo({top:0, behavior:reduceMotion() ? "auto" : "smooth"}); return; }   // tapping where you are: back to its top
+  showTab(b.dataset.tab);
 });
-let plantsFrom = "locations";   // which bar button stays lit on the plant list: Plants, or Locations when a place was opened
-function showTab(tab, from){
+/* opt.back: going back (nothing new to remember). */
+function showTab(tab, opt){
+  const back = !!(opt && opt.back);
+  if(ROOTS.includes(tab)){ NAV.length = 0; rootTab = tab; }
+  else if(!back && tab !== currentTab) NAV.push(navCtx());
   currentTab = tab;
-  if(tab === "plants"){ plantsFrom = from || "locations"; const rb = $("#view-plants .round-back"); if(rb) rb.hidden = plantsFrom === "plants"; }
   if(tab !== "plants") idsFilter = null;
-  const main = tab === "log" || tab === "profile" ? "settings" : tab === "friend" ? "friends" : tab === "plants" ? plantsFrom : tab;
   document.body.dataset.page = tab;
-  document.querySelectorAll("#dial [data-tab]").forEach(b => { if(b.dataset.tab === main) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
-  ["today","locations","plants","log","settings","profile","friends","friend"].forEach(t => $("#view-" + t).hidden = t !== tab);
+  document.body.dataset.root = rootTab;
+  document.querySelectorAll("#dial [data-tab]").forEach(b => { if(b.dataset.tab === rootTab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  ["today","locations","plants","journal","log","settings","profile","friends","friend"].forEach(t => $("#view-" + t).hidden = t !== tab);
   if(tab === "settings") fillSettings();
   if(tab === "profile") fillProfile();
   if(tab === "friends") openFriends();
   if(tab === "friend") renderFriend();
+  if(tab === "journal") renderJournalPage();
   if(tab === "today") applySky(); else { cancelAnimationFrame(fxState.raf); applyBackdrop(); }
   applyLook();
-  dial.classList.remove("folded");
   window.scrollTo(0,0);
+  syncTrap();
 }
 $("#search").addEventListener("input", renderPlants);
-$("#addBtn").addEventListener("click", () => openWizard());
 
 /* ---------- Photos ---------- */
 const idb = (() => {
@@ -465,7 +511,7 @@ const defaultVis = () => (me && VIS[me.defaultVisibility] && me.defaultVisibilit
 function visBlock(vis, open){
   const v = VIS[vis] || VIS.vault;
   return `<div class="vis-row"><span class="vis-ic">${v.icon}</span><span>${tr("Visible to:")} <b>${v.label}</b></span><button type="button" class="linkish" data-vis-change>${open ? tr("Done") : tr("Change")}</button></div>` +
-    (open ? `<div class="seg small vis-seg" role="radiogroup" aria-label="${tr("Visible to")}">${["friends","vault"].map(k => `<button type="button" role="radio" data-vis="${k}" aria-pressed="${k === vis}">${VIS[k].icon}${VIS[k].short}</button>`).join("")}</div><p class="status">${v.hint}</p>` : "");
+    (open ? `<div class="seg small vis-seg" role="group" aria-label="${tr("Visible to")}">${["friends","vault"].map(k => `<button type="button" data-vis="${k}" aria-pressed="${k === vis}">${VIS[k].icon}${VIS[k].short}</button>`).join("")}</div><p class="status">${v.hint}</p>` : "");
 }
 function onVisClick(e, st, el){
   const c = e.target.closest("[data-vis-change]"), v = e.target.closest("[data-vis]");
@@ -496,6 +542,35 @@ $("#fMicro").addEventListener("click", e => {
   drawMicro();
 });
 const cleanMicro = m => { const o = {}; ["wall","tree","pm"].forEach(k => { if(m[k]) o[k] = true; }); if(m.wind) o.wind = m.wind; return o; };
+/* ---------- The top of the plant sheet: the plant, where it is, how it's doing, and the common actions ----------
+   Above the fold: its newest photo, its spot (with Move), Alvor's estimate in words that say it's an estimate, who
+   sees it, and Watered / Add a moment / Move / Something wrong. Everything else (care, journal, editing) follows. */
+function psTopHtml(p){
+  const ph = latestPhoto(p.id), W = wx(), st = waterStatus(p, W), flags = [...(plantFlags[p.id] || [])].sort();
+  const kb = findPreset(p.species, p.genus), common = kb ? plantName(kb.s, kb.n) : "";
+  const vis = online ? VIS[visOf(p)] : null;
+  const care = ["consider","likely","urgent"].includes(st.stage) ? STAGE_WORD[st.stage] : st.stage === "unknown" ? STAGE_WORD.unknown : STAGE_WORD[st.stage];
+  return `<div class="ps-hero ${ph ? "has-ph" : ""}">${ph ? `<button class="ps-img" data-act="viewPhoto" data-ph="${ph.id}" aria-label="${tr("Open the newest photo of {name}", {name:esc(p.name)})}"><img src="${ph.data}" alt=""></button>`
+      : `<span class="ps-img ps-none a-${p.area}" aria-hidden="true">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`}
+    <div class="ps-id">${p.species ? `<i>${esc(p.species)}</i>` : ""}${common && common !== p.name && common !== p.species ? `<small>${esc(common)}</small>` : ""}
+      ${vis ? `<span class="ps-vis">${vis.icon}${esc(vis.short)}</span>` : ""}</div></div>
+    <div class="ps-where">${zi(p.zone)}<span><b>${esc(zoneLabel(p))}</b><small>${esc(PAT_WORD[p.pattern] || "")}</small></span><button class="btn small" data-act="move" data-id="${p.id}">${ICON.move}${tr("Move")}</button></div>
+    <details class="ps-care st-${st.stage}" ${psCareOpen ? "open" : ""}><summary><span class="ps-ci">${ICON.drop}</span><span><b>${esc(care)}</b><small>${esc((st.reasons || [])[0] || "")}${st.reasons && st.reasons.length ? " · " : ""}${tr("an estimate")}</small></span><span class="ps-why">${tr("Why?")}</span></summary>${careBoxHtml(p)}</details>
+    ${flags.length ? `<div class="ps-flags">${flags.map(k => `<span class="lflag f-${k}">${ICON[FLAG_INFO[k][0]]}${FLAG_INFO[k][1]}</span>`).join("")}</div>` : ""}
+    <div class="ps-acts">
+      <button class="btn primary" data-act="water" data-id="${p.id}">${ICON.drop}${tr("Watered")}</button>
+      <button class="btn" data-j="add">${ICON.plus}${tr("Add a moment")}</button>
+      <button class="btn" data-act="health" data-id="${p.id}">${ICON.warn}${tr("Something wrong?")}</button>
+    </div>`;
+}
+let psCareOpen = false;   // "Why?" under the watering estimate stays open while you use the sheet
+document.addEventListener("toggle", e => { if(e.target.classList && e.target.classList.contains("ps-care")) psCareOpen = e.target.open; }, true);
+function refreshPsTop(){
+  if(!dlg.open || !editingId) return;
+  const p = state.plants.find(x => x.id === editingId); if(!p) return;
+  $("#psTop").innerHTML = psTopHtml(p);
+  $("#dlgTitle").textContent = p.name;
+}
 /* Water now: Alvor's estimate for this plant, why, and what you found. */
 function careBoxHtml(p){
   const st = waterStatus(p, wx());
@@ -569,6 +644,7 @@ function refreshCareBox(){
   $("#feedNow").innerHTML = feedBoxHtml(p);
   showSettle(p);
   $("#fLast").value = p.lastWatered || "";
+  refreshPsTop();
 }
 $("#fZonePick").addEventListener("click", e => { if(pickerClick(e, editSel)) drawEditPick(); });
 attachSuggest($("#fSpecies"), it => { $("#fGenus").value = it.genus; showPresetNote(); $("#fSpecies").dispatchEvent(new Event("change")); });
@@ -577,7 +653,7 @@ let formKB = null;
 const formFacts = () => ({species:$("#fSpecies").value, genus:$("#fGenus").value, minTemp:$("#fMin").value, ws:$("#fWs").value, ww:$("#fWw").value});
 function showPresetNote(){
   const r = findPreset($("#fSpecies").value, $("#fGenus").value);
-  $("#presetNote").innerHTML = kbCardHtml(r); $("#kbAbout").hidden = !r;
+  $("#presetNote").innerHTML = kbCardHtml(r); $("#kbAbout").hidden = !r; $("#psAbout").hidden = !r;
   showKbSource();
 }
 function showKbSource(){ $("#fKbSrc").innerHTML = kbSourceHtml(formFacts()); }
@@ -593,8 +669,10 @@ $("#fKbSrc").addEventListener("click", e => {
 function openDialog(id){
   editingId = id;
   const p = id ? state.plants.find(x => x.id === id) : null;
-  $("#dlgTitle").textContent = p ? tr("Edit plant") : tr("Add plant");
+  $("#dlgTitle").textContent = p ? p.name : tr("Add plant");
   $("#dlgDelete").hidden = !p;
+  $("#psTop").innerHTML = p ? psTopHtml(p) : "";
+  $("#psEdit").open = !p;
   $("#arcBox").hidden = !p;
   $("#fName").value = p ? p.name : "";
   $("#fSpecies").value = p ? p.species : "";
@@ -604,7 +682,8 @@ function openDialog(id){
   editSel = p ? {area:p.area, zone:p.zone, planting:p.planting} : {area:"outside", zone:"out-sun", planting:"ground"};
   editMicro = {...((p && p.micro) || {})};
   drawEditPick();
-  $("#careBox").hidden = !p;
+  $("#careBox").hidden = true;   // the watering estimate lives at the top of the sheet now (psTop), with its why
+  psCareOpen = false;
   $("#careNow").innerHTML = p ? careBoxHtml(p) : "";
   $("#feedBox").hidden = !p || !!p.archived;
   $("#feedNow").innerHTML = p && !p.archived ? feedBoxHtml(p) : "";

@@ -17,7 +17,7 @@ const STYLES = [
    loc:{house:"loc-house-future.jpg", garden:"loc-garden-future.jpg", greenhouse:"loc-greenhouse-future.jpg", balcony:"loc-balcony-future.jpg"}}
 ];
 const ACCENTS = [
-  {k:"fern", label:tr("Fern"), c:"#2F6B45"}, {k:"moss", label:tr("Moss"), c:"#5C6B2A"}, {k:"plum", label:tr("Plum"), c:"#7A3D6A"},
+  {k:"fern", label:tr("Forest"), c:"#355640"}, {k:"moss", label:tr("Moss"), c:"#5C6B2A"}, {k:"plum", label:tr("Plum"), c:"#7A3D6A"},
   {k:"rose", label:tr("Rose"), c:"#AD4A74"}, {k:"graphite", label:tr("Graphite"), c:"#3E4A52"}
 ];
 const MODES = [["auto", tr("Automatic")], ["light", tr("Light")], ["dark", tr("Dark")]];
@@ -49,7 +49,7 @@ function imgSize(src){
   return imgSizes[src] ||= new Promise((res, rej) => { const i = new Image(); i.onload = () => res({w:i.naturalWidth, h:i.naturalHeight}); i.onerror = rej; i.src = src; });
 }
 /* What the backdrop shows: {k, src, pos, sun} */
-function styleSpec(k){ const st = styleOf(k); return {k:st.k === "classic" ? "sunrise" : st.k, src:st.bg, pos:st.pos, sun:st.sun}; }
+function styleSpec(k){ const st = styleOf(k); return {k:st.k, src:st.bg, pos:st.pos, sun:st.sun}; }
 function ownSpec(t, src){
   const x = Math.min(1, Math.max(0, +t.x || .5)), y = Math.min(1, Math.max(0, +t.y || .5));
   return {k:"own", src, pos:t.sun ? [x, y] : [.5, .5], sun:t.sun ? [x, y] : null};
@@ -57,22 +57,20 @@ function ownSpec(t, src){
 let bgShown = null, bgTurn = 0;
 function placeSun(){
   const S = bgShown, sun = $(".bg-sun"), box = $(".bg");
-  if(!S || S.k === "sunrise" || !S.sun || !S.size){ return; }
+  if(!S || !S.sun || !S.size){ return; }
   const vw = box.clientWidth, vh = box.clientHeight, {w, h} = S.size;
   const k = Math.max(vw / w, vh / h), rw = w * k, rh = h * k;
   const left = (vw - rw) * S.pos[0] + S.sun[0] * rw, top = (vh - rh) * S.pos[1] + S.sun[1] * rh;
-  Object.assign(sun.style, {left:left + "px", top:top + "px", width:.7 * vh + "px", height:.7 * vh + "px", display:""});
+  const r = Math.max(vh, vw * .6);
+  Object.assign(sun.style, {left:left + "px", top:top + "px", width:.7 * r + "px", height:.7 * r + "px", display:""});
 }
 async function showBackdrop(S){
   const turn = ++bgTurn, photo = $(".bg-photo"), sun = $(".bg-sun");
-  if(!S || S.k === "sunrise"){   // the original: its sun is placed by the stylesheet
-    bgShown = {k:"sunrise"};
-    photo.style.backgroundImage = photo.style.backgroundPosition = "";
-    ["left","top","width","height","display"].forEach(p => sun.style[p] = "");
-    return;
-  }
+  /* The photo now sits in the band at the top of Today (and of a friend's garden), so every style's light is placed
+     from the photo's own size, the original stone house too. No backdrop given: the Classic one. */
+  if(!S) S = styleSpec("classic");
   let size = null;
-  try{ size = await imgSize(S.src); }catch(e){ if(turn === bgTurn) showBackdrop(null); return; }
+  try{ size = await imgSize(S.src); }catch(e){ if(turn === bgTurn && S.k !== "classic") showBackdrop(null); return; }
   if(turn !== bgTurn) return;
   bgShown = {...S, size};
   photo.style.backgroundImage = `url("${S.src}")`;
@@ -129,7 +127,7 @@ function fillLook(){
     if(bgChecked.has(st.k)) return; bgChecked.add(st.k);
     imgSize(st.bg).catch(() => { bgMissing.add(st.k); if(currentTab === "settings") fillLook(); applyLook(); render(); });
   });
-  const tile = (attr, label, img, on) => `<button class="bgt" role="radio" ${attr} aria-pressed="${on}"><span class="im" style="${img ? `background-image:url('${img}')` : ""}"></span><small>${label}</small></button>`;
+  const tile = (attr, label, img, on) => `<button class="bgt" ${attr} aria-pressed="${on}"><span class="im" style="${img ? `background-image:url('${img}')` : ""}"></span><small>${label}</small></button>`;
   const cur = styleOf(L.style);
   $("#styleRow").innerHTML = STYLES.filter(st => !bgMissing.has(st.k)).map(st => tile(`data-style="${st.k}"`, st.label, st.bg, cur.k === st.k)).join("");
   let h = tile(`data-bg="style"`, cur.label, cur.bg, L.bg !== "own");
@@ -143,8 +141,8 @@ function fillLook(){
   $("#ownFromPlants").hidden = !Object.values(photos).some(l => l.length);
   $("#ownFromPlants").textContent = L.own ? tr("Change: my plant photos") : tr("From my plant photos");
   $("#ownFromPhone").textContent = L.own ? tr("Change: from the phone") : tr("From the phone");
-  $("#accRow").innerHTML = ACCENTS.map(a => `<button class="acc" role="radio" data-acc="${a.k}" aria-pressed="${L.accent === a.k}" aria-label="${a.label}" style="--c:${a.c}"><span>${a.label}</span></button>`).join("");
-  $("#modeSeg").innerHTML = MODES.map(([k, t]) => `<button role="radio" data-mode="${k}" aria-pressed="${L.mode === k}">${t}</button>`).join("");
+  $("#accRow").innerHTML = ACCENTS.map(a => `<button class="acc" data-acc="${a.k}" aria-pressed="${L.accent === a.k}" aria-label="${a.label}" style="--c:${a.c}"><span>${a.label}</span></button>`).join("");
+  $("#modeSeg").innerHTML = MODES.map(([k, t]) => `<button data-mode="${k}" aria-pressed="${L.mode === k}">${t}</button>`).join("");
 }
 $("#styleRow").addEventListener("click", e => {
   const b = e.target.closest("[data-style]"); if(!b || b.dataset.style === styleOf(look().style).k) return;

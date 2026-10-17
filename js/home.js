@@ -4,7 +4,9 @@
 /* ---------- Render ---------- */
 /* "Updated 14:02", naming MET Norway when the forecast came from it (its data asks to be credited where it's shown). */
 function updLine(w){
-  const at = new Date(w.at), time = `${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  const at = new Date(w.at), hm = `${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  /* An older forecast says its day too, so a saved one never looks fresh. */
+  const time = ymd(at) === today() ? hm : `${at.toLocaleDateString(LOCALE, {day:"numeric", month:"short"})} ${hm}`;
   return w.source === "met" ? tr("Updated {time} · MET Norway", {time}) : tr("Updated {time}", {time});
 }
 function render(){
@@ -25,8 +27,13 @@ function render(){
   renderHero(W, groups);
   renderLocations(W);
   renderAlerts(groups);
+  renderTodayPlaces();
+  renderTodayLater();
   renderPlants();
   renderLog();
+  fillMeButtons();
+  if(currentTab === "journal") renderJournalPage();
+  refreshPsTop();
 }
 
 /* ---------- Forecast with warnings on the days ---------- */
@@ -41,26 +48,34 @@ function renderForecast(W){
     const r = dayRisks(d);
     const cls = r.frost.length ? "frost" : r.heat.length ? "heat" : "";
     const badge = r.frost.length ? `<span class="fc-badge frost">${ICON.snow}</span>` : r.heat.length ? `<span class="fc-badge heat">${ICON.heat}</span>` : "";
-    return `<button class="fc-day ${cls} ${fcOpen === d.date ? "open" : ""}" data-fc="${d.date}" aria-label="${tr("{day}, {hi} to {lo}", {day:longDay(d.date), hi:deg(d.max), lo:deg(d.min)})}${cls ? tr(", warning") : ""}">
+    /* The visible words are the button's name (day, high, low, rain); hidden words only add what the eye gets from layout and colour. */
+    return `<button class="fc-day ${cls} ${fcOpen === d.date ? "open" : ""}" data-fc="${d.date}" aria-controls="fcDetail">
       ${badge}<span class="fc-dn">${i === 0 ? tr("Today") : parseDay(d.date).toLocaleDateString(LOCALE, {weekday:"short"})}</span>
-      ${wIcon(codes[idx0 + i], true)}<b class="hi">${deg(d.max)}</b><small class="lo">${deg(d.min)}</small><small class="rn ${d.rain >= 0.1 ? "" : "dry"}">${d.rain >= 0.1 ? (d.rain < 10 ? (Math.round(d.rain * 10) / 10) : Math.round(d.rain)) : "–"}</small></button>`;
+      ${wIcon(codes[idx0 + i], true)}<span class="vh">${tr("High")}</span><b class="hi">${deg(d.max)}</b><span class="vh">${tr("Low")}</span><small class="lo">${deg(d.min)}</small><span class="vh">${tr("Rain mm")}</span><small class="rn ${d.rain >= 0.1 ? "" : "dry"}">${d.rain >= 0.1 ? (d.rain < 10 ? (Math.round(d.rain * 10) / 10) : Math.round(d.rain)) : "–"}</small>${r.frost.length ? `<span class="vh">${tr("Frost warning")}</span>` : r.heat.length ? `<span class="vh">${tr("Heat warning")}</span>` : ""}</button>`;
   }).join("");
   el.insertAdjacentHTML("afterbegin", `<div class="fc-lab" aria-hidden="true"><span class="fc-dn">&nbsp;</span><span class="fc-sp"></span><b class="hi">${tr("High")}</b><small class="lo">${tr("Low")}</small><small class="rn">${tr("Rain mm")}</small></div>`);
   const det = $("#fcDetail");
   const d = fcOpen && W.next.find(x => x.date === fcOpen);
+  el.querySelectorAll("[data-fc]").forEach(b => b.setAttribute("aria-expanded", b.dataset.fc === fcOpen));
   if(!d){ det.hidden = true; return; }
+  /* The day in full: what the forecast says, and which plants it matters for (the same rules as the alerts). */
   const r = dayRisks(d), names = a => a.map(p => esc(p.name)).join(", ");
-  det.innerHTML = `<b>${longDay(d.date).replace(/^./, c => c.toUpperCase())}</b>` +
-    (r.frost.length ? `<p><span class="dot frost">${ICON.snow}</span>${tr("Down to {t}, too cold for {names}.", {t:deg(d.min), names:names(r.frost)})}</p>` : "") +
-    (r.heat.length ? `<p><span class="dot heat">${ICON.heat}</span>${tr("Up to {t}, too hot for {names}.", {t:deg(d.max), names:names(r.heat)})}</p>` : "");
+  const estGust = state.weather && state.weather.source === "met";
+  const facts = [
+    `<li><span>${tr("High")}</span><b class="hi">${deg(d.max)}</b></li>`, `<li><span>${tr("Low")}</span><b class="lo">${deg(d.min)}</b></li>`,
+    `<li><span>${tr("Rain")}</span><b>${d.rain >= 0.1 ? tr("{n} mm", {n:d.rain < 10 ? Math.round(d.rain * 10) / 10 : Math.round(d.rain)}) : tr("Dry")}</b>${d.prob ? `<small>${tr("{n}% chance", {n:Math.round(d.prob)})}</small>` : ""}</li>`,
+    `<li><span>${tr("Gusts")}</span><b>${tr("{n} km/h", {n:Math.round(d.gust || 0)})}</b>${estGust ? `<small>${tr("estimated")}</small>` : ""}</li>`];
+  det.innerHTML = `<div class="fcd-h"><b>${cap(longDay(d.date))}</b><small>${parseDay(d.date).toLocaleDateString(LOCALE, {day:"numeric", month:"long"})}</small></div>
+    <ul class="fcd-facts">${facts.join("")}</ul>` +
+    (r.frost.length ? `<p><span class="dot frost">${ICON.snow}</span>${tr("Down to {t}, too cold for {names}.", {t:deg(d.min), names:names(r.frost)})} <button class="linkish" data-act="seePlants" data-ids="${r.frost.map(p => p.id).join(",")}">${tr("See plants")}</button></p>` : "") +
+    (r.heat.length ? `<p><span class="dot heat">${ICON.heat}</span>${tr("Up to {t}, too hot for {names}.", {t:deg(d.max), names:names(r.heat)})} <button class="linkish" data-act="seePlants" data-ids="${r.heat.map(p => p.id).join(",")}">${tr("See plants")}</button></p>` : "") +
+    (!r.frost.length && !r.heat.length && state.plants.length ? `<p class="fcd-calm">${ICON.leaf}${tr("No plant is at risk from the temperature that day.")}</p>` : "");
   det.hidden = false;
 }
 $("#forecast").addEventListener("click", e => {
   const b = e.target.closest("[data-fc]"); if(!b) return;
-  const W = wx(), d = W && W.next.find(x => x.date === b.dataset.fc);
-  const r = d && dayRisks(d);
-  fcOpen = r && (r.frost.length || r.heat.length) && fcOpen !== b.dataset.fc ? b.dataset.fc : null;
-  renderForecast(W);
+  fcOpen = fcOpen !== b.dataset.fc ? b.dataset.fc : null;
+  renderForecast(wx());
 });
 $("#nowWx").addEventListener("click", () => fetchWeather(true));
 
@@ -117,14 +132,28 @@ function gardenTodayHtml(groups){
   </div>`;
 }
 const alertsOpen = new Set();   // kinds of alert opened on this visit
+/* "Got it" on a card: you've seen it. The card stays while the risk is real, folded into a quiet line after what
+   still needs doing, until tomorrow. Nothing is marked as done. Only on this phone (a per-day convenience). */
+const ACK_KEY = "alvor-ack";
+let ackDay = (() => { try{ const a = JSON.parse(localStorage.getItem(ACK_KEY) || "null"); if(a && Array.isArray(a.k)) return a; }catch(e){} return {d:"", k:[]}; })();
+const acked = t => ackDay.d === today() && ackDay.k.includes(t);
+function setAck(t, on){
+  if(ackDay.d !== today()) ackDay = {d:today(), k:[]};
+  ackDay.k = ackDay.k.filter(x => x !== t); if(on) ackDay.k.push(t);
+  try{ localStorage.setItem(ACK_KEY, JSON.stringify(ackDay)); }catch(e){}
+}
+/* Today's order: Garden today, then real risks (cold, heat, wind), then what's due (watering, feeding, heads-ups),
+   then your own tasks; cards you've said "Got it" to come last. A calm day is just Garden today saying so. */
+const KIND_RANK = {frost:0, heat:1, wind:2, water:3, care:4, info:5};
 function renderAlerts(groups){
   const el = $("#alerts");
   if(!state.plants.length){
-    el.innerHTML = `<div class="acard t-info"><div class="a-ic">${ICON.sprout}</div><div class="a-main"><h3>${tr("Start with your plants")}</h3><p class="a-lead">${tr("Add each plant once. Alerts and watering reminders then appear here every day.")}</p></div><div class="a-act"><button class="btn primary" data-act="add">${tr("Add plant")}</button></div></div>`;
+    el.innerHTML = `<div class="acard t-info first-run"><div class="a-ic">${ICON.sprout}</div><div class="a-main"><h2 class="a-h">${tr("Start with your plants")}</h2><p class="a-lead">${tr("Add each plant once. Alerts and watering reminders then appear here every day.")}</p></div>
+      <div class="a-act"><button class="btn primary" data-hub="add">${tr("Add plant")}</button>${online && token ? `<button class="btn" data-hub="identify">${tr("Identify a plant")}</button>` : ""}</div></div>`;
     return;
   }
-  const today = gardenTodayHtml(groups), mine = tasksCardHtml() + snapCardHtml();   // your own tasks and the month's snapshot follow Alvor's cards
-  if(!groups.length){ el.innerHTML = today + mine; return; }
+  const gt = gardenTodayHtml(groups), tasks = tasksCardHtml();
+  if(!groups.length){ el.innerHTML = gt + tasks; return; }
   // One card per kind of alert (frost, heat, wind, watering…), closed by default: the count first, the plants on a tap.
   const kinds = [];
   groups.forEach(g => {
@@ -133,15 +162,16 @@ function renderAlerts(groups){
     if(!k) kinds.push(k = {type:L.type, parts:[]});
     k.parts.push({g, L});
   });
-  el.innerHTML = today + kinds.map(k => {
+  kinds.sort((a, b) => (acked(a.type) - acked(b.type)) || ((KIND_RANK[a.type] ?? 9) - (KIND_RANK[b.type] ?? 9)));
+  const card = k => {
     const head = (k.parts.find(x => x.g.level === "danger") || k.parts[0]).L;
     const n = new Set(k.parts.flatMap(x => x.g.items.map(i => i.p.id))).size;
-    const open = alertsOpen.has(k.type), many = k.parts.length > 1;
+    const open = alertsOpen.has(k.type), many = k.parts.length > 1, seen = acked(k.type);
     const chip = k.parts.map(x => x.L.chip).find(Boolean) || "";
     const title = k.type === "water" && k.parts.some(x => x.g.key === "water") ? k.parts.find(x => x.g.key === "water").L.title : head.title;
     const parts = k.parts.map(({g, L}) => {
       const ids = g.items.map(i => i.p.id).join(","), wxk = alertWx(g);
-      const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}"${wxk && g.key !== "goOut" ? ` data-wx="${wxk}"` : ""}>${tr("Mark as moved")}</button>`
+      const btn = g.move ? `<button class="btn primary" data-act="moveAll" data-to="${g.move}" data-ids="${ids}"${wxk && g.key !== "goOut" ? ` data-wx="${wxk}"` : ""}>${tr("Mark as moved")}</button><button class="btn" data-act="seePlants" data-ids="${ids}">${tr("See plants")}</button>`
         : PROTECT_KEYS.includes(g.key) ? (protectedToday(g.items.map(i => i.p.id)) ? `<p class="a-done">${ICON.check}${tr("Marked as protected today")}</p>`
           : `<button class="btn primary" data-act="protectAll" data-ids="${ids}" data-wx="frost" data-what="${esc(g.title || L.title || "")}">${tr("Mark as protected")}</button><button class="btn" data-act="seePlants" data-ids="${ids}">${tr("See plants")}</button>`)
         : g.waterAll ? `<button class="btn primary" data-act="waterAll" data-ids="${ids}">${tr("Mark all watered")}</button>`
@@ -151,30 +181,59 @@ function renderAlerts(groups){
       return `<div class="a-sub">
         ${many && L.title !== title ? `<h4>${esc(L.title)}</h4>` : ""}
         ${L.lead ? `<p class="a-lead">${esc(L.lead)}</p>` : ""}
-        <ul>${g.items.map(i => `<li>${ICON.leaf}<span><span class="pn">${esc(i.p.name)}</span>${i.p.species && i.p.species !== i.p.name ? ` <i>(${esc(i.p.species)})</i>` : ""}<small>${i.stage === "urgent" ? `<b class="st st-urgent">${STAGE_WORD.urgent}</b> · ` : ""}${esc(i.why)}</small>${fbRow(g, i.p)}</span></li>`).join("")}</ul>
+        <ul>${g.items.map(i => `<li>${ICON.leaf}<span><button class="pn" data-act="edit" data-id="${i.p.id}">${esc(i.p.name)}</button>${i.p.species && i.p.species !== i.p.name ? ` <i>(${esc(i.p.species)})</i>` : ""}<small>${i.stage === "urgent" ? `<b class="st st-urgent">${STAGE_WORD.urgent}</b> · ` : ""}${esc(i.why)}</small>${fbRow(g, i.p)}</span></li>`).join("")}</ul>
         ${L.tip ? `<p class="a-tip">${esc(L.tip)}</p>` : ""}
         ${btn ? `<div class="a-act">${btn}</div>` : ""}
       </div>`;
     }).join("");
-    return `<div class="acard agroup t-${k.type} ${open ? "open" : ""}">
-      <div class="a-ic">${ICON[head.icon]}</div>
+    const ack = `<div class="a-ack"><button class="linkish" data-ack="${k.type}" aria-pressed="${seen}">${seen ? tr("Back to the top") : tr("I've seen it")}</button><small>${seen ? tr("You said you've seen it today.") : tr("Folds it away until tomorrow. Nothing is marked as done.")}</small></div>`;
+    return `<div class="acard agroup t-${k.type} ${open ? "open" : ""} ${seen ? "acked" : ""} ${RISK_TYPES.includes(k.type) ? "risk" : ""}">
+      <div class="a-ic" aria-hidden="true">${ICON[head.icon]}</div>
       <button class="a-head" data-atype="${k.type}" aria-expanded="${open}">
-        <span class="a-top"><span class="a-lab">${esc(head.label)}</span>${chip ? `<span class="a-chip">${esc(chip)}</span>` : ""}</span>
+        <span class="a-top"><span class="a-lab">${esc(head.label)}</span>${seen ? `<span class="a-seen">${ICON.check}${tr("Seen")}</span>` : chip ? `<span class="a-chip">${esc(chip)}</span>` : ""}</span>
         <h3>${esc(title)}</h3>
         ${/^\d/.test(title) ? "" : `<span class="a-count">${trn(n, "{n} plant", "{n} plants")}</span>`}
         <svg class="a-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
-      <div class="a-body" ${open ? "" : "hidden"}>${parts}</div>
+      <div class="a-body" ${open ? "" : "hidden"}>${parts}${ack}</div>
     </div>`;
-  }).join("") + mine;
+  };
+  const live = kinds.filter(k => !acked(k.type)), seen = kinds.filter(k => acked(k.type));
+  el.innerHTML = gt + live.map(card).join("") + tasks + seen.map(card).join("");
 }
+const RISK_TYPES = ["frost", "heat", "wind"];
 $("#alerts").addEventListener("click", e => {
+  const a = e.target.closest("[data-ack]");
+  if(a){ const t = a.dataset.ack, on = !acked(t); setAck(t, on); if(on) alertsOpen.delete(t); renderAlerts(state.plants.length ? buildAlerts() : []); const h = $(`#alerts [data-atype="${t}"]`); if(h) h.focus(); toast(on ? tr("Folded away until tomorrow") : tr("Back at the top")); return; }
   const h = e.target.closest("[data-atype]"); if(!h) return;
   const t = h.dataset.atype, card = h.closest(".agroup"), open = !alertsOpen.has(t);
   if(open) alertsOpen.add(t); else alertsOpen.delete(t);
   card.classList.toggle("open", open); h.setAttribute("aria-expanded", open);
   card.querySelector(".a-body").hidden = !open;
 });
+
+/* ---------- Today: your places at a glance, and something gentle at the end ---------- */
+function renderTodayPlaces(){
+  const el = $("#todayPlaces"); if(!el) return;
+  if(!state.plants.length){ el.innerHTML = ""; return; }
+  const items = LOCS().map(L => {
+    const list = state.plants.filter(p => L.areas.includes(p.area));
+    return {L, n:list.length, need:list.filter(p => (plantFlags[p.id] || new Set()).size).length};
+  }).filter(x => x.n);
+  el.innerHTML = `<div class="sec-h tp-h"><h2>${tr("Your places")}</h2><button class="linkish" data-act="allPlants">${tr("All plants")} · ${state.plants.length}</button></div>
+    <div class="tp-row">${items.map(({L, n, need}) => { const mine = locPicSrc(L.k);
+      return `<button class="tp loc-${L.k} ${mine ? "has-img" : ""}" data-tploc="${L.k === "garden" ? "garden" : L.areas[0]}" style="${mine ? `--img:url('${mine}')` : locStyle(look().style, L.k)}">
+        <span class="tp-ic" aria-hidden="true">${ICON[L.icon]}</span><span class="tp-t"><b>${esc(L.label)}</b><small>${trn(n, "{n} plant", "{n} plants")}</small>${need ? `<small class="tp-need">${trn(need, "{n} needs a look", "{n} need a look")}</small>` : ""}</span></button>`; }).join("")}</div>`;
+}
+$("#todayPlaces").addEventListener("click", e => {
+  const b = e.target.closest("[data-tploc]"); if(!b) return;
+  /* Garden at that place: back from it goes to Garden. */
+  showTab("locations"); idsFilter = null; plantFilter = b.dataset.tploc; showTab("plants"); renderPlants();
+});
+function renderTodayLater(){
+  const el = $("#todayLater"); if(!el) return;
+  el.innerHTML = state.plants.length ? snapCardHtml() : "";
+}
 
 /* Per-plant status icons, from the same rules as the alerts */
 let plantFlags = {};
@@ -190,7 +249,7 @@ function flagsFrom(groups){
   return f;
 }
 const FLAG_INFO = {frost:["snow",tr("Too cold")], heat:["heat",tr("Too hot")], wind:["wind",tr("Strong wind")], water:["drop",tr("Needs water")], move:["move",tr("Time to move")], feed:["feed",tr("Ready for feeding")]};
-const flagIcons = id => [...(plantFlags[id] || [])].sort().map(k => `<span class="flag f-${k}" title="${FLAG_INFO[k][1]}" aria-label="${FLAG_INFO[k][1]}">${ICON[FLAG_INFO[k][0]]}</span>`).join("");
+const flagIcons = id => [...(plantFlags[id] || [])].sort().map(k => `<span class="flag f-${k}" role="img" title="${FLAG_INFO[k][1]}" aria-label="${FLAG_INFO[k][1]}">${ICON[FLAG_INFO[k][0]]}</span>`).join("");
 
 /* ---------- The illustrated scene ---------- */
 /* Positions are % of the square picture. */
@@ -356,24 +415,18 @@ setInterval(() => { if(!document.hidden && currentTab === "today") applySky(); }
 const SKY_WORD = {clear:tr("Clear"), partly:tr("Partly cloudy"), cloudy:tr("Cloudy"), fog:tr("Fog"), rain:tr("Rain"), snow:tr("Snow"), storm:tr("Thunderstorm")};
 function renderHero(W, groups){
   $("#heroPlace").textContent = state.settings.place || tr("Your garden");
+  $("#heroDate").textContent = cap(new Date().toLocaleDateString(LOCALE, {weekday:"long", day:"numeric", month:"long"}));
   const w = state.weather, cur = w && w.current;
+  $("#fcSrc").textContent = W && W.next.length ? tr("Tap a day for details") : "";
   if(!(cur && W && W.next.length)){
-    $("#heroNow").innerHTML = `<span class="hn-wait">${w ? tr("Tap to refresh the weather") : tr("Loading forecast…")}</span>`;
-    $("#heroChips").innerHTML = ""; $("#heroUpd").textContent = ""; return;
+    $("#heroNow").innerHTML = `<span class="hn-wait">${w ? tr("Tap to refresh the weather") : navigator.onLine === false ? tr("You're offline. The forecast loads when you're back online.") : tr("Loading forecast…")}</span>`;
+    $("#heroUpd").textContent = ""; return;
   }
   const t = W.next[0];
-  $("#heroNow").innerHTML = `<span class="hn-ic">${wIcon(cur.weather_code, cur.is_day !== 0)}</span><b class="hn-t">${deg(cur.temperature_2m)}</b><span class="hn-s"><span>${SKY_WORD[sky(cur.weather_code)] || ""}</span><small>${tr("H {t}", {t:deg(t.max)})} · ${tr("L {t}", {t:deg(t.min)})}</small></span>`;
-  $("#heroUpd").textContent = updLine(w);
-  /* The chips count the same plants as the alerts and Garden today (the next three nights). */
-  const r = dayRisks(t), chips = [];
-  const coldItems = (groups || []).filter(g => GA.COLD_KEYS.includes(g.key)).flatMap(g => g.items);
-  const coldIds = [...new Set(coldItems.map(i => i.p.id))], lowest = coldItems.length ? Math.min(...coldItems.map(i => i.t)) : 99;
-  if(coldIds.length) chips.push(`<button class="hchip frost" data-act="seePlants" data-ids="${coldIds.join(",")}">${ICON.snow}<span>${lowest <= 0 ? tr("Frost risk") : tr("Cold night")} · ${trn(coldIds.length, "{n} plant", "{n} plants")}</span></button>`);
-  if(r.heat.length) chips.push(`<button class="hchip heat" data-act="seePlants" data-ids="${r.heat.map(p => p.id).join(",")}">${ICON.heat}<span>${tr("Heat")} · ${trn(r.heat.length, "{n} plant", "{n} plants")}</span></button>`);
-  const thirsty = state.plants.filter(p => (plantFlags[p.id] || new Set()).has("water"));
-  if(thirsty.length) chips.push(`<button class="hchip water" data-act="seePlants" data-ids="${thirsty.map(p => p.id).join(",")}">${ICON.drop}<span>${trn(thirsty.length, "{n} needs water", "{n} need water")}</span></button>`);
-  if(!chips.length && state.plants.length) chips.push(`<span class="hchip calm">${ICON.leaf}<span>${tr("All calm today")}</span></span>`);
-  $("#heroChips").innerHTML = chips.join("");
+  $("#heroNow").innerHTML = `<span class="hn-ic">${wIcon(cur.weather_code, cur.is_day !== 0)}</span><b class="hn-t">${deg(cur.temperature_2m)}</b><span class="hn-s"><span>${SKY_WORD[sky(cur.weather_code)] || ""}</span><small>${tr("H {t}", {t:deg(t.max)})} · ${tr("L {t}", {t:deg(t.min)})}</small></span><span class="hn-r" aria-hidden="true">${ICON.clock}</span><span class="vh">${tr("Refresh the weather")}</span>`;
+  const old = Date.now() - w.at > 3 * 3600000;
+  $("#heroUpd").innerHTML = `${old ? ICON.warn : ""}<span>${esc(updLine(w))}${old ? " · " + esc(tr("tap the weather to refresh")) : ""}</span>`;
+  $("#heroUpd").classList.toggle("stale", old);
 }
 $("#heroNow").addEventListener("click", () => fetchWeather(true));
 
@@ -382,8 +435,8 @@ function applyBackdrop(){
   const type = cur ? sky(cur.weather_code) : "partly";
   b.dataset.sky = type; b.dataset.phase = skyPhase();
   b.classList.toggle("frosty", !!(cur && cur.temperature_2m <= 0 && type !== "snow"));
-  const want = currentTab !== "today" ? "none" : type === "rain" || type === "storm" ? "rain" : type === "snow" ? "snow" : "none";
-  startFx(want, type === "storm" && currentTab === "today");
+  /* The Living Compass keeps the photo calm: the weather tints it, but nothing falls or flashes over the page. */
+  startFx("none", false);
 }
 
 const LOCS = () => isApt()
@@ -395,8 +448,11 @@ const LOCS = () => isApt()
 function renderLocations(W){
   const el = $("#locList"); if(!el) return;
   const n = state.plants.length;
-  if($("#allCount")) $("#allCount").textContent = trn(n, "{n} plant", "{n} plants");
-  $("#locSub").textContent = isApt() ? tr("Two spaces, one home") : tr("Three spaces, one garden");
+  if($("#allCount")) $("#allCount").textContent = n ? String(n) : "";
+  const used = LOCS().filter(L => state.plants.some(p => L.areas.includes(p.area))).length;
+  $("#locSub").textContent = n ? trn(n, "{n} plant", "{n} plants") + " · " + trn(used, "{n} place", "{n} places") : tr("Where your plants live");
+  const archived = (state.archive || []).length, vault = online ? state.plants.filter(p => visOf(p) === "vault").length : 0;
+  if($("#allSub")) $("#allSub").textContent = n ? [trn(n, "{n} plant", "{n} plants"), vault ? trn(vault, "{n} only for you", "{n} only for you") : "", archived ? trn(archived, "{n} in the Archive", "{n} in the Archive") : ""].filter(Boolean).join(" · ") : tr("Search, filter, list, grid or tiles");
   const r0 = {frost:state.plants.filter(p => (plantFlags[p.id] || new Set()).has("frost"))};   // same plants as the alerts
   el.innerHTML = LOCS().map(L => {
     const list = state.plants.filter(p => L.areas.includes(p.area));
@@ -412,13 +468,18 @@ function renderLocations(W){
     const status = (risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk from the cold", {n:risk})}</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : "")
       + (temp ? `<button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button>` : "");
     const mine = locPicSrc(L.k), canPic = online && !!me && !!token;
-    return `<div class="loc loc-${L.k} ${list.length ? "" : "empty"} ${mine ? "has-img" : ""}" style="${mine ? "" : locStyle(look().style, L.k)}">
+    /* A place with no plants yet is offered, not claimed: a slim card with a way to start it. */
+    if(!list.length) return `<div class="loc loc-${L.k} empty slim">
+      <button class="loc-main" data-loc="${L.k === "garden" ? "garden" : L.areas[0]}"><span class="loc-ic" aria-hidden="true">${ICON[L.icon]}</span>
+        <span class="loc-t"><b>${L.label}</b><small>${tr("No plants here yet")}</small></span><span class="chev" aria-hidden="true">›</span></button>
+      ${temp ? `<div class="loc-status"><button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button></div>` : ""}</div>`;
+    return `<div class="loc loc-${L.k} ${mine ? "has-img" : ""}" style="${mine ? "" : locStyle(look().style, L.k)}">
       ${mine ? `<img class="loc-img" src="${mine}" alt="">` : `<span class="loc-art">${ICON[L.icon]}</span>`}
       ${canPic ? `<button class="loc-pic ${look().locs && look().locs[L.k] ? "on" : ""}" data-locpic="${L.k}" aria-label="${look().locs && look().locs[L.k] ? tr("Change your own {place} photo", {place:L.label.toLowerCase()}) : tr("Add your own {place} photo", {place:L.label.toLowerCase()})}">${look().locs && look().locs[L.k] ? ICON.camera : ICON.plus}</button>` : ""}
-      <button class="loc-main" data-loc="${L.k === "garden" ? "garden" : L.areas[0]}" aria-label="${L.label}: ${trn(list.length, "{n} plant", "{n} plants")}">
-        <span class="loc-ic">${ICON[L.icon]}</span>
+      <button class="loc-main" data-loc="${L.k === "garden" ? "garden" : L.areas[0]}">
+        <span class="loc-ic" aria-hidden="true">${ICON[L.icon]}</span>
         <span class="loc-t"><b>${L.label}</b><small>${L.sub} · ${list.length ? trn(list.length, "{n} plant", "{n} plants") : tr("no plants yet")}</small></span>
-        <span class="chev">›</span>
+        <span class="chev" aria-hidden="true">›</span>
       </button>
       ${status ? `<div class="loc-status">${status}</div>` : ""}
       ${spots.length > 1 || L.k === "greenhouse" ? `<div class="loc-spots">${spots.filter(x => x.c || L.k !== "greenhouse").map(x => `<button class="spot" data-loc="${x.f}">${ICON[x.icon] || ""}<span>${esc(x.label)}</span><b>${x.c}</b></button>`).join("")}</div>` : ""}
@@ -462,7 +523,7 @@ function openLocTemp(k){
     ltHeated = isNum(s.ghHeat);
     $("#ltBody").innerHTML = `
       <p class="lt-intro">${tr("Alvor uses this to know which plants are safe in the greenhouse on a cold night, and which need fleece or the house.")}</p>
-      <div class="seg" role="radiogroup" aria-label="${tr("Heating")}">
+      <div class="seg" role="group" aria-label="${tr("Heating")}">
         <button type="button" data-heat="0" aria-pressed="${!ltHeated}">${tr("Unheated")}</button>
         <button type="button" data-heat="1" aria-pressed="${ltHeated}">${tr("Heated")}</button>
       </div>
