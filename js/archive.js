@@ -125,7 +125,7 @@ function arcSince(p){
 function arcRow(p){
   const a = p.archived, ph = latestPhoto(p.id);
   return `<button type="button" class="arc-row w-${esc(a.why)}" data-act="openArc" data-id="${p.id}">
-    <span class="arc-th">${ph ? `<img src="${ph.data}" alt="">` : `<span class="initial a-${p.area}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`}</span>
+    <span class="arc-th">${ph ? `<img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async">` : `<span class="initial a-${p.area}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`}</span>
     <span class="arc-tx"><b>${esc(p.name)}</b>${p.species ? `<i>${esc(p.species)}</i>` : ""}
       <span class="arc-what">${esc(arcWhat(a))} · ${jDate(a.d)}</span>${arcSince(p) ? `<small>${esc(arcSince(p))}</small>` : ""}</span></button>`;
 }

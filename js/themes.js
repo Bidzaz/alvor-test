@@ -217,8 +217,8 @@ $("#ownFile").addEventListener("change", async e => {
 });
 $("#ownFromPlants").addEventListener("click", () => { locPicFor = null; openPlantPicker(); });
 function openPlantPicker(){
-  const list = Object.values(photos).flat().filter(ph => ph && ph.data).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 90);
-  $("#bpGrid").innerHTML = list.map(ph => `<button data-bp="${esc(ph.id)}" aria-label="${tr("Use this photo")}"><img src="${ph.data}" alt="" loading="lazy"></button>`).join("");
+  const list = Object.values(photos).flat().filter(ph => ph && (ph.th || ph.src || ph.data)).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 90);
+  $("#bpGrid").innerHTML = list.map(ph => `<button data-bp="${esc(ph.id)}" aria-label="${tr("Use this photo")}"><img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async"></button>`).join("");
   bgPickDlg.showModal();
 }
 $("#bgPickClose").addEventListener("click", () => bgPickDlg.close());
@@ -227,9 +227,9 @@ $("#bpGrid").addEventListener("click", async e => {
   const b = e.target.closest("[data-bp]"); if(!b) return;
   const ph = Object.values(photos).flat().find(x => x && x.id === b.dataset.bp); if(!ph) return;
   const plant = state.plants.find(p => p.id === ph.plantId);
-  if(locPicFor){ const k = locPicFor; bgPickDlg.close(); toast(tr("Saving photo…")); saveLocPic(k, ph.data); return; }
+  if(locPicFor){ const k = locPicFor; bgPickDlg.close(); toast(tr("Saving photo…")); saveLocPic(k, await fullPhoto(ph)); return; }
   try{
-    const data = await shrinkForBackdrop(ph.data);
+    const data = await shrinkForBackdrop(await fullPhoto(ph));
     bgPickDlg.close();
     openBgEdit({data, x:.5, y:.35, sun:false, isNew:true, vault:!!plant && plant.visibility === "vault"});
   }catch(err){ toast(tr("Couldn't use that photo")); }

@@ -93,7 +93,8 @@ function updateBadge(){
   const r = circle ? circle.incoming.length : 0, a = typeof unseenCount === "function" ? unseenCount() : 0, n = r + a, b = $("#reqBadge");
   b.hidden = !n; b.textContent = n > 9 ? "9+" : n;
   const parts = [r ? trn(r, "{n} new request", "{n} new requests") : "", a ? trn(a, "{n} new reaction or comment", "{n} new reactions and comments") : ""].filter(Boolean);
-  $("#friendsBtn").setAttribute("aria-label", parts.length ? `${tr("Circle")}, ${parts.join(", ")}` : tr("Circle"));
+  // Said after its visible word ("Circle, 2 new requests"): the number on the badge is for the eyes only.
+  $("#reqSay").textContent = parts.length ? `, ${parts.join(", ")}` : "";
 }
 async function loadMyLink(){
   if(myLink || !token) return;
@@ -342,7 +343,7 @@ function friendScene(V, home){
     const list = V.plants.filter(x => x.area === a);
     const k = a === "outside" ? "garden" : a, label = a === "outside" ? tr("Garden") : fAreaLabel(a, home);
     const own = V.locUrls && V.locUrls[k];
-    return `<button class="fl-tile loc-${k} ${own ? "has-img" : ""}" data-gact="area" data-a="${a}" aria-pressed="${V.filter === a}" aria-label="${esc(label)}: ${plantsWord(list.length)}" style="${own ? "" : locStyle(V.style || "classic", k)}">${own ? `<img src="${esc(own)}" alt="">` : ""}
+    return `<button class="fl-tile loc-${k} ${own ? "has-img" : ""}" data-gact="area" data-a="${a}" aria-pressed="${V.filter === a}" style="${own ? "" : locStyle(V.style || "classic", k)}">${own ? `<img src="${esc(own)}" alt="">` : ""}
       <span class="fl-art">${ICON[a]}</span>
       <span class="fl-t"><span class="fl-ic">${ICON[a]}</span><b>${esc(label)}</b><small>${plantsWord(list.length)}</small></span></button>`;
   }).join("")}</div>`;
@@ -483,6 +484,6 @@ function momentsHtml(x, V){
   const phs = V.byPlant[x.id] || [];
   return `<div class="fp-moments"><h3 class="pick-h">${tr("Milestones")}</h3><div class="jr-list mini">${list.map(m => {
     const ph = m.ph && phs.find(p => p.id === m.ph), url = ph && V.urls[ph.path_small];
-    return `<div class="jr-item k-${m.k}"><span class="jr-ic">${JI[m.k]}</span><span class="jr-txt"><b>${m.k === "acquired" ? tr("Got it") : esc(MOMENT_WORD[m.k])}</b><small>${esc(jDate(m.d))}</small></span>${url ? `<button type="button" class="fp-mph" data-fpm="${esc(ph.id)}"><img class="jr-img" src="${esc(url)}" alt=""></button>` : ""}</div>`;
+    return `<div class="jr-item k-${m.k}"><span class="jr-ic">${JI[m.k]}</span><span class="jr-txt"><b>${m.k === "acquired" ? tr("Got it") : esc(MOMENT_WORD[m.k])}</b><small>${esc(jDate(m.d))}</small></span>${url ? `<button type="button" class="fp-mph" data-fpm="${esc(ph.id)}"><img class="jr-img" src="${esc(url)}" alt="${esc(tr("Photo from {date}", {date:jDate(m.d)}))}"></button>` : ""}</div>`;
   }).join("")}</div></div>`;
 }

@@ -51,10 +51,10 @@ function storyItemHtml(it){
     const img = e.ph && (photos[p.id] || []).find(x => x.id === e.ph);
     return `<button type="button" class="jr-item k-${k}" data-story="plant" data-id="${esc(p.id)}"><span class="jr-ic">${JI[k] || JI.note}</span>
       <span class="jr-txt"><b>${who} · ${esc(label)}</b><small>${jDate(e.d)}</small>${e.n ? `<span class="jr-note">${esc(e.n)}</span>` : ""}${typeof discMarks === "function" ? discMarks(p, e) : ""}</span>
-      ${img ? `<img class="jr-img" src="${img.data}" alt="">` : ""}</button>`;
+      ${img ? `<img class="jr-img" src="${phSrc(img)}" alt="" loading="lazy" decoding="async">` : ""}</button>`;
   }
   if(it.type === "photos") return `<div class="jr-item k-photo"><span class="jr-ic">${JI.photo}</span><span class="jr-txt"><b>${who} · ${trn(it.list.length, "{n} photo", "{n} photos")}</b><small>${jDate(it.d)}</small>
-      <span class="jr-thumbs">${it.list.slice(0, 6).map(x => `<button type="button" data-story="photo" data-id="${esc(p.id)}" data-ph="${x.id}"><img src="${x.data}" alt="${esc(tr("Photo of {name} from {date}", {name:p.name, date:jDate(x.date)}))}" loading="lazy"></button>`).join("")}</span></span></div>`;
+      <span class="jr-thumbs">${it.list.slice(0, 6).map(x => `<button type="button" data-story="photo" data-id="${esc(p.id)}" data-ph="${x.id}"><img src="${phSrc(x)}" loading="lazy" decoding="async" alt="${esc(tr("Photo of {name} from {date}", {name:p.name, date:jDate(x.date)}))}"></button>`).join("")}</span></span></div>`;
   const alvor = `<span class="st-alvor">${tr("Alvor")}</span>`;
   if(it.type === "added") return `<button type="button" class="jr-item k-start quiet" data-story="plant" data-id="${esc(p.id)}"><span class="jr-ic">${JI.start}</span><span class="jr-txt"><span>${alvor}${tr("{name} added to Alvor", {name:esc(p.name)})}</span><small>${jDate(it.d)}</small></span></button>`;
   if(it.type === "year") return `<button type="button" class="jr-item k-acquired quiet" data-story="plant" data-id="${esc(p.id)}"><span class="jr-ic">${JI.acquired}</span><span class="jr-txt"><span>${alvor}${trn(it.n, "{name}: a year in your garden", "{name}: {n} years in your garden", {name:esc(p.name)})}</span><small>${jDate(it.d)}</small></span></button>`;
@@ -69,7 +69,12 @@ function storyHtml(S, page){
     (!q || (it.p && fold([it.p.name, it.p.species, it.p.genus, it.e && it.e.n, it.e && JK[it.e.k] && JK[it.e.k].label].join(" ").toLowerCase()).includes(q)));
   const all = storyItems(S.f).filter(it => it.type === "disc" ? !S.place && !q : hit(it));
   const months = [...new Set(all.map(it => it.d.slice(0, 7)))];
-  const shown = new Set(months.slice(0, S.months));
+  /* 12 months at a time, and at most about 300 entries (whole months, at least one): a big garden with thousands
+     of photos and milestones stays quick. "Show earlier" brings the next ones. */
+  const perMonth = {}; all.forEach(it => { const m = it.d.slice(0, 7); perMonth[m] = (perMonth[m] || 0) + 1; });
+  const cap = 300 * S.months / 12; let nShown = 0, upto = 0;
+  for(const m of months.slice(0, S.months)){ if(upto && nShown + perMonth[m] > cap) break; nShown += perMonth[m]; upto++; }
+  const shown = new Set(months.slice(0, upto));
   const items = all.filter(it => shown.has(it.d.slice(0, 7)));
   const plants = allPlants(), nph = plants.reduce((n, p) => n + (photos[p.id] || []).length, 0);
   const nms = plants.reduce((n, p) => n + jEntries(p).filter(e => STORY_KINDS.includes(e.k) && !e.auto && !e.task).length, 0);
@@ -90,7 +95,7 @@ function storyHtml(S, page){
       h += storyItemHtml(it);
     }
     h += `</div>`;
-    if(months.length > S.months) h += `<div class="jr-acts st-more"><button type="button" class="btn small" data-story="more">${tr("Show earlier")}</button></div>`;
+    if(months.length > upto) h += `<div class="jr-acts st-more"><button type="button" class="btn small" data-story="more">${tr("Show earlier")}</button></div>`;
   }
   h += `<p class="status st-key"><span class="st-alvor">${tr("Alvor")}</span>${tr("marks what Alvor noticed: a plant's years with you, a discovery. Everything else is what you recorded.")}</p>
     <p class="status jr-private">${ICON.lock}${tr("Only you see your garden's story. Friends see your shared plants' photos and happy moments, as before.")}</p>`;

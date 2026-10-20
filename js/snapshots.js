@@ -83,7 +83,7 @@ function snapCardHtml(){
     <div class="a-ic">${SNAP_ICON}</div>
     <div class="a-main"><span class="a-lab">${tr("Snapshot")}</span><h3>${tr("Your {month} in the garden", {month:new Date(P.y, P.m - 1, 15).toLocaleDateString(LOCALE, {month:"long"})})}</h3>
       ${lead ? `<p class="a-lead">${esc(lead)}</p>` : ""}
-      ${D.best.length ? `<div class="snap-mini">${D.best.slice(0, 4).map(x => `<img src="${x.ph.data}" alt="">`).join("")}</div>` : ""}
+      ${D.best.length ? `<div class="snap-mini">${D.best.slice(0, 4).map(x => `<img src="${phSrc(x.ph)}" alt="" loading="lazy" decoding="async">`).join("")}</div>` : ""}
       <div class="tk-acts"><button class="btn small primary" data-snap="open" data-y="${P.y}" data-m="${P.m}">${tr("Open")}</button><button class="btn small" data-snap="hide" data-key="${key}">${tr("Not now")}</button></div>
     </div></div>`;
 }
@@ -107,7 +107,7 @@ function renderSnap(){
       <div class="snap-step"><button type="button" class="round-back" data-snap="prev" aria-label="${tr("Earlier")}">${ICON.back}</button><h3>${esc(snapTitle(P))}</h3><button type="button" class="round-back fwd" data-snap="next" aria-label="${tr("Later")}" ${atNow ? "disabled" : ""}>${ICON.back}</button></div>
     </div>`;
   if(D.empty){ $("#snapBody").innerHTML = h + `<p class="status jr-empty" style="text-align:center;margin:30px 0">${tr("Nothing noted in this period. Photos and journal milestones make the snapshot.")}</p>`; return; }
-  if(D.best.length) h += `<div class="snap-grid n${Math.min(D.best.length, 7)}">${D.best.map((x, i) => `<button type="button" data-snap="photo" data-p="${x.p.id}" data-ph="${x.ph.id}"><img src="${x.ph.data}" alt="${esc(x.p.name)}"><span>${esc(x.p.name)}</span></button>`).join("")}</div>`;
+  if(D.best.length) h += `<div class="snap-grid n${Math.min(D.best.length, 7)}">${D.best.map((x, i) => `<button type="button" data-snap="photo" data-p="${x.p.id}" data-ph="${x.ph.id}"><img src="${phSrc(x.ph)}" loading="lazy" decoding="async" alt="${esc(x.p.name)}"><span>${esc(x.p.name)}</span></button>`).join("")}</div>`;
   h += `<div class="snap-stats">${stat(D.newPlants.length, "{n} new plant", "{n} new plants")}${stat(D.happy.filter(x => x.e.k === "flower").length, "{n} flowering", "{n} flowerings")}${stat(D.photos.length, "{n} photo", "{n} photos")}${stat(D.waterings, "{n} watering", "{n} waterings")}${stat(D.feeds, "{n} feed", "{n} feeds")}${stat(D.tasks, "{n} task done", "{n} tasks done")}</div>`;
   if(D.happy.length) h += `<h3 class="pick-h">${tr("Highlights")}</h3><ul class="snap-ms">${D.happy.slice(0, 12).map(msLine).join("")}</ul>`;
   if(D.newPlants.length) h += `<h3 class="pick-h">${tr("New in the garden")}</h3><div class="snap-plants">${D.newPlants.map(p => `<button type="button" data-snap="plant" data-p="${p.id}">${thumbHtml(p)}<span class="sp-n">${esc(p.name)}</span></button>`).join("")}</div>`;
@@ -148,7 +148,7 @@ async function snapPicture(P){
   const D = snapData(P), c = document.createElement("canvas"); c.width = 1080; c.height = 1350;
   const g = c.getContext("2d"), font = (w, s) => `${w} ${s}px Manrope, system-ui, sans-serif`;
   g.fillStyle = "#F3F1EA"; g.fillRect(0, 0, 1080, 1350);
-  const imgs = await Promise.all(D.best.slice(0, 5).map(x => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = x.ph.data; })));
+  const imgs = await Promise.all(D.best.slice(0, 5).map(async x => { const src = await fullPhoto(x.ph); return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }));
   const cover = (img, x, y, w, h) => {
     if(!img) return;
     const k = Math.max(w / img.width, h / img.height), sw = w / k, sh = h / k;

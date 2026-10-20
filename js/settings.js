@@ -142,7 +142,7 @@ function fillSettings(){
   fillAccount();
   fillProfileCard(); fillPrivacy(); fillLook(); fillLang();
   refreshNotifyStatus();
-  if(me && me.owner && token) loadAdmin();
+  if(me && me.owner && token){ loadAdmin(); loadUsage(); }
   fillSetIndex();
   renderColdPick();
   $("#sMargin").value = s.margin; $("#sHeat").value = s.heat; $("#sWind").value = s.wind; $("#sRain").value = s.rain;

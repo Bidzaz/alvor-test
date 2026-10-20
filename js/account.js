@@ -219,6 +219,29 @@ const phPath = (id, size) => `${me.id}/${id}-${size}.jpg`;
 const readDels = () => { try{ return JSON.parse(localStorage.getItem(PH_DEL_KEY) || "[]"); }catch(e){ return []; } };
 const writeDels = a => { try{ localStorage.setItem(PH_DEL_KEY, JSON.stringify(a)); }catch(e){} };
 function forgetPhoto(id){ writeDels([...new Set([...readDels(), id])]); queuePhotoSync(); }
+/* Files left behind in the account. A photo goes up as two files and then its row; if the connection drops in
+   between, the files are there without a row, and if the photo or its plant is deleted before the retry, nothing
+   points to them any more. About once a week this phone lists its own folder and removes the photo files that no
+   photo in the account and no photo on this phone points to, and that are more than a day old (so a photo another
+   phone is sending right now is never touched). Only your own folder: the account doesn't let anyone list another. */
+const PH_SWEEP_KEY = "garden-photo-sweep", PH_SWEEP_EVERY = 7 * 86400000, PH_SWEEP_AGE = 86400000;
+async function sweepPhotoFiles(serverIds, localIds, force){
+  let last = 0; try{ last = +localStorage.getItem(PH_SWEEP_KEY) || 0; }catch(e){}
+  if(!force && Date.now() - last < PH_SWEEP_EVERY) return 0;
+  const store = sb.storage.from("photos"), files = [];
+  for(let offset = 0; offset < 100000; offset += 1000){
+    const page = must(await store.list(me.id, {limit:1000, offset, sortBy:{column:"name", order:"asc"}})) || [];
+    files.push(...page);
+    if(page.length < 1000) break;
+  }
+  const keep = id => serverIds.has(id) || localIds.has(id);
+  const old = f => { const t = Date.parse(f.created_at || f.updated_at || ""); return isFinite(t) && Date.now() - t > PH_SWEEP_AGE; };
+  const gone = files.filter(f => { const m = /^([0-9a-f-]{36})-[ls]\.jpg$/.exec(f.name || ""); return m && !keep(m[1]) && old(f); })
+    .map(f => `${me.id}/${f.name}`);
+  for(let i = 0; i < gone.length; i += 100) must(await store.remove(gone.slice(i, i + 100)));
+  try{ localStorage.setItem(PH_SWEEP_KEY, String(Date.now())); }catch(e){}
+  return gone.length;
+}
 let photoSyncing = null, photoTimer = null;
 function queuePhotoSync(){ if(!token) return; clearTimeout(photoTimer); photoTimer = setTimeout(syncPhotos, 1500); }
 async function syncPhotos(){
@@ -238,7 +261,8 @@ async function syncPhotos(){
       const plantIds = new Set(allPlants().map(p => p.id));
       const rows = await allRows(() => sb.from("photos").select("id,plant_id,path_large,taken_at,hidden").eq("owner_id", me.id), "id");
       const server = new Set(rows.map(r => r.id));
-      const local = await idb.all(), localIds = new Set(local.map(p => p.id)), pendingDel = new Set(readDels());
+      // The details only (no data): the whole photo is read just before it goes up.
+      const local = await idb.meta(), localIds = new Set(local.map(p => p.id)), pendingDel = new Set(readDels());
       // 2. New photos on this phone go up, large and small. One that fails (a weak connection, a plant not saved
       //    to the account yet) waits for next time without holding up the others; the files are written with
       //    "upsert", so a photo cut off half way is simply sent again, never doubled.
@@ -249,8 +273,10 @@ async function syncPhotos(){
         try{
           if(!server.has(ph.id)){
             setSync(tr("Saving photos…"));
-            must(await store.upload(phPath(ph.id, "l"), await dataToBlob(ph.data), {upsert:true, contentType:"image/jpeg"}));
-            must(await store.upload(phPath(ph.id, "s"), await smallJpeg(ph.data), {upsert:true, contentType:"image/jpeg"}));
+            const full = await idb.get(ph.id);
+            if(!full || !full.data) continue;
+            must(await store.upload(phPath(ph.id, "l"), await dataToBlob(full.data), {upsert:true, contentType:"image/jpeg"}));
+            must(await store.upload(phPath(ph.id, "s"), await smallJpeg(full.data), {upsert:true, contentType:"image/jpeg"}));
             must(await sb.from("photos").upsert({id:ph.id, plant_id:ph.plantId, owner_id:me.id, hidden:!!ph.hidden,
               path_large:phPath(ph.id, "l"), path_small:phPath(ph.id, "s"), taken_at:new Date(ph.ts || Date.now()).toISOString()}));
             delete ph.hideDirty; delete ph.dateDirty;
@@ -290,6 +316,8 @@ async function syncPhotos(){
         await idb.put({id:r.id, plantId:r.plant_id, date:ymd(at), ts:at.getTime(), data:await blobToData(blob), synced:true, hidden:!!r.hidden});
         changed = true;
       }
+      // 5. Now and then: files nothing points to any more (see sweepPhotoFiles)
+      if(!failed) await sweepPhotoFiles(server, localIds).catch(() => {});
       if(failed) setSync(trn(failed, "{n} photo isn't saved to your account yet. Alvor tries again next time.", "{n} photos aren't saved to your account yet. Alvor tries again next time."));
       else if(uploaded.size || changed) setSync(tr("Saved to your account at {time}.", {time:hhmm()}));
     }catch(e){
@@ -495,6 +523,7 @@ function fillAccount(){
   }else if(off) off.remove();
   $("#dataCard").hidden = !(me && token);
   $("#adminCard").hidden = !(me && me.owner && token);
+  $("#usageCard").hidden = !(me && me.owner && token);
 }
 $("#inviteBtn").addEventListener("click", async () => {
   const out = $("#inviteOut");

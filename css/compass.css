@@ -91,7 +91,7 @@ dialog::backdrop{background:rgba(18,28,22,.42);-webkit-backdrop-filter:none;back
 .btn.primary{background:var(--fern);border-color:var(--fern);color:var(--on-fern);box-shadow:none}
 .btn.primary:hover{filter:brightness(1.06)}
 .btn:hover{border-color:color-mix(in srgb,var(--ink) 24%,transparent)}
-.btn.danger{color:#A3303D;border-color:color-mix(in srgb,#A3303D 55%,transparent)}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 55%,transparent)}
 .chip{min-height:40px;padding:8px 15px;border-radius:999px;background:var(--surface);border:1px solid var(--line);-webkit-backdrop-filter:none;backdrop-filter:none;color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:6px}
 .chip[aria-pressed=true]{background:var(--fern);border-color:var(--fern);color:var(--on-fern);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--on-fern) 25%,transparent)}
 .chip svg{width:15px;height:15px}
@@ -466,3 +466,20 @@ dialog::backdrop{background:rgba(18,28,22,.42);-webkit-backdrop-filter:none;back
   #view-today #todayLater{grid-area:later}
   #view-today .tp-h{margin-top:14px}
 }
+
+/* At least a fingertip (WCAG 2.2: 24 × 24) for the few controls that are text alone */
+button.nm{min-height:24px}
+summary{min-height:24px}
+/* Big text (the phone's text size up to 200 %): everything grows, except the dock's labels, which stop at about
+   135 % so each place keeps its whole word in its slot (cut words help nobody). The buttons keep their names for
+   screen readers either way. */
+.tb-l{font-size:min(1em, 15.5px)}
+@media (max-width:360px){.tb-l{font-size:min(1em, 14px)}}
+/* With big text: the weather's words go under the temperature, and two fields side by side stack, instead of
+   running off the screen. At normal sizes nothing changes. */
+.hero-now{flex-wrap:wrap}
+.hn-s{flex:1 1 7em;min-width:0}
+.row2{grid-template-columns:repeat(auto-fill,minmax(min(100%,9em),1fr))}
+.row2 > *{min-width:0}
+.row3{grid-template-columns:repeat(auto-fill,minmax(min(100%,6em),1fr))}
+.row3 > *{min-width:0}

@@ -235,8 +235,9 @@ function renderDisc(){
     if(!list.length) continue;
     h += `<h3 class="pick-h">${label}</h3><div class="disc-grid">${list.map(c => {
       const r = got.get(c.id);
-      return `<button type="button" class="disc-tile ${r ? "found" : ""}" data-disc="one" data-id="${c.id}" aria-label="${esc(discName(c.id))}: ${r ? esc(tr("found {date}", {date:discDay(r.unlocked_at)})) : esc(tr("not found yet"))}">
-        ${discSeal(c.id, !!r, 64)}<b>${esc(discName(c.id))}</b><small>${r ? esc(parseDay(String(r.unlocked_at).slice(0, 10)).toLocaleDateString(LOCALE, {day:"numeric", month:"short", year:"numeric"})) : tr("Not yet")}</small>${r && !r.seen_at ? `<i class="disc-new">${tr("New")}</i>` : ""}</button>`;
+      // Named by what it shows (its name, then the day it was found or "Not yet"), as a screen reader reads it.
+      return `<button type="button" class="disc-tile ${r ? "found" : ""}" data-disc="one" data-id="${c.id}">
+        ${discSeal(c.id, !!r, 64)}<b>${esc(discName(c.id))}</b><small>${r ? `<span class="vh">${esc(tr("Found"))}: </span>` + esc(parseDay(String(r.unlocked_at).slice(0, 10)).toLocaleDateString(LOCALE, {day:"numeric", month:"short", year:"numeric"})) : tr("Not yet")}</small>${r && !r.seen_at ? `<i class="disc-new">${tr("New")}</i>` : ""}</button>`;
     }).join("")}</div>`;
   }
   if(hiddenLeft) h += `<p class="status disc-hidden">${trn(hiddenLeft, "And 1 more, hidden: it shows itself when it's found.", "And {n} more, hidden: each shows itself when it's found.")}</p>`;

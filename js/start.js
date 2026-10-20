@@ -27,6 +27,7 @@ initAuth().then(async () => {
   syncLang();
   loadCircle();
   loadAdmin(true);
+  usageSeen();
   await joinFromLink();
   loadFeed();
   loadCuttings();
@@ -36,4 +37,4 @@ initAuth().then(async () => {
   maybeShareIntro();
 });
 refreshCurrent(false);
-document.addEventListener("visibilitychange", () => { if(!document.hidden){ fetchWeather(false); refreshCurrent(false); if(token){ pull(); loadCircle(); loadFeed(); loadCuttings(); } } });
+document.addEventListener("visibilitychange", () => { if(!document.hidden){ fetchWeather(false); refreshCurrent(false); if(token){ pull(); loadCircle(); loadFeed(); loadCuttings(); usageSeen(); } } });

@@ -158,9 +158,15 @@ function upgradeIds(){
   saveLocal();
   return map;
 }
+/* Old ids (from the first versions of Alvor) become UUIDs. Runs at every start, so it only reads whole photos
+   when there's something to change: the ids alone otherwise. */
 async function upgradePhotoIds(map){
   try{
-    for(const ph of await idb.all()){
+    const old = (await idb.keys()).filter(id => !UUID_RE.test(String(id)));
+    if(!old.length && !(map && Object.keys(map).length)) return;
+    const ids = map && Object.keys(map).length ? await idb.keys() : old;
+    for(const id of ids){
+      const ph = await idb.get(id); if(!ph) continue;
       let changed = false;
       if(map && map[ph.plantId]){ ph.plantId = map[ph.plantId]; changed = true; }
       if(!UUID_RE.test(String(ph.id))){ await idb.del(ph.id); ph.id = idFromOld(ph.id); changed = true; }

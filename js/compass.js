@@ -119,7 +119,7 @@ hubDlg.addEventListener("close", () => { HUB = null; document.body.classList.rem
 hubDlg.addEventListener("cancel", e => { if(HUB && HUB.step !== "main"){ e.preventDefault(); HUB = {step:"main", q:""}; renderHub(); focusHub(); } });
 function hubPlantRow(p){
   const ph = latestPhoto(p.id);
-  return `<button type="button" class="hub-plant" data-hubp="${p.id}">${ph ? `<img src="${ph.data}" alt="">` : `<span class="initial a-${p.area}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`}
+  return `<button type="button" class="hub-plant" data-hubp="${p.id}">${ph ? `<img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async">` : `<span class="initial a-${p.area}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`}
     <span class="hp-t"><b>${esc(p.name)}</b><small>${esc(ZONES[p.zone] ? ZONES[p.zone].label : "")}</small></span><span class="hp-f">${flagIcons(p.id)}</span></button>`;
 }
 function renderHub(){

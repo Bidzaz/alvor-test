@@ -63,7 +63,7 @@ function renderPlants(){
 const vaultMark = p => online && visOf(p) === "vault" ? `<span class="vmark" title="${tr("In your Vault: only you see it")}" aria-label="${tr("(in your Vault)")}">${ICON.lock}</span>` : "";
 function thumbHtml(p){
   const ph = latestPhoto(p.id);
-  return ph ? `<img src="${ph.data}" alt="">` : `<span class="initial a-${p.area}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`;
+  return ph ? `<img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async">` : `<span class="initial a-${p.area}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`;
 }
 function wateredText(p, W){
   const st = waterStatus(p, W);
@@ -72,7 +72,7 @@ function wateredText(p, W){
 }
 const waterTagCls = (p, W) => "tag w-" + waterStatus(p, W).stage;
 const ownMini = p => online && me && token && typeof miniCounts === "function" ? miniCounts({owner:me.id, type:"plant", id:p.id}) : "";
-const plantBg = p => { const ph = latestPhoto(p.id); return ph ? `<img class="p-bg" src="${ph.data}" alt="" aria-hidden="true">` : ""; };
+const plantBg = p => { const ph = latestPhoto(p.id); return ph ? `<img class="p-bg" src="${phSrc(ph)}" alt="" aria-hidden="true" loading="lazy" decoding="async">` : ""; };
 function plantRow(p, W){
   return `<div class="plant ${latestPhoto(p.id) ? "has-bg" : ""}">${plantBg(p)}
     <button class="thumb" data-act="edit" data-id="${p.id}" aria-label="${tr("Open {name}", {name:esc(p.name)})}">${thumbHtml(p)}</button>
@@ -349,35 +349,139 @@ function showTab(tab, opt){
 }
 $("#search").addEventListener("input", renderPlants);
 
-/* ---------- Photos ---------- */
+/* ---------- Photos ----------
+   On the phone, in two IndexedDB databases:
+   · "garden-photos" (as always): each photo whole: id, plantId, date, ts, data (the 2000 px JPEG as a data URL),
+     synced, hidden, hideDirty, dateDirty. This is the photo itself; older versions of Alvor read it unchanged.
+   · "garden-thumbs": the same details without data, plus th, a small copy (480 px JPEG Blob) for lists, cards,
+     journals and tiles. It's only a copy: rebuilt from garden-photos whenever one is missing.
+   The app keeps only the small copies in memory (as blob: addresses in ph.src), so a garden with thousands of
+   photos opens fast and light. The whole photo is read when it's shown large (viewer, the plant's picture,
+   before and after), shared, used as a backdrop or sent to the account: fullPhoto(ph). */
 const idb = (() => {
-  let dbp;
-  const db = () => dbp ||= new Promise((res, rej) => {
-    const r = indexedDB.open("garden-photos", 1);
-    r.onupgradeneeded = () => r.result.createObjectStore("photos", {keyPath:"id"});
-    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
-  });
-  const run = async (mode, fn) => {
-    const d = await db();
+  const open = (name, store) => { let p; return () => p ||= new Promise((res, rej) => {
+    const r = indexedDB.open(name, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(store, {keyPath:"id"});
+    r.onsuccess = () => { const d = r.result; d.onversionchange = () => d.close(); res(d); }; r.onerror = () => rej(r.error);
+  }); };
+  const photoDb = open("garden-photos", "photos"), thumbDb = open("garden-thumbs", "thumbs");
+  const run = async (dbf, store, mode, fn) => {
+    const d = await dbf();
     return new Promise((res, rej) => {
-      const t = d.transaction("photos", mode), req = fn(t.objectStore("photos"));
+      const t = d.transaction(store, mode), req = fn(t.objectStore(store));
       t.oncomplete = () => res(req ? req.result : undefined); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
     });
   };
-  return {put:ph => run("readwrite", s => s.put(ph)), del:id => run("readwrite", s => s.delete(id)),
-    all:() => run("readonly", s => s.getAll()), clear:() => run("readwrite", s => s.clear())};
+  const P = (mode, fn) => run(photoDb, "photos", mode, fn), T = (mode, fn) => run(thumbDb, "thumbs", mode, fn);
+  const clean = ph => { const o = {...ph}; delete o.src; delete o.th; delete o.data; return o; };
+  /* Writes a photo. With data: the whole photo and a new small copy. Without (a changed detail: synced, hidden,
+     a new date): the details change in both, and the photo itself stays as it is. */
+  async function put(ph){
+    let th = ph.th instanceof Blob ? ph.th : null;
+    if(ph.data){
+      if(!th) th = await makeThumb(ph.data).catch(() => null);
+      await P("readwrite", s => s.put({...clean(ph), data:ph.data}));
+    }else{
+      let found = false;
+      await P("readwrite", s => { const g = s.get(ph.id); g.onsuccess = () => { if(g.result){ found = true; s.put({...g.result, ...clean(ph), data:g.result.data}); } }; return null; });
+      if(!found) throw new Error("photo not on this phone");
+      if(!th){ const old = await T("readonly", s => s.get(ph.id)); th = old && old.th || null; }
+      if(!th){ const full = await get(ph.id); th = full && await makeThumb(full.data).catch(() => null); }
+    }
+    // The small copy is only a copy: if it can't be written, the photo is still saved (it's rebuilt next time).
+    await T("readwrite", s => s.put({...clean(ph), th})).catch(() => {});
+    if(th){ ph.th = th; ph.src = thumbUrl(ph.id, th, true); delete ph.data; }   // in memory: the small copy only
+  }
+  const get = id => P("readonly", s => s.get(id));
+  return {put, get,
+    del:async id => { await P("readwrite", s => s.delete(id)); await T("readwrite", s => s.delete(id)).catch(() => {}); dropThumbUrl(id); },
+    all:() => P("readonly", s => s.getAll()),        // every photo whole: only for the backup file
+    // Every photo's details and small copy. If the copies can't be read, the photos themselves (as before).
+    meta:() => T("readonly", s => s.getAll()).catch(() => P("readonly", s => s.getAll())),
+    keys:() => P("readonly", s => s.getAllKeys()), thumbKeys:() => T("readonly", s => s.getAllKeys()),
+    putThumb:rec => T("readwrite", s => s.put(rec)), delThumb:id => T("readwrite", s => s.delete(id)),
+    clear:async () => { await P("readwrite", s => s.clear()); await T("readwrite", s => s.clear()).catch(() => {}); dropThumbUrl(); }};
 })();
-let photos = {};   // plantId -> newest first
-let pending = [];  // photos for a plant not saved yet
+/* The small copy as an address an <img> can show. One per photo, kept while the photo is on the phone. */
+const thumbUrls = new Map();
+function thumbUrl(id, blob, fresh){
+  const had = thumbUrls.get(id);
+  if(had && !fresh) return had;
+  if(had) setTimeout(() => URL.revokeObjectURL(had), 60000);   // screens drawn a moment ago may still show it
+  const u = URL.createObjectURL(blob); thumbUrls.set(id, u); return u;
+}
+function dropThumbUrl(id){
+  for(const [k, u] of thumbUrls) if(id == null || k === id){ setTimeout(() => URL.revokeObjectURL(u), 60000); thumbUrls.delete(k); }
+}
+async function makeThumb(data){
+  const c = await drawJpeg(data, 480);
+  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("thumb")), "image/jpeg", 0.74));
+}
+/* Builds the small copies that are missing (the first time this version opens, a photo another version
+   added), and drops copies of photos that are gone. One photo at a time, so memory stays low. */
+let thumbsReady = null;
+function ensureThumbs(onProgress){
+  return thumbsReady ||= (async () => {
+    try{
+      const [keys, tkeys] = await Promise.all([idb.keys(), idb.thumbKeys()]);
+      const have = new Set(tkeys), want = new Set(keys);
+      for(const k of tkeys) if(!want.has(k)) await idb.delThumb(k).catch(() => {});
+      const missing = keys.filter(k => !have.has(k));
+      for(let i = 0; i < missing.length; i++){
+        const ph = await idb.get(missing[i]).catch(() => null);
+        if(ph && ph.data){
+          const th = await makeThumb(ph.data).catch(() => null);
+          const o = {...ph}; delete o.data;
+          await idb.putThumb({...o, th}).catch(() => {});
+        }
+        if(onProgress && (i + 1) % 100 === 0) await onProgress();   // the photos appear as they're ready
+      }
+    }catch(e){}
+  })();
+}
+/* The whole photo (data URL), for showing it large, sharing or sending it. The last few are kept. */
+const fullCache = new Map();
+async function fullPhoto(ph){
+  if(!ph) return "";
+  if(ph.data) return ph.data;
+  if(fullCache.has(ph.id)) return fullCache.get(ph.id);
+  let r = null; try{ r = await idb.get(ph.id); }catch(e){}
+  const d = r && r.data || ph.src || "";
+  if(r && r.data){ fullCache.set(ph.id, d); if(fullCache.size > 6) fullCache.delete(fullCache.keys().next().value); }
+  return d;
+}
+/* For an <img>: the small copy when there is one (or the photo itself, for one just taken). Its address is made
+   the first time it's shown. */
+const phSrc = ph => !ph ? "" : ph.src || (ph.th instanceof Blob ? (ph.src = thumbUrl(ph.id, ph.th)) : ph.data || "");
+/* Images marked data-full="photo id" are drawn small first and swapped for the whole photo once it's read. */
+function upFull(root){
+  (root || document).querySelectorAll("img[data-full]").forEach(img => {
+    const id = img.dataset.full; img.removeAttribute("data-full");
+    const ph = Object.values(photos).flat().find(x => x.id === id) || pending.find(x => x.id === id);
+    if(ph && !ph.data) fullPhoto(ph).then(d => { if(d && img.isConnected) img.src = d; });
+  });
+}
+let photos = {};   // plantId -> newest first (details and small copies; no data)
+let pending = [];  // photos for a plant not saved yet (with their data)
 const latestPhoto = id => (photos[id] || [])[0];
 const sortPh = a => a.sort((x,y) => y.ts - x.ts);
 async function loadPhotos(){
   try{
-    const all = await idb.all(); photos = {};
-    all.forEach(ph => (photos[ph.plantId] ||= []).push(ph));
-    Object.values(photos).forEach(sortPh);
+    await ensureThumbs(fillPhotos);
+    await fillPhotos(false);
   }catch(e){}
   renderPlants();
+}
+async function fillPhotos(draw = true){
+  const all = await idb.meta(), next = {}, seen = new Set();
+  for(const ph of all){
+    if(thumbUrls.has(ph.id)) ph.src = thumbUrls.get(ph.id);
+    seen.add(ph.id); (next[ph.plantId] ||= []).push(ph);
+  }
+  for(const id of [...thumbUrls.keys()]) if(!seen.has(id)) dropThumbUrl(id);
+  Object.values(next).forEach(sortPh);
+  photos = next;
+  if(draw) renderPlants();
 }
 /* Photos are kept at up to 2000 px (about 0.3 to 0.6 MB); friends get an 800 px copy. */
 async function drawJpeg(src, max, quality){
@@ -443,7 +547,7 @@ const galleryList = () => editingId ? (photos[editingId] || []) : pending;
 function renderGallery(){
   const list = galleryList();
   $("#gallery").innerHTML = list.length ? list.map(ph =>
-    `<button class="ph" data-act="viewPhoto" data-ph="${ph.id}"><img src="${ph.data}" alt="${tr("Photo from {date}", {date:ph.date})}">${ph.hidden && online ? `<span class="ph-hid" title="${tr("Hidden from friends")}">${ICON.eyeOff}</span>` : ""}${parseDay(ph.date).toLocaleDateString(LOCALE,{day:"numeric",month:"short",year:"2-digit"})}</button>`).join("")
+    `<button class="ph" data-act="viewPhoto" data-ph="${ph.id}"><img src="${phSrc(ph)}" loading="lazy" decoding="async" alt="${tr("Photo from {date}", {date:ph.date})}">${ph.hidden && online ? `<span class="ph-hid" title="${tr("Hidden from friends")}">${ICON.eyeOff}</span>` : ""}${parseDay(ph.date).toLocaleDateString(LOCALE,{day:"numeric",month:"short",year:"2-digit"})}</button>`).join("")
     : `<p class="none">${tr("No photos yet. The newest photo becomes the plant's picture.")}</p>`;
 }
 $("#addPhoto").addEventListener("click", () => $("#photoFile").click());
@@ -472,7 +576,9 @@ let viewing = null;
 const viewer = $("#viewer");
 function viewPhoto(id){
   viewing = galleryList().find(p => p.id === id); if(!viewing) return;
-  $("#viewerImg").src = viewing.data;
+  const v = viewing, img = $("#viewerImg");
+  img.src = phSrc(v);
+  if(!v.data) fullPhoto(v).then(d => { if(d && viewing === v) img.src = d; });
   $("#viewerDate").textContent = parseDay(viewing.date).toLocaleDateString(LOCALE,{day:"numeric",month:"long",year:"numeric"});
   fillViewerHide(); fillViewerJournal();
   viewer.showModal();
@@ -550,7 +656,7 @@ function psTopHtml(p){
   const kb = findPreset(p.species, p.genus), common = kb ? plantName(kb.s, kb.n) : "";
   const vis = online ? VIS[visOf(p)] : null;
   const care = ["consider","likely","urgent"].includes(st.stage) ? STAGE_WORD[st.stage] : st.stage === "unknown" ? STAGE_WORD.unknown : STAGE_WORD[st.stage];
-  return `<div class="ps-hero ${ph ? "has-ph" : ""}">${ph ? `<button class="ps-img" data-act="viewPhoto" data-ph="${ph.id}" aria-label="${tr("Open the newest photo of {name}", {name:esc(p.name)})}"><img src="${ph.data}" alt=""></button>`
+  return `<div class="ps-hero ${ph ? "has-ph" : ""}">${ph ? `<button class="ps-img" data-act="viewPhoto" data-ph="${ph.id}" aria-label="${tr("Open the newest photo of {name}", {name:esc(p.name)})}"><img src="${phSrc(ph)}" data-full="${ph.id}" alt=""></button>`
       : `<span class="ps-img ps-none a-${p.area}" aria-hidden="true">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`}
     <div class="ps-id">${p.species ? `<i>${esc(p.species)}</i>` : ""}${common && common !== p.name && common !== p.species ? `<small>${esc(common)}</small>` : ""}
       ${vis ? `<span class="ps-vis">${vis.icon}${esc(vis.short)}</span>` : ""}</div></div>
@@ -568,7 +674,7 @@ document.addEventListener("toggle", e => { if(e.target.classList && e.target.cla
 function refreshPsTop(){
   if(!dlg.open || !editingId) return;
   const p = state.plants.find(x => x.id === editingId); if(!p) return;
-  $("#psTop").innerHTML = psTopHtml(p);
+  $("#psTop").innerHTML = psTopHtml(p); upFull($("#psTop"));
   $("#dlgTitle").textContent = p.name;
 }
 /* Water now: Alvor's estimate for this plant, why, and what you found. */
@@ -671,7 +777,7 @@ function openDialog(id){
   const p = id ? state.plants.find(x => x.id === id) : null;
   $("#dlgTitle").textContent = p ? p.name : tr("Add plant");
   $("#dlgDelete").hidden = !p;
-  $("#psTop").innerHTML = p ? psTopHtml(p) : "";
+  $("#psTop").innerHTML = p ? psTopHtml(p) : ""; upFull($("#psTop"));
   $("#psEdit").open = !p;
   $("#arcBox").hidden = !p;
   $("#fName").value = p ? p.name : "";
@@ -779,7 +885,9 @@ async function deleteForGood(id){
   const p = plantById(id); if(!p) return false;
   if(!confirm(p.archived ? tr("Delete {name} for good, with its photos and journal? This can't be undone.", {name:p.name})
     : tr("Delete {name} for good, with its photos and journal? If it died or you gave it away, Move to the Archive keeps its story.", {name:p.name}))) return false;
-  for(const ph of photos[id] || []){ try{ await idb.del(ph.id); }catch(e){} }
+  /* Each photo is also taken off the account by its files, not only through the plant: a photo whose upload was
+     cut off half way has files there but no row yet, and would otherwise stay behind. */
+  for(const ph of photos[id] || []){ try{ await idb.del(ph.id); }catch(e){} if(token) forgetPhoto(ph.id); }
   delete photos[id];
   state.plants = state.plants.filter(x => x.id !== id);
   state.archive = (state.archive || []).filter(x => x.id !== id);

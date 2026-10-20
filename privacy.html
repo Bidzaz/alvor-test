@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#F5F4EC; --surface:#FFFFFF; --ink:#223127; --muted:#6B7970; --line:#E2E5DA;
+  --bg:#F5F4EC; --surface:#FFFFFF; --ink:#223127; --muted:#5E6C63; --line:#E2E5DA;
   --fern:#3F6E4C; --fern-soft:#E7F0E2; --on-fern:#FFFFFF;
   --shadow:0 1px 2px rgba(40,60,40,.05), 0 6px 20px rgba(40,70,40,.07);
 }
@@ -54,8 +54,8 @@ section p:last-child,section ul:last-child{margin-bottom:0}
 ul{margin:0 0 10px;padding-left:20px}
 li{margin:3px 0}
 a{color:var(--fern);font-weight:700}
-.tbl{width:100%;border-collapse:collapse;font-size:.93rem;margin:4px 0 10px}
-.tbl th,.tbl td{text-align:left;vertical-align:top;padding:8px 10px;border-top:1px solid var(--line)}
+.tbl{width:100%;border-collapse:collapse;font-size:.93rem;margin:4px 0 10px;table-layout:fixed}
+.tbl th,.tbl td{text-align:left;vertical-align:top;padding:8px 10px;border-top:1px solid var(--line);overflow-wrap:anywhere;hyphens:auto}
 .tbl th{font-weight:700;border-top:0;color:var(--fern)}
 .short{background:var(--fern-soft);border-color:transparent}
 .short li{margin:5px 0}
@@ -66,7 +66,7 @@ a{color:var(--fern);font-weight:700}
   <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="12 12 76 76" aria-hidden="true"><circle cx="50" cy="50" r="36" fill="#E4EFDD"/><path d="M36 56a14 14 0 0 1 28 0z" fill="#F2B45A"/><path d="M14.5 56A36 36 0 0 0 85.5 56Z" fill="#8DBB78"/><path d="M50 79V60" stroke="#3F6E4C" stroke-width="3" stroke-linecap="round"/><path d="M50 64c-2-8-9-11-16-10 1 7 8 11 16 10z" fill="#3F6E4C"/><path d="M50 59c2-9 9-13 17-12-1 8-8 12-17 12z" fill="#4F8A5B"/><circle cx="50" cy="50" r="36" fill="none" stroke="#3F6E4C" stroke-width="2.5"/></svg><b>Alvor</b></div>
   <div class="lang-en" lang="en">
   <h1>Privacy policy</h1>
-  <p class="meta">Last updated: 15 October 2026</p>
+  <p class="meta">Last updated: 20 October 2026</p>
 
   <section class="short">
     <h2>In short</h2>
@@ -97,6 +97,7 @@ a{color:var(--fern);font-weight:700}
       <li><b>Notifications:</b> if you turn them on, an address for your phone given by its notification service, so Alvor can send the morning summary and the evening frost check.</li>
       <li><b>Your discoveries:</b> which of Alvor's small discoveries you've found (a first flower, a plant's first year…), the day, and the plant or journal entry that earned each one. Alvor works them out from what's already in your account; they're never shown to friends or compared with anyone.</li>
       <li><b>Small counters:</b> how many plant identifications you made today, and which daily messages were already sent, to keep within limits.</li>
+      <li><b>The days you open Alvor:</b> the day only (no time, no screens, nothing about what you did), kept for 400 days. The owner sees them only as totals for everyone (how many people have a first plant, acted on an alert or came back after a week), never yours on their own.</li>
     </ul>
     <p>Alvor also keeps a copy of your garden and photos on your own phone, so it works without a connection. It doesn't use cookies.</p>
   </section>
@@ -106,7 +107,7 @@ a{color:var(--fern);font-weight:700}
     <table class="tbl">
       <tr><th>Friends can see</th><th>Nobody else ever sees</th></tr>
       <tr><td>Your name, @username and profile photo; your garden's backdrop and town; and, for each plant you share, its name, species, spot and photos (except photos you hide), its happy moments (when you got it, new growth, flowering and fruiting, with the day and photo, unless you switch that off) and whether it has cuttings to share.</td>
-          <td>Your email, your notes, your plants' journals, your watering and activity history, your care settings, your exact location, your discoveries, and every plant you keep in the Vault.</td></tr>
+          <td>Your email, your notes, your plants' journals, your watering and activity history, your care settings, your exact location, your discoveries, the days you open Alvor, and every plant you keep in the Vault.</td></tr>
     </table>
     <p>A friend who asks you for a cutting, and you, see the request, its note and the answer. Each plant has its own "Visible to" setting. If "Let people find me" is switched on, people can also find your name, @username and profile photo by searching. It's off unless you turn it on.</p>
   </section>
@@ -169,7 +170,7 @@ a{color:var(--fern);font-weight:700}
   </div>
   <div class="lang-es" lang="es" hidden>
   <h1>Política de privacidad</h1>
-  <p class="meta">Última actualización: 15 de octubre de 2026</p>
+  <p class="meta">Última actualización: 20 de octubre de 2026</p>
 
   <section class="short">
     <h2>En resumen</h2>
@@ -200,6 +201,7 @@ a{color:var(--fern);font-weight:700}
       <li><b>Avisos:</b> si los activas, una dirección de tu móvil que da su servicio de notificaciones, para que Alvor pueda mandarte el resumen de la mañana y el aviso de frío de la tarde.</li>
       <li><b>Tus descubrimientos:</b> cuáles de los pequeños descubrimientos de Alvor has encontrado (una primera flor, el primer año de una planta…), el día y la planta o la entrada del diario que lo consiguió. Alvor los calcula a partir de lo que ya está en tu cuenta; nunca se muestran a tus amistades ni se comparan con nadie.</li>
       <li><b>Pequeños contadores:</b> cuántas identificaciones de plantas has hecho hoy y qué mensajes diarios ya se han enviado, para no pasarse de los límites.</li>
+      <li><b>Los días que abres Alvor:</b> solo el día (ni la hora, ni las pantallas, nada de lo que hiciste), guardados 400 días. El propietario solo los ve como totales de todos (cuántas personas tienen una primera planta, hicieron caso de un aviso o volvieron después de una semana), nunca los tuyos por separado.</li>
     </ul>
     <p>Alvor también guarda una copia de tu jardín y de tus fotos en tu propio móvil, para que funcione sin conexión. No usa cookies.</p>
   </section>
@@ -209,7 +211,7 @@ a{color:var(--fern);font-weight:700}
     <table class="tbl">
       <tr><th>Tus amigos pueden ver</th><th>Nadie más ve nunca</th></tr>
       <tr><td>Tu nombre, tu @usuario y tu foto de perfil; el fondo y el pueblo de tu jardín; y, de cada planta que compartes, su nombre, especie, sitio y fotos (salvo las que ocultes), sus buenos momentos (cuándo la conseguiste, brotes nuevos, floraciones y frutos, con el día y la foto, salvo que lo desactives) y si tiene esquejes para compartir.</td>
-          <td>Tu correo, tus notas, el diario de tus plantas, tu historial de riego y de actividad, tus ajustes de cuidados, tu ubicación exacta, tus descubrimientos y todas las plantas que guardas en la Cámara.</td></tr>
+          <td>Tu correo, tus notas, el diario de tus plantas, tu historial de riego y de actividad, tus ajustes de cuidados, tu ubicación exacta, tus descubrimientos, los días que abres Alvor y todas las plantas que guardas en la Cámara.</td></tr>
     </table>
     <p>Cuando un amigo te pide un esqueje, los dos veis la petición, su nota y la respuesta. Cada planta tiene su propio ajuste «Visible para». Si «Dejar que me encuentren» está activado, la gente también puede encontrar tu nombre, tu @usuario y tu foto de perfil buscando. Está desactivado salvo que lo actives.</p>
   </section>

@@ -78,7 +78,8 @@ alvor-data.json   Todo lo que el servidor de Alvor guarda sobre ti: el correo co
                   y cuidados y su diario (también las del Archivo), tus tareas del jardín,
                   tu historial, amigos, solicitudes, bloqueos, invitaciones, los esquejes
                   que pediste o te pidieron, las reacciones y comentarios que escribiste,
-                  las denuncias que enviaste y tus descubrimientos.
+                  las denuncias que enviaste, tus descubrimientos y los días que
+                  abriste Alvor.
                   Se abre con cualquier editor de texto.
 photos/           Todas las fotos, a tamaño completo, en una carpeta por planta.
 profile-photo.jpg Tu foto de perfil, si tienes una.
@@ -94,7 +95,8 @@ alvor-data.json   Everything Alvor's server keeps about you: your sign-in email,
                   care details and its journal (those in the Archive too), your garden
                   tasks, your history, friends, requests, blocks, invitations, the
                   cuttings you asked for or were asked for, reactions and comments
-                  you wrote, reports you sent, and your discoveries.
+                  you wrote, reports you sent, your discoveries, and the days you
+                  opened Alvor.
                   It opens in any text editor.
 photos/           Every photo, at full size, in a folder per plant.
 profile-photo.jpg Your profile photo, if you have one.
@@ -115,11 +117,13 @@ async function downloadMyData(){
     const data = must(await sb.rpc("export_my_data"));
     // Discoveries (part 11): which ones, when, and what earned them. Left out if the table isn't there yet.
     try{ const r = await sb.from("discoveries").select("discovery,unlocked_at,qualified_on,evidence,seen_at").eq("owner_id", me.id); if(!r.error && r.data) data.discoveries = r.data; }catch(e){}
+    // The days you opened Alvor (part 12): the day only. Left out if the table isn't there yet.
+    try{ const r = await sb.from("usage_days").select("day").eq("owner_id", me.id).order("day"); if(!r.error && r.data) data.days_you_opened_alvor = r.data.map(x => x.day); }catch(e){}
     const enc = new TextEncoder(), files = [], now = new Date();
     files.push({name:"README.txt", data:enc.encode(DATA_README), date:now});
     files.push({name:"alvor-data.json", data:enc.encode(JSON.stringify(data, null, 2)), date:now});
     const names = Object.fromEntries((data.plants || []).map(p => [p.id, safeName(p.name)]));
-    const local = Object.fromEntries((await idb.all().catch(() => [])).map(ph => [ph.id, ph]));
+    const local = new Set(await idb.keys().catch(() => []));   // photos on this phone are read from it, one at a time
     const list = data.photos || [];
     let missing = 0;
     for(let i = 0; i < list.length; i++){
@@ -127,7 +131,8 @@ async function downloadMyData(){
       st(tr("Adding photos: {n} of {total}…", {n:i + 1, total:list.length}));
       let bytes = null;
       try{
-        if(local[ph.id] && local[ph.id].data) bytes = new Uint8Array(await (await dataToBlob(local[ph.id].data)).arrayBuffer());
+        const mine = local.has(ph.id) ? await idb.get(ph.id).catch(() => null) : null;
+        if(mine && mine.data) bytes = new Uint8Array(await (await dataToBlob(mine.data)).arrayBuffer());
         else bytes = new Uint8Array(await must(await sb.storage.from("photos").download(phPath(ph.id, "l"))).arrayBuffer());
       }catch(e){ missing++; continue; }
       const at = new Date(ph.taken_at || ph.uploaded_at || now);
@@ -245,3 +250,48 @@ $("#adminList").addEventListener("click", async e => {
   }catch(err){ circleErr(err); }
   await loadAdmin();
 });
+
+/* ---------- How Alvor is used (part 12) ----------
+   usageSeen: once a day per phone, the server notes the day (its own clock). Only the day: nothing about what's
+   done in the app. The owner's card shows totals for everyone (admin_usage), never one person's days. */
+const USAGE_KEY = "alvor-usage-day";
+function usageSeen(){
+  if(!online || !token || !me || !sb) return;
+  const k = me.id + "|" + new Date().toISOString().slice(0, 10);
+  let last = ""; try{ last = localStorage.getItem(USAGE_KEY) || ""; }catch(e){}
+  if(last === k) return;
+  sb.rpc("usage_seen").then(r => {
+    // Noted (or part 12 isn't there yet: no point asking again today). A dropped connection tries next time.
+    if(!r.error || !/fetch|network/i.test(String(r.error.message || ""))){ try{ localStorage.setItem(USAGE_KEY, k); }catch(e){} }
+  }).catch(() => {});
+}
+let usage = null;
+async function loadUsage(){
+  if(!me || !me.owner || !token) return;
+  try{
+    const r = await sb.rpc("admin_usage");
+    if(r.error) usage = /admin_usage|PGRST202|not find|does not exist/i.test(String(r.error.message || "") + (r.error.code || "")) ? {missing:true} : {error:true};
+    else usage = r.data || {error:true};
+  }catch(e){ usage = {error:true}; }
+  renderUsage();
+}
+function renderUsage(){
+  const el = $("#usageBody"), U = usage; if(!el) return;
+  if(!U){ el.innerHTML = `<p class="f-empty">${tr("Loading…")}</p>`; return; }
+  if(U.missing){ el.innerHTML = `<p class="f-empty">${tr("Run database part 12 in Supabase to see these.")}</p>`; return; }
+  if(U.error){ el.innerHTML = `<p class="f-empty">${tr("Couldn't load these. Check your connection.")}</p>`; return; }
+  const n = +U.accounts || 0, of = k => tr("{n} of {total}", {n:+U[k] || 0, total:n});
+  const row = (label, value) => `<div class="use-row"><span>${label}</span><b>${value}</b></div>`;
+  const back = k => { const b = (U.back || {})[k] || {}; return +b.asked ? tr("{n} of {total}", {n:+b.came || 0, total:+b.asked}) : "–"; };
+  const disc = Object.entries(U.discoveries || {}).sort((a, b) => b[1] - a[1]);
+  let h = row(tr("Accounts"), n + (+U.joined_30 ? ` <small>${tr("{n} new this month", {n:+U.joined_30})}</small>` : ""))
+    + row(tr("Have a first plant"), of("with_plant")) + row(tr("Have a first photo"), of("with_photo"))
+    + row(tr("Acted on an alert"), of("acted_on_alert"))
+    + row(tr("Opened Alvor this week"), of("active_7")) + row(tr("Opened Alvor this month"), of("active_30"));
+  h += `<h3 class="sub-h">${tr("Came back")}</h3>` + row(tr("After a day"), back("1")) + row(tr("After a week"), back("7")) + row(tr("After a month"), back("30"));
+  h += `<p class="status">${U.since ? tr("Counted for people who joined since {date}, when Alvor started noting the days, and had the time to come back.", {date:shortDate(U.since)}) : tr("Alvor starts noting the days from now.")}</p>`;
+  if(disc.length) h += `<h3 class="sub-h">${tr("Discoveries found")}</h3><div class="use-disc">${disc.map(([id, c]) => `<span>${esc(typeof discName === "function" ? discName(id) : id)} <b>${+c}</b></span>`).join("")}</div>`;
+  h += `<h3 class="sub-h">${tr("Worth watching")}</h3>` + row(tr("People with plants but nothing recorded after a month"), +U.plants_no_records_30 || 0)
+    + row(tr("People who switched off the small discovery moments"), +U.moments_off || 0);
+  el.innerHTML = h;
+}

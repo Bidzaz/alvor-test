@@ -680,7 +680,10 @@ function frostAction(p, t, s, hasGh, gh){
    feedSkip (the day you said "Skip this time"), rpy (years between repottings, your own; 0 never), rpSkip (the year
    you said "Not this year"). Alvor never knows the soil: these are reminders from what you logged, nothing more. */
 const jLastEntry = (p, k) => (p.journal || []).filter(e => e && !e.del && e.k === k && e.d).reduce((a, e) => !a || e.d > a.d || (e.d === a.d && (+e.m || 0) > (+a.m || 0)) ? e : a, null);
-const monthName = m => new Date(Date.UTC(2026, m - 1, 15)).toLocaleDateString(LOCALES[lang] || "en-GB", {month:"long", timeZone:"UTC"});
+const MONTH_NAMES = new Map();   // formatting a date is slow and this is asked for every plant on every redraw
+const monthName = m => { const k = lang + "|" + m; let v = MONTH_NAMES.get(k);
+  if(v === undefined){ v = new Date(Date.UTC(2026, m - 1, 15)).toLocaleDateString(LOCALES[lang] || "en-GB", {month:"long", timeZone:"UTC"}); MONTH_NAMES.set(k, v); }
+  return v; };
 const monthOf = d => +String(d).slice(5, 7);
 /* The first day of the most recent season that started on north-month m (hemisphere-adjusted). */
 function seasonStartDay(today, m, s){

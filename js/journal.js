@@ -145,10 +145,10 @@ function jItemHtml(it, p){
     const e = it.e, k = JK[e.k] ? e.k : "note", img = e.ph && ph(e.ph);
     return `<button type="button" class="jr-item k-${k}" data-j="edit" data-e="${esc(e.id)}"><span class="jr-ic">${JI[k]}</span>
       <span class="jr-txt"><b>${JK[k].label}</b><small>${jDate(e.d)}</small>${e.n ? `<span class="jr-note">${esc(e.n)}</span>` : ""}${typeof discMarks === "function" ? discMarks(p, e) : ""}</span>
-      ${img ? `<img class="jr-img" src="${img.data}" alt="">` : ""}</button>`;
+      ${img ? `<img class="jr-img" src="${phSrc(img)}" alt="" loading="lazy" decoding="async">` : ""}</button>`;
   }
   if(it.type === "photos") return `<div class="jr-item k-photo"><span class="jr-ic">${JI.photo}</span><span class="jr-txt"><b>${trn(it.list.length, "{n} photo", "{n} photos")}</b><small>${jDate(it.d)}</small>
-      <span class="jr-thumbs">${it.list.map(x => `<button type="button" data-act="viewPhoto" data-ph="${x.id}"><img src="${x.data}" alt="${tr("Photo from {date}", {date:jDate(x.date)})}"></button>`).join("")}</span></span></div>`;
+      <span class="jr-thumbs">${it.list.map(x => `<button type="button" data-act="viewPhoto" data-ph="${x.id}"><img src="${phSrc(x)}" loading="lazy" decoding="async" alt="${tr("Photo from {date}", {date:jDate(x.date)})}"></button>`).join("")}</span></span></div>`;
   if(it.type === "move") return `<div class="jr-item k-moved quiet"><span class="jr-ic">${JI.moved}</span><span class="jr-txt"><span>${esc(logText(it.e.txt))}</span><small>${jDate(it.d)}</small></span></div>`;
   if(it.type === "care") return `<div class="jr-item k-care quiet"><span class="jr-ic">${JI.care}</span><span class="jr-txt"><span>${esc(logText(it.l.detail))}</span><small>${jDate(it.d)}</small></span></div>`;
   if(it.type === "waterings") return `<div class="jr-item k-care quiet"><span class="jr-ic">${JI.care}</span><span class="jr-txt"><span>${trn(it.n, "Watered once this month", "Watered {n} times this month")}</span></span></div>`;
@@ -195,7 +195,7 @@ function renderJournal(){
   $("#jrnTitle").textContent = tr("{name}'s journal", {name:p.name});
   const list = jPhotos(p.id);
   const strip = list.length >= 2 ? `<h3 class="pick-h">${tr("Photos over time")}</h3><div class="jr-strip">${list.map((x, i) =>
-    `<button type="button" data-act="viewPhoto" data-ph="${x.id}"><img src="${x.data}" alt="${tr("Photo from {date}", {date:jDate(x.date)})}"><span>${parseDay(x.date).toLocaleDateString(LOCALE, {month:"short", year:"numeric"})}</span>${i ? `<small>+${jAge(list[0].date, x.date)}</small>` : `<small>${tr("first")}</small>`}</button>`).join("")}</div>` : "";
+    `<button type="button" data-act="viewPhoto" data-ph="${x.id}"><img src="${phSrc(x)}" loading="lazy" decoding="async" alt="${tr("Photo from {date}", {date:jDate(x.date)})}"><span>${parseDay(x.date).toLocaleDateString(LOCALE, {month:"short", year:"numeric"})}</span>${i ? `<small>+${jAge(list[0].date, x.date)}</small>` : `<small>${tr("first")}</small>`}</button>`).join("")}</div>` : "";
   const E = jEntries(p);
   const count = {all:null, ms:E.filter(e => !(e.k === "moved" && e.auto)).length, photos:(photos[p.id] || []).length, moves:E.filter(e => e.k === "moved").length,
     care:state.log.filter(l => l.plantId === p.id && (l.type === "water" || l.type === "care")).length, feed:E.filter(e => e.k === "fed").length};
@@ -228,7 +228,7 @@ function renderMs(){
   const p = plantById(MS.plantId); if(!p) return msDlg.close();
   $("#msTitle").textContent = MS.id ? (MS.auto ? tr("Move") : tr("Journal entry")) : tr("Add to {name}'s journal", {name:p.name});
   $("#msDelete").hidden = !MS.id;
-  const sel = MS.newPh ? MS.newPh.data : MS.ph && ((photos[p.id] || []).find(x => x.id === MS.ph) || {}).data;
+  const sel = MS.newPh ? MS.newPh.data : MS.ph && phSrc((photos[p.id] || []).find(x => x.id === MS.ph));
   const own = (photos[p.id] || []);
   $("#msBody").innerHTML = (MS.auto ? `<p class="jr-movetxt">${ICON.move} ${esc(logText(MS.txt))}</p><p class="status">${tr("Alvor wrote this when you moved it. Add a note if you like.")}</p>`
       : `<div class="ms-kinds" role="group" aria-label="${tr("What happened?")}">${JK_ORDER.map(k => `<button type="button" class="ms-k k-${k}" data-mk="${k}" aria-pressed="${MS.k === k}"><span class="jr-ic">${JI[k]}</span>${JK[k].label}</button>`).join("")}</div>`) +
@@ -237,7 +237,7 @@ function renderMs(){
      <div class="field"><label>${tr("Photo")}</label>
        ${sel ? `<div class="ms-ph"><img src="${sel}" alt=""><button type="button" class="btn small" data-ms="rmPh">${tr("Remove")}</button></div>` : ""}
        <div class="jr-acts"><button type="button" class="btn small" data-ms="cam">${ICON.camera}${tr("Take a photo")}</button><button type="button" class="btn small" data-ms="file">${tr("From gallery")}</button></div>
-       ${own.length ? `<p class="status">${tr("Or one of its photos:")}</p><div class="cmp-strip">${own.map(x => `<button type="button" data-ms="pick" data-id="${x.id}" aria-pressed="${!MS.newPh && MS.ph === x.id}"><img src="${x.data}" alt="${tr("Photo from {date}", {date:jDate(x.date)})}"><small>${jDate(x.date, false)}</small></button>`).join("")}</div>` : ""}
+       ${own.length ? `<p class="status">${tr("Or one of its photos:")}</p><div class="cmp-strip">${own.map(x => `<button type="button" data-ms="pick" data-id="${x.id}" aria-pressed="${!MS.newPh && MS.ph === x.id}"><img src="${phSrc(x)}" loading="lazy" decoding="async" alt="${tr("Photo from {date}", {date:jDate(x.date)})}"><small>${jDate(x.date, false)}</small></button>`).join("")}</div>` : ""}
      </div>`;
   $("#msDate").addEventListener("change", e => { MS.d = e.target.value || today(); MS.dateTouched = true; });
   $("#msNote").addEventListener("input", e => { MS.n = e.target.value; });
@@ -313,14 +313,15 @@ function renderCompare(){
   const A = list.find(x => x.id === CMP.a) || list[0], B = list.find(x => x.id === CMP.b) || list[list.length - 1];
   if(!A || !B) return cmpDlg.close();
   const gap = A.date === B.date ? tr("Same day") : tr("{age} apart", {age:jAge(A.date < B.date ? A.date : B.date, A.date < B.date ? B.date : A.date)});
-  const strip = side => `<div class="cmp-strip">${list.map(x => `<button type="button" data-cpick="${side}" data-id="${x.id}" aria-pressed="${(side === "a" ? A : B).id === x.id}"><img src="${x.data}" alt="${tr("Photo from {date}", {date:jDate(x.date)})}"><small>${jDate(x.date, false)}</small></button>`).join("")}</div>`;
+  const strip = side => `<div class="cmp-strip">${list.map(x => `<button type="button" data-cpick="${side}" data-id="${x.id}" aria-pressed="${(side === "a" ? A : B).id === x.id}"><img src="${phSrc(x)}" loading="lazy" decoding="async" alt="${tr("Photo from {date}", {date:jDate(x.date)})}"><small>${jDate(x.date, false)}</small></button>`).join("")}</div>`;
   $("#cmpBody").innerHTML = `<div class="cmp-frame ${CMP.mode}" style="--x:${CMP.x}%">
-      <img class="cmp-a" src="${A.data}" alt="${tr("Before: {date}", {date:jDate(A.date)})}"><img class="cmp-b" src="${B.data}" alt="${tr("After: {date}", {date:jDate(B.date)})}">
+      <img class="cmp-a" src="${phSrc(A)}" data-full="${A.id}" alt="${tr("Before: {date}", {date:jDate(A.date)})}"><img class="cmp-b" src="${phSrc(B)}" data-full="${B.id}" alt="${tr("After: {date}", {date:jDate(B.date)})}">
       ${CMP.mode === "slide" ? `<span class="cmp-line"></span><input type="range" class="cmp-range" min="0" max="100" value="${CMP.x}" aria-label="${tr("Slide between before and after")}">` : ""}
       <span class="cmp-lab l">${jDate(A.date)}</span><span class="cmp-lab r">${jDate(B.date)}</span></div>
     <p class="cmp-gap">${gap}</p>
     <div class="seg small" role="group" aria-label="${tr("How to compare")}"><button type="button" data-cmode="slide" aria-pressed="${CMP.mode === "slide"}">${tr("Slider")}</button><button type="button" data-cmode="side" aria-pressed="${CMP.mode === "side"}">${tr("Side by side")}</button></div>
     <h3 class="pick-h">${tr("Before")}</h3>${strip("a")}<h3 class="pick-h">${tr("After")}</h3>${strip("b")}`;
+  upFull($("#cmpBody"));
   const r = $("#cmpBody .cmp-range");
   if(r) r.addEventListener("input", () => { CMP.x = +r.value; $("#cmpBody .cmp-frame").style.setProperty("--x", CMP.x + "%"); });
 }
