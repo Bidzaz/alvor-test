@@ -29,9 +29,13 @@ const JOB_TITLE = {bringIn:tr("Bring it inside"), toGh:tr("Move it to the greenh
   crownProtect:tr("Protect the crown"), mulchRoots:tr("Mulch the roots"), springGrowth:tr("Cover the new growth"), ghProtect:tr("Fleece it in the greenhouse"),
   warmerSpot:tr("Find it a warmer spot"), storeCold:tr("Too cold in storage for it"), takeOff:tr("Take the protection off"), water:tr("Water it"), waterUnknown:tr("When did you last water it?"), heat:tr("Water it early and give it shade"), wind:tr("Secure it against the gusts"),
   settleSun:tr("Shade it around midday"), vent:tr("Open the greenhouse"), heater:tr("Check the greenhouse heater"), feed:tr("Ready for feeding"), repot:tr("Time to repot"), goOut:tr("Safe to move outside")};
-const placeKey = p => { const a = p.area || "outside"; return a === "store" ? "store" : a; };
-const WALK = ["porch", "outside", "balcony", "greenhouse", "store", "house"];
-const PLACE_WORD = () => ({porch:tr("Porch"), outside:isApt() ? tr("Balcony") : tr("Outside"), balcony:tr("Balcony"), greenhouse:tr("Greenhouse"), store:tr("Winter storage"), house:areaLabel("house")});
+const placeKey = p => whereKey(p) || "outside";
+const WALK0 = ["porch", "outside", "balcony", "greenhouse", "store", "house"];
+/* The walk's order: Alvor's places, each followed by your own places of the same kind. */
+const walkOrder = () => WALK0.flatMap(a => [a, ...myPlaces().filter(L => placeArea(L) === a).map(L => "pl:" + L.id)]);
+const PLACE_WORD = () => ({porch:tr("Porch"), outside:isApt() ? tr("Balcony") : tr("Outside"), balcony:tr("Balcony"), greenhouse:tr("Greenhouse"), store:tr("Winter storage"), house:areaLabel("house"),
+  ...Object.fromEntries(myPlaces().map(L => ["pl:" + L.id, L.n]))});
+const placeIcon = k => { const L = plKey(k); return ICON[L ? PLACE_KINDS[L.k].icon : k === "outside" ? "outside" : k === "store" ? "store" : k === "porch" ? "porch" : k === "balcony" ? "balcony" : k === "greenhouse" ? "greenhouse" : "house"]; };
 const JOB_RANK = k => GA.COLD_KEYS.includes(k) ? 0 : ["heater","heat","vent","wind"].includes(k) ? 1 : ["takeOff","settleSun","goOut"].includes(k) ? 2 : k === "water" ? 3 : 4;
 function buildJobs(groups){
   const out = [];
@@ -93,7 +97,7 @@ function unprotect(ids, undo){
 /* The outside temperature at which a plant needs something done (its limit, the margin, its spot's warmth), or
    null when nothing outside reaches it (a heated greenhouse warmer than it needs). */
 function frostThreshold(p){
-  const s = state.settings, P = GA.placeOf(p), lim = coldLimit(p);
+  const s = GA.placeSet(p, state.settings), P = GA.placeOf(p), lim = coldLimit(p);   // your own places: their own temperatures
   if(P.inside || P.store || !GA.coldOn(p)) return null;
   if(P.gh){ const h = GA.RULES && s.ghHeat != null && isFinite(+s.ghHeat) ? +s.ghHeat : null; if(h != null && h >= lim) return null; return lim - (+s.gh || 0); }
   return lim - GA.frostBonus(p, s);
@@ -202,11 +206,11 @@ function walkHtml(jobs){
   const tasks = GA.tasksDue(state.settings, today());
   if(!jobs.length && !tasks.length) return GA.taskList(state.settings).length ? "" : `<button class="tk-start" data-task="new">${ICON.plus}<span>${tr("Add your own task: buy compost, plant bulbs…")}</span></button>`;
   const by = {}; jobs.forEach(j => (by[j.place] ||= []).push(j));
-  const W = PLACE_WORD(), places = WALK.filter(k => by[k]);
+  const W = PLACE_WORD(), places = walkOrder().filter(k => by[k]);
   const open = jobs.filter(j => !j.done).length;
   return `<div class="acard walk-card">
     <div class="walk-h"><h2>${tr("Walk the garden")}</h2>${open > 1 ? `<button type="button" class="btn small" data-today="round">${tr("One at a time")}</button>` : ""}</div>
-    ${places.map(k => `<section class="walk-pl"><h3>${ICON[k === "outside" ? "outside" : k === "store" ? "store" : k === "porch" ? "porch" : k === "balcony" ? "balcony" : k === "greenhouse" ? "greenhouse" : "house"]}${esc(W[k])}</h3>
+    ${places.map(k => `<section class="walk-pl"><h3>${placeIcon(k)}${esc(W[k])}</h3>
       <ul class="jobs">${by[k].map(jobRow).join("")}</ul></section>`).join("")}
     ${tasks.length || myTasks().length ? `<section class="walk-pl walk-tasks"><h3>${TASK_ICON}${tr("Your tasks")}</h3>
       ${tasks.length ? `<div class="tk-list">${tasks.map(x => taskRow(x)).join("")}</div>` : `<p class="status">${esc(nextThing())}</p>`}
@@ -274,13 +278,13 @@ function saveAfter(){
 /* ---------- A question Alvor needs answered now ---------- */
 function askHtml(){
   const s = state.settings, W = wx(), out = [];
-  const usesGh = !isApt() && state.plants.some(p => p.area === "greenhouse" || p.pattern === "greenhouse");
+  const usesGh = !isApt() && state.plants.some(p => inArea(p, "greenhouse") || p.pattern === "greenhouse");
   const coldSoon = W && W.next.slice(0, 3).some(d => d.min <= 3);
   if(usesGh && coldSoon && !s.ghAsked && s.ghHeat == null && (s.gh == null || +s.gh === 3))
     out.push(`<div class="acard ask-card"><div class="a-ic">${ICON.greenhouse}</div><div class="a-main"><span class="a-lab">${tr("One question")}</span>
       <h3>${tr("Is your greenhouse heated?")}</h3><p class="a-lead">${tr("A cold night is coming. Alvor needs to know which plants are safe in the greenhouse.")}</p>
       <div class="a-act"><button type="button" class="btn" data-today="ghNo">${tr("Unheated")}</button><button type="button" class="btn primary" data-today="ghYes">${tr("Heated…")}</button></div></div></div>`);
-  if(state.plants.some(p => p.area === "store") && !isFinite(parseFloat(s.storeLow)) && !s.storeAsked)
+  if(state.plants.some(p => inArea(p, "store")) && !isFinite(parseFloat(s.storeLow)) && !s.storeAsked)
     out.push(`<div class="acard ask-card"><div class="a-ic">${ICON.store}</div><div class="a-main"><span class="a-lab">${tr("One question")}</span>
       <h3>${tr("How cold does your winter storage get?")}</h3><p class="a-lead">${tr("Alvor assumes about {t} on the coldest nights. A min/max thermometer tells you for sure.", {t:GA.RULES.store.low + "°"})}</p>
       <div class="a-act"><button type="button" class="btn primary" data-today="storeSet">${tr("Set it")}</button><button type="button" class="btn" data-today="storeOk">${tr("That's about right")}</button></div></div></div>`);

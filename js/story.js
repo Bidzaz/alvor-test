@@ -59,7 +59,7 @@ function storyItemHtml(it){
   return "";
 }
 /* The timeline as HTML, for the Journal page and the garden journal sheet. S = {f, months, q (plant or note), place}. */
-const STORY_PLACE = p => p.archived ? "archive" : p.area === "porch" || p.area === "outside" ? "garden" : p.area;   // "garden": outside and the porch
+const STORY_PLACE = p => p.archived ? "archive" : plPlace(p) ? "pl:" + p.place : p.area === "porch" || p.area === "outside" ? "garden" : p.area;   // "garden": outside and the porch; "pl:…" one of your own places
 function storyHtml(S, page){
   const q = fold(String(S.q || "").trim().toLowerCase());
   const hit = it => (!S.place || (it.p && STORY_PLACE(it.p) === S.place)) &&
@@ -111,8 +111,9 @@ function renderJournalPage(){
   if(typeof renderDiscCard === "function") renderDiscCard();
   /* Where: only the places that have plants (and the Archive when it has some). */
   const places = [...new Set(plants.map(STORY_PLACE))];
-  const PL = {house:areaLabel("house"), garden:tr("Outside"), greenhouse:tr("Greenhouse"), balcony:tr("Balcony"), store:tr("Winter storage"), archive:tr("Archive")};
-  const order = ["house", "garden", "greenhouse", "balcony", "store", "archive"].filter(k => places.includes(k));
+  const PL = {house:areaLabel("house"), garden:tr("Outside"), greenhouse:tr("Greenhouse"), balcony:tr("Balcony"), store:tr("Winter storage"), archive:tr("Archive"),
+    ...Object.fromEntries(myPlaces().map(L => ["pl:" + L.id, esc(L.n)]))};
+  const order = ["house", "garden", "greenhouse", "balcony", "store", ...myPlaces().map(L => "pl:" + L.id), "archive"].filter(k => places.includes(k));
   if(JP.place && !order.includes(JP.place)) JP.place = "";
   $("#jpPlaces").innerHTML = order.length > 1 ? [`<button type="button" class="chip" data-jpp="" aria-pressed="${!JP.place}">${tr("All places")}</button>`, ...order.map(k => `<button type="button" class="chip" data-jpp="${k}" aria-pressed="${JP.place === k}">${PL[k]}</button>`)].join("") : "";
   $("#jpSearch").value = JP.q;

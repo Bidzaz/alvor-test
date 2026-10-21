@@ -94,7 +94,41 @@ const DEFAULT_PLANTING = {indoor:"pot", outdoor:"ground", mover:"pot", greenhous
 const areaOf = z => (ZONES[z] || {}).area || z;
 const zi = z => `<span class="zi a-${areaOf(z)}">${ICON[(ZONES[z] || {}).icon || z] || ""}</span>`;
 const canGround = z => ZONES[z] && (ZONES[z].area === "outside" || ZONES[z].area === "greenhouse");
-const zoneLabel = p => ZONES[p.zone].label + (canGround(p.zone) ? (p.planting === "ground" ? tr(", in the ground") : tr(", in a pot")) : "");
+/* ---------- Your own places (Phase G, October 2026) ----------
+   Next to Alvor's places, people name their own: a polytunnel, a cold frame, the garage, a cool bedroom, the terrace.
+   Each has a kind that works like one of Alvor's places (its spots, rain, frost), with its own temperatures where the
+   kind has them. settings.places: [{id, n the name, k the kind, gh and heat (a greenhouse: warmer than outside by, the
+   heater's temperature or null), low (a room or storage: its lowest on a cold night, or null), m when it last changed,
+   del}], merged place by place between phones (sync.js). A plant in one keeps a zone of the kind (so the care engine,
+   notify and friends see a greenhouse, a room or a bed as before) and p.place, the place's id; the care engine takes the
+   place's temperatures (placeSet in alerts.js). A place that's deleted, or not on this phone yet, simply leaves its plants
+   in Alvor's place of the same kind. Friends see your plants in Alvor's place of the kind (your names stay yours). */
+const PLACE_KINDS = {
+  outside:{loc:"garden", area:"outside", icon:"outside", label:tr("Part of the garden"), hint:tr("A bed, a terrace, the vegetable patch: open to the sky")},
+  covered:{loc:"garden", area:"porch", icon:"porch", label:tr("Under cover"), hint:tr("A roof, open sides: a lean-to, a carport, a covered terrace")},
+  greenhouse:{loc:"greenhouse", area:"greenhouse", icon:"greenhouse", label:tr("Greenhouse or cold frame"), hint:tr("A polytunnel, a cold frame, a second greenhouse")},
+  room:{loc:"house", area:"house", icon:"house", label:tr("A room inside"), hint:tr("A conservatory, a cool bedroom, the stairwell")},
+  balcony:{loc:"balcony", area:"balcony", icon:"balcony", label:tr("Another balcony"), hint:tr("A terrace or a second balcony")},
+  store:{loc:"store", area:"store", icon:"store", label:tr("Winter storage"), hint:tr("A garage, a cellar, a shed: dark and frost-free")}
+};
+const placeKinds = () => isApt() ? ["room","balcony","greenhouse","store"] : ["outside","covered","greenhouse","room","store"];
+const MAX_PLACES = 12;
+const myPlaces = () => (Array.isArray(state.settings.places) ? state.settings.places : []).filter(L => L && !L.del && L.id && PLACE_KINDS[L.k] && placeKinds().includes(L.k));
+const placeById = id => id ? myPlaces().find(L => L.id === id) || null : null;
+const plPlace = p => p && p.place ? placeById(p.place) : null;   // the plant's own place, when it's in one of yours
+const placeArea = L => PLACE_KINDS[L.k].area;
+const placeZones = L => AREAS[placeArea(L)].zones;
+/* Where a plant is, for grouping and filters: "pl:<id>" in one of your places, else Alvor's area. */
+const whereKey = p => { const L = plPlace(p); return L ? "pl:" + L.id : p.area; };
+const inArea = (p, a) => p.area === a && !plPlace(p);   // in Alvor's own place, not one of yours of the same kind
+const plKey = k => typeof k === "string" && k.startsWith("pl:") ? placeById(k.slice(3)) : null;
+const zoneLabel = p => {
+  const L = plPlace(p), Z = ZONES[p.zone], ground = canGround(p.zone) ? (p.planting === "ground" ? tr(", in the ground") : tr(", in a pot")) : "";
+  return (L ? L.n + (placeZones(L).length > 1 ? " · " + Z.short : "") : Z.label) + ground;
+};
+const zoneShort = p => { const L = plPlace(p); return L ? L.n : ZONES[p.zone].short; };
+const spotName = p => { const L = plPlace(p); return L ? L.n : ZONES[p.zone] ? ZONES[p.zone].label : ""; };
+const whereName = p => { const L = plPlace(p); return L ? L.n : areaLabel(p.area); };
 const OLD_ZONES = {window:"house-window", shade:"house-low", covered:"porch-partial", pots:"out-sun", potsShade:"out-shade", ground:"out-sun"};
 function zoneFromOld(p){
   if(OLD_ZONES[p.zone]) return OLD_ZONES[p.zone];
@@ -116,7 +150,7 @@ function applyZone(p, z, planting){
    allPlants() is everything the account holds; state.plants is only the garden as it is now. */
 const allPlants = () => [...state.plants, ...(state.archive || [])];
 const plantById = id => allPlants().find(x => x.id === id);
-/* Puts each plant on the right list (after a sync, a backup import or a change on another phone). */
+/* Puts each plant on the right list (after a sync, a restore or a change on another phone). */
 function splitArchive(list){
   state.plants = list.filter(p => !p.archived);
   state.archive = list.filter(p => p.archived);
@@ -300,7 +334,7 @@ function load(){
 }
 function saveLocal(){
   try{ localStorage.setItem(KEY, JSON.stringify(state)); }
-  catch(e){ toast(tr("Couldn't save. Export a backup to be safe.")); }
+  catch(e){ toast(tr("Couldn't save on this phone. Download your data to be safe.")); }
 }
 /* Sync bookkeeping (the rules are in sync.js): what changed or was deleted on this phone since the last save.
    Kept apart from the garden, tied to the account it belongs to. */

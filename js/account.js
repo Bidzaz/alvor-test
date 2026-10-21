@@ -245,7 +245,7 @@ async function sweepPhotoFiles(serverIds, localIds, force){
 let photoSyncing = null, photoTimer = null;
 function queuePhotoSync(){ if(!token) return; clearTimeout(photoTimer); photoTimer = setTimeout(syncPhotos, 1500); }
 async function syncPhotos(){
-  if(!token || !me || !sb) return;
+  if(!token || !me || !sb || restoring) return;   // a restore is putting photos on this phone: it syncs them when it's done
   if(photoSyncing) return photoSyncing;
   photoSyncing = (async () => {
     let changed = false;
@@ -521,7 +521,7 @@ function fillAccount(){
     if(!off){ off = document.createElement("p"); off.id = "acctOff"; off.className = "acct-off"; $("#acctLine").after(off); }
     off.textContent = tr("Your account has been switched off by the owner of Alvor. Your garden still works for you, but nobody else can see it, find you or add you.");
   }else if(off) off.remove();
-  $("#dataCard").hidden = !(me && token);
+  $("#dataCard").hidden = $("#delAcctCard").hidden = !(me && token);
   $("#adminCard").hidden = !(me && me.owner && token);
   $("#usageCard").hidden = !(me && me.owner && token);
 }

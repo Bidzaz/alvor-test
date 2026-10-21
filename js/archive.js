@@ -112,9 +112,10 @@ function restorePlant(id){
   state.plants.push(p);
   applyZone(p, ZONES[p.zone] ? p.zone : defaultZone(p.pattern), p.planting);
   if(!areaOrder().includes(p.area)) applyZone(p, defaultZone(p.pattern));
+  if(p.place && !(plPlace(p) && placeZones(plPlace(p)).includes(p.zone))) delete p.place;   // its place of yours, if it's still there
   addLog(p.id, "archive", "Back in the garden");
   save(); render(); refreshJournal();
-  toast(tr("{name} is back: {spot}. Move it if it lives somewhere else now.", {name:p.name, spot:ZONES[p.zone].label}));
+  toast(tr("{name} is back: {spot}. Move it if it lives somewhere else now.", {name:p.name, spot:spotName(p)}));
 }
 
 /* ---------- The Archive in the Plants tab ---------- */

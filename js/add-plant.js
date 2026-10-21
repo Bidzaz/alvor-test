@@ -32,7 +32,7 @@ function applySpecies(){
   if(pr && !W.zoneTouched){
     W.pattern = isApt() && pr.pat === "greenhouse" ? "mover" : pr.pat;
     const pf = KB.profile(W.species, W.genus);
-    W.zone = spotFor(W.pattern, pf && pf.light); W.area = ZONES[W.zone].area; W.top = null; W.planting = defaultPlanting(W.pattern);
+    W.zone = spotFor(W.pattern, pf && pf.light); W.area = ZONES[W.zone].area; W.top = null; W.place = null; W.planting = defaultPlanting(W.pattern);
   }
   if(!W.coldTouched) W.coldAlert = coldDefault(W.minTemp);
   if(!W.nameTouched) W.name = W.common || plantName(W.species, (pr && pr.n) || "") || W.species || W.genus || "";
@@ -185,6 +185,7 @@ async function wizSave(){
   if(W.from) p.from = W.from;   // a cutting from a friend: whose plant it came from
   p.own = KB.ownOf(p);
   applyZone(p, W.zone, W.planting);
+  const pl = placeById(W.place); if(pl && placeZones(pl).includes(p.zone)) p.place = pl.id;   // one of your own places
   const got = W.got && W.got < today() ? W.got : W.gotNote ? today() : "";
   if(got) p.journal = [{id:uid(), d:got, k:"acquired", m:Date.now(), ...(W.gotNote ? {n:W.gotNote} : {})}];
   state.plants.push(p); addLog(p.id, "add", "Added");

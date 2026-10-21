@@ -70,7 +70,9 @@ function thingPhrase(kind, word, form, who){
 function logText(d){
   d = String(d || "");
   if(LANG === "en") return d;
-  const spot = x => STR[x] != null ? STR[x] : STR[cap(x)] != null ? STR[cap(x)].toLowerCase() : x;
+  const one = x => STR[x] != null ? STR[x] : STR[cap(x)] != null ? STR[cap(x)].toLowerCase() : null;
+  // One of your own places: "Polytunnel", or "Back bed, Partial sun" (your name stays, Alvor's spot is translated)
+  const spot = x => { const t = one(x); if(t != null) return t; const i = x.lastIndexOf(", "), tail = i > 0 ? one(x.slice(i + 2)) : null; return tail != null ? x.slice(0, i + 2) + tail : x; };
   let m;
   if((m = d.match(/^Moved to: (.+)$/))) return tr("Moved to: {spot}", {spot:spot(m[1])});
   if((m = d.match(/^Planted in the ground \((.+)\)$/))) return tr("Planted in the ground ({spot})", {spot:spot(m[1])});

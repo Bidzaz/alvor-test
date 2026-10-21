@@ -40,7 +40,9 @@ $("#repSend").addEventListener("click", async () => {
 });
 
 /* ---------- Download my data ----------
-   One .zip: everything the server keeps (alvor-data.json), every photo at full size, and a short read-me. */
+   One .zip: everything the server keeps (alvor-data.json), every photo at full size, and a short read-me.
+   It is also the garden's backup: Restore from a file (below) reads it back. Each photo in alvor-data.json
+   names its file in the zip ("file"). */
 const CRC_T = (() => { const t = new Uint32Array(256); for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
 function crc32(b){ let c = ~0; for(let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return ~c >>> 0; }
 /* A plain, uncompressed zip (photos don't shrink anyway). files: [{name, data:Uint8Array, date}] */
@@ -85,6 +87,9 @@ photos/           Todas las fotos, a tamaño completo, en una carpeta por planta
 profile-photo.jpg Tu foto de perfil, si tienes una.
 backdrop-photo.jpg Tu foto de fondo, si elegiste una.
 
+Este archivo también es la copia de seguridad de tu jardín: para recuperarlo, usa
+Ajustes → Tus datos → Restaurar desde un archivo, y elige este .zip.
+
 Alvor no guarda nada más sobre ti. Para borrarlo todo, usa
 Ajustes → Borrar mi cuenta en la app, o la página "Borrar tu cuenta".
 ` : `Your data from Alvor
@@ -101,6 +106,9 @@ alvor-data.json   Everything Alvor's server keeps about you: your sign-in email,
 photos/           Every photo, at full size, in a folder per plant.
 profile-photo.jpg Your profile photo, if you have one.
 backdrop-photo.jpg Your own backdrop photo, if you chose one.
+
+This file is also your garden's backup: to bring it back, use
+Settings → Your data → Restore from a file, and choose this .zip.
 
 Alvor doesn't keep anything else about you. To delete it all, use
 Settings → Delete my account in the app, or the "Delete your account" page.
@@ -120,8 +128,6 @@ async function downloadMyData(){
     // The days you opened Alvor (part 12): the day only. Left out if the table isn't there yet.
     try{ const r = await sb.from("usage_days").select("day").eq("owner_id", me.id).order("day"); if(!r.error && r.data) data.days_you_opened_alvor = r.data.map(x => x.day); }catch(e){}
     const enc = new TextEncoder(), files = [], now = new Date();
-    files.push({name:"README.txt", data:enc.encode(DATA_README), date:now});
-    files.push({name:"alvor-data.json", data:enc.encode(JSON.stringify(data, null, 2)), date:now});
     const names = Object.fromEntries((data.plants || []).map(p => [p.id, safeName(p.name)]));
     const local = new Set(await idb.keys().catch(() => []));   // photos on this phone are read from it, one at a time
     const list = data.photos || [];
@@ -136,8 +142,12 @@ async function downloadMyData(){
         else bytes = new Uint8Array(await must(await sb.storage.from("photos").download(phPath(ph.id, "l"))).arrayBuffer());
       }catch(e){ missing++; continue; }
       const at = new Date(ph.taken_at || ph.uploaded_at || now);
-      files.push({name:`photos/${names[ph.plant_id] || "Plant"} (${String(ph.plant_id).slice(0, 4)})/${ymd(at)} ${String(ph.id).slice(0, 8)}.jpg`, data:bytes, date:at});
+      ph.file = `photos/${names[ph.plant_id] || "Plant"} (${String(ph.plant_id).slice(0, 4)})/${ymd(at)} ${String(ph.id).slice(0, 8)}.jpg`;
+      files.push({name:ph.file, data:bytes, date:at});
     }
+    // The read-me and the details first (written now, so each photo can name its file).
+    files.unshift({name:"README.txt", data:enc.encode(DATA_README), date:now},
+                  {name:"alvor-data.json", data:enc.encode(JSON.stringify(data, null, 2)), date:now});
     if(me.avatar){
       try{ const r = await fetch(avatarUrl(me.avatar)); if(r.ok) files.push({name:"profile-photo.jpg", data:new Uint8Array(await r.arrayBuffer()), date:now}); }catch(e){}
     }
@@ -159,6 +169,114 @@ async function downloadMyData(){
   }finally{ dataBusy = false; $("#dataBtn").disabled = false; }
 }
 $("#dataBtn").addEventListener("click", downloadMyData);
+
+/* ---------- Restore from a file ----------
+   Download my data is the garden's backup (Backup was folded into it, October 21). Restore reads either:
+   - a Download my data .zip: the plants and their journals, the settings and history from alvor-data.json, and each
+     photo from its file in the zip (by "file", or by the photo id in the file name for zips made before that);
+   - a backup .json from the old Alvor (or an earlier version of this one), photos inside.
+   The garden on this phone is replaced, and the next save makes the account the same: plants missing from the file
+   are deleted there, plants in it come back as they were. */
+async function readZip(file){
+  const u16 = (v, o) => v.getUint16(o, true), u32 = (v, o) => v.getUint32(o, true);
+  const tailFrom = Math.max(0, file.size - 65557), tail = new DataView(await file.slice(tailFrom).arrayBuffer());
+  let e = -1;
+  for(let i = tail.byteLength - 22; i >= 0; i--) if(u32(tail, i) === 0x06054b50){ e = i; break; }
+  if(e < 0) throw new Error("not a zip");
+  const count = u16(tail, e + 10), cdSize = u32(tail, e + 12), cdOff = u32(tail, e + 16);
+  const cd = new DataView(await file.slice(cdOff, cdOff + cdSize).arrayBuffer()), dec = new TextDecoder();
+  const out = new Map();
+  for(let i = 0, o = 0; i < count && o + 46 <= cd.byteLength; i++){
+    if(u32(cd, o) !== 0x02014b50) throw new Error("bad zip");
+    const method = u16(cd, o + 10), csize = u32(cd, o + 20), nlen = u16(cd, o + 28), xlen = u16(cd, o + 30), clen = u16(cd, o + 32), loc = u32(cd, o + 42);
+    const name = dec.decode(new Uint8Array(cd.buffer, cd.byteOffset + o + 46, nlen));
+    out.set(name, {method, get:async () => {
+      const h = new DataView(await file.slice(loc, loc + 30).arrayBuffer());
+      const start = loc + 30 + u16(h, 26) + u16(h, 28), raw = file.slice(start, start + csize);
+      if(method === 0) return raw;
+      if(method === 8 && typeof DecompressionStream === "function") return new Response(raw.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob();
+      throw new Error("zip method");
+    }});
+    o += 46 + nlen + xlen + clen;
+  }
+  return out;
+}
+/* alvor-data.json (what the server keeps) as a garden: the plants as the app keeps them, settings and history. */
+function gardenFromData(d){
+  if(!d || !Array.isArray(d.plants) || !d.garden_private) throw new Error("not alvor data");
+  const {_sAt, _gone, updatedAt, ...settings} = d.garden_private.settings || {};
+  const plants = d.plants.map(r => ({...(r.private_details || {}), id:r.id, ...(r.name && !(r.private_details || {}).name ? {name:r.name} : {}),
+    visibility:r.visible_to || (r.private_details || {}).visibility || "vault"}));
+  return {plants, settings, log:Array.isArray(d.garden_private.history) ? d.garden_private.history : []};
+}
+let restoring = false;
+async function restoreFromFile(f){
+  if(restoring) return;
+  const st = m => { $("#restoreStatus").textContent = m; };
+  let garden = null, photoList = null, zip = null;
+  try{
+    if(/\.zip$/i.test(f.name) || f.type === "application/zip" || f.type === "application/x-zip-compressed"){
+      zip = await readZip(f);
+      const j = zip.get("alvor-data.json"); if(!j) throw new Error("no data");
+      const data = JSON.parse(await (await j.get()).text());
+      garden = gardenFromData(data);
+      photoList = Array.isArray(data.photos) ? data.photos : [];
+    }else{
+      const d = JSON.parse(await f.text());
+      if(!Array.isArray(d.plants)) throw new Error("bad");
+      garden = d;
+    }
+  }catch(err){ st(""); toast(tr("That file isn't a garden backup")); return; }
+  const n = garden.plants.length + (Array.isArray(garden.archive) ? garden.archive.length : 0);
+  if(!confirm(trn(n, "Replace the garden on this phone and in your account with the {n} plant in this file?", "Replace the garden on this phone and in your account with the {n} plants in this file?"))) return;
+  restoring = true; $("#importBtn").disabled = true;
+  try{
+    const base = defaults();
+    const inline = Array.isArray(garden.photos) ? garden.photos : null;
+    delete garden.photos;
+    state = {...base, ...garden, settings:{...base.settings, ...(garden.settings || {})}, weather:null, account:me ? me.id : garden.account};
+    splitArchive(allPlants().map(p => ({...p})));
+    const idMap = upgradeIds();
+    normalizePlants(); normalizeLocation(); useActiveLocation(); migrateJournal();
+    save();
+    let missing = 0;
+    if(inline || zip){
+      try{ await idb.clear(); }catch(e){}
+      photos = {};
+      if(inline){
+        for(const ph of inline){ delete ph.synced; try{ await idb.put(ph); }catch(e){ missing++; } }
+      }else{
+        // Older zips have no "file": the photo's id (first 8 characters) is in its file name.
+        const byShort = new Map([...zip.keys()].filter(k => /\.jpe?g$/i.test(k)).map(k => [(k.match(/ ([0-9a-f]{8})\.jpe?g$/i) || [])[1], k]));
+        const ids = new Set(allPlants().map(p => p.id));
+        for(let i = 0; i < photoList.length; i++){
+          const ph = photoList[i];
+          st(tr("Restoring photos: {n} of {total}…", {n:i + 1, total:photoList.length}));
+          const entry = zip.get(ph.file) || zip.get(byShort.get(String(ph.id).slice(0, 8)));
+          if(!entry || !ids.has(ph.plant_id)){ missing++; continue; }
+          try{
+            const blob = await entry.get(), at = new Date(ph.taken_at || ph.uploaded_at || Date.now());
+            await idb.put({id:ph.id, plantId:ph.plant_id, date:ymd(at), ts:at.getTime(), hidden:!!ph.hidden_from_friends,
+              data:await blobToData(new Blob([blob], {type:"image/jpeg"}))});
+          }catch(e){ missing++; }
+        }
+      }
+      await upgradePhotoIds(idMap);
+      await loadPhotos();
+      queuePhotoSync();
+    }
+    fillSettings(); render(); fetchWeather(true);
+    st(missing ? trn(missing, "Garden restored. {n} photo couldn't be read from the file.", "Garden restored. {n} photos couldn't be read from the file.") : tr("Garden restored."));
+    toast(tr("Garden restored"));
+  }catch(err){
+    st(""); toast(tr("Plants restored, but the photos couldn't be saved"));
+  }finally{ restoring = false; $("#importBtn").disabled = false; }
+}
+$("#importBtn").addEventListener("click", () => $("#importFile").click());
+$("#importFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if(f) await restoreFromFile(f);
+});
 
 /* ---------- Delete my account ----------
    The "account" server function checks the password again, removes the photo files and the sign-in;

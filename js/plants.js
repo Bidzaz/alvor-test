@@ -6,45 +6,51 @@
 let plantView = (() => { try{ const v = localStorage.getItem("garden-view"); return v === "tiles" || v === "grid" ? "grid" : "list"; }catch(e){ return "list"; } })();
 let idsFilter = null;
 /* At the top of a place's plants: its picture, how it's doing right now, and adding a plant right there. */
-const ctxLoc = f => ["house","house-window","house-low","house-cabinet"].includes(f) ? "house" : f === "greenhouse" ? "greenhouse"
+const ctxLoc = f => plKey(f) ? f : ["house","house-window","house-low","house-cabinet"].includes(f) ? "house" : f === "greenhouse" ? "greenhouse"
   : f === "balcony" || /^balc-/.test(f) ? "balcony" : f === "garden" || f === "outside" || f === "porch" || /^(out|porch)-/.test(f) ? "garden" : null;
 function renderPlantsCtx(){
   const el = $("#plantsCtx"); if(!el) return;
   const k = !idsFilter && ctxLoc(plantFilter), L = k && LOCS().find(x => x.k === k);
   if(!L){ el.innerHTML = ""; return; }
-  const list = state.plants.filter(p => L.areas.includes(p.area));
+  const list = state.plants.filter(p => locHas(L, p));
   const risk = list.filter(p => (plantFlags[p.id] || new Set()).has("frost")).length, thirsty = list.filter(p => (plantFlags[p.id] || new Set()).has("water")).length;
-  const temp = tempChip(L.k), mine = locPicSrc(L.k);
-  el.innerHTML = `<div class="pctx loc-${L.k} ${mine ? "has-img" : ""}" style="${mine ? `--img:url('${mine}')` : locStyle(look().style, L.k)}">
+  const temp = tempChip(L.k), mine = L.place ? null : locPicSrc(L.k), cls = L.loc || L.k;
+  el.innerHTML = `<div class="pctx loc-${cls} ${mine ? "has-img" : ""}" style="${mine ? `--img:url('${mine}')` : locStyle(look().style, cls)}">
       <span class="pctx-ic" aria-hidden="true">${ICON[L.icon]}</span>
       <div class="pctx-st">${risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk from the cold", {n:risk})}</span>` : ""}${thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : ""}
         ${temp ? `<button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button>` : ""}
         ${!risk && !thirsty && list.length ? `<span class="lchip calm">${ICON.leaf}${tr("Nothing needs doing here")}</span>` : ""}</div>
     </div>
-    <div class="pctx-acts"><button class="btn primary small" data-hub="add">${ICON.plus}${tr("Add a plant here")}</button></div>`;
+    <div class="pctx-acts"><button class="btn primary small" data-hub="add">${ICON.plus}${tr("Add a plant here")}</button>${L.place ? `<button class="btn small" data-place-edit="${esc(L.place.id)}">${tr("Edit this place")}</button>` : ""}</div>`;
 }
-$("#plantsCtx").addEventListener("click", e => { const th = e.target.closest("[data-loctemp]"); if(th) openLocTemp(th.dataset.loctemp); });
+$("#plantsCtx").addEventListener("click", e => {
+  const th = e.target.closest("[data-loctemp]"); if(th) return openLocTemp(th.dataset.loctemp);
+  const ed = e.target.closest("[data-place-edit]"); if(ed) openPlace(ed.dataset.placeEdit);
+});
 function renderPlants(){
   const pt = $("#plantsTitle"); if(pt) pt.textContent = plantsTitle();
   renderPlantsCtx();
+  if(plantFilter && plantFilter.startsWith("pl:") && !plKey(plantFilter)) plantFilter = "all";   // a place deleted meanwhile
   const counts = {all:state.plants.length};
-  ALL_AREAS.forEach(a => counts[a] = state.plants.filter(p => p.area === a).length);
+  ALL_AREAS.forEach(a => counts[a] = state.plants.filter(p => inArea(p, a)).length);
+  myPlaces().forEach(L => counts["pl:" + L.id] = state.plants.filter(p => whereKey(p) === "pl:" + L.id).length);
   counts.vault = online ? state.plants.filter(p => visOf(p) === "vault").length : 0;
   counts.archive = (state.archive || []).length;
   if(plantFilter === "vault" && !counts.vault) plantFilter = "all";
   if(plantFilter === "archive" && !counts.archive) plantFilter = "all";
-  const chips = ["all", ...ALL_AREAS.filter(a => counts[a]), ...(counts.vault ? ["vault"] : []), ...(counts.archive ? ["archive"] : [])];
+  const chips = ["all", ...ALL_AREAS.filter(a => counts[a]), ...myPlaces().map(L => "pl:" + L.id).filter(k => counts[k] || plantFilter === k), ...(counts.vault ? ["vault"] : []), ...(counts.archive ? ["archive"] : [])];
   if(ZONES[plantFilter] && plantFilter !== "greenhouse") chips.push(plantFilter);
   $("#chips").innerHTML = (idsFilter ? `<button class="chip" data-act="clearIds" aria-pressed="true">${tr("From the alert: {n}", {n:idsFilter.length})} ✕</button>` : "") +
     chips.map(k => {
-      const label = k === "all" ? tr("All") : k === "vault" ? `${ICON.lock}${tr("Vault")}` : k === "archive" ? `${ARC_ICON}${tr("Archive")}` : AREAS[k] ? areaLabel(k) : ZONES[k].label;
-      const n = k === "all" || k === "vault" || k === "archive" ? counts[k] : AREAS[k] ? counts[k] : state.plants.filter(p => p.zone === k).length;
+      const label = k === "all" ? tr("All") : k === "vault" ? `${ICON.lock}${tr("Vault")}` : k === "archive" ? `${ARC_ICON}${tr("Archive")}` : plKey(k) ? esc(plKey(k).n) : AREAS[k] ? areaLabel(k) : ZONES[k].label;
+      const n = k === "all" || k === "vault" || k === "archive" || plKey(k) ? counts[k] : AREAS[k] ? counts[k] : state.plants.filter(p => p.zone === k && !plPlace(p)).length;
       return `<button class="chip" data-act="filter" data-f="${k}" aria-pressed="${!idsFilter && plantFilter === k}">${label} ${n}</button>`;
     }).join("");
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === plantView));
   const q = $("#search").value.trim().toLowerCase();
   const W = wx();
-  const match = p => idsFilter ? idsFilter.includes(p.id) : plantFilter === "all" || (plantFilter === "vault" ? visOf(p) === "vault" : plantFilter === "garden" ? (p.area === "outside" || p.area === "porch") : p.area === plantFilter || p.zone === plantFilter);
+  const match = p => idsFilter ? idsFilter.includes(p.id) : plantFilter === "all" || (plantFilter === "vault" ? visOf(p) === "vault" : plKey(plantFilter) ? whereKey(p) === plantFilter
+    : plantFilter === "garden" ? (inArea(p, "outside") || inArea(p, "porch")) : inArea(p, plantFilter) || (p.zone === plantFilter && !plPlace(p)));
   const list = state.plants.filter(p => match(p) && (!q || [p.name, p.species, p.genus, p.notes].join(" ").toLowerCase().includes(q)));
   const el = $("#plantList");
   /* The Archive is its own list: no place chips or views from the garden as it is now. */
@@ -58,11 +64,13 @@ function renderPlants(){
   }
   if(!list.length){ const searching = q || idsFilter || plantFilter === "vault";
     el.innerHTML = `<div class="empty slim"><p>${searching ? tr("No plants match. Clear the search or pick another filter.") : tr("No plants here yet.")}</p>${searching ? `<button class="btn small" data-act="clearFind">${tr("Clear search and filters")}</button>` : ""}</div>`; return; }
-  const by = Object.fromEntries(ALL_AREAS.map(a => [a, []]));
-  list.sort((a, b) => a.name.localeCompare(b.name)).forEach(p => by[p.area].push(p));
-  el.innerHTML = ALL_AREAS.filter(a => by[a].length).map(a => `
-    <h2 class="group-h">${zi(a)} ${areaLabel(a)} <small>${by[a].length}</small></h2>
-    <div class="pgroup">${by[a].map(p => plantView === "grid" ? plantTile(p) : plantRow(p, W)).join("")}</div>`).join("");
+  /* Grouped by where they are: Alvor's places, then yours. */
+  const keys = [...ALL_AREAS, ...myPlaces().map(L => "pl:" + L.id)];
+  const by = Object.fromEntries(keys.map(a => [a, []]));
+  list.sort((a, b) => a.name.localeCompare(b.name)).forEach(p => (by[whereKey(p)] || (by[p.area] ||= [])).push(p));
+  el.innerHTML = keys.filter(a => by[a].length).map(a => { const L = plKey(a);
+    return `<h2 class="group-h">${L ? `<span class="zi a-${placeArea(L)}">${ICON[PLACE_KINDS[L.k].icon]}</span>` : zi(a)} ${L ? esc(L.n) : areaLabel(a)} <small>${by[a].length}</small></h2>
+    <div class="pgroup">${by[a].map(p => plantView === "grid" ? plantTile(p) : plantRow(p, W)).join("")}</div>`; }).join("");
 }
 const vaultMark = p => online && visOf(p) === "vault" ? `<span class="vmark" title="${tr("In your Vault: only you see it")}" aria-label="${tr("(in your Vault)")}">${ICON.lock}</span>` : "";
 function thumbHtml(p){
@@ -105,7 +113,7 @@ function plantCard(p, W){
     <div class="pc-body">
       <button class="nm" data-act="edit" data-id="${p.id}">${esc(p.name)}${vaultMark(p)}</button>
       ${p.species ? `<div class="sp">${esc(p.species)}</div>` : ""}
-      <div class="where">${zi(p.zone)}<span>${esc(ZONES[p.zone].short)}</span></div>${ownMini(p)}
+      <div class="where">${zi(p.zone)}<span>${esc(zoneShort(p))}</span></div>${ownMini(p)}
       <div class="pc-acts"><button class="icon-btn" data-act="move" data-id="${p.id}" aria-label="${tr("Move {name}", {name:esc(p.name)})}">${ICON.move}</button><button class="icon-btn water" data-act="water" data-id="${p.id}" aria-label="${tr("Mark {name} watered", {name:esc(p.name)})}">${ICON.drop}</button></div>
     </div>
   </div>`;
@@ -167,17 +175,22 @@ function careFeedback(id, kind){
   toast(kind === "wet" ? tr("Got it. Alvor will expect {name} to dry more slowly.", {name:p.name})
     : kind === "fine" ? tr("Got it. Alvor will look at {name} again in a few days.", {name:p.name}) : tr("Alvor will ask again tomorrow."));
 }
-function setZone(p, z, planting){
+/* place: one of your own places (its id), or none for Alvor's. */
+function setZone(p, z, planting, place){
   planting = canGround(z) ? (planting || p.planting || "pot") : "pot";
-  if(!ZONES[z] || (p.zone === z && p.planting === planting)) return false;
+  const L = placeById(place), pl = L && placeZones(L).includes(z) ? L.id : null, oldPl = plPlace(p) ? p.place : null;
+  if(!ZONES[z] || (p.zone === z && p.planting === planting && oldPl === pl)) return false;
   const old = p.zone, oldPlant = p.planting;
-  if(ZONES[old] && ZONES[old].area === "house") p.lastInside = old;
-  if(ZONES[old] && (ZONES[old].area === "outside" || ZONES[old].area === "balcony")) p.lastOutside = old;
-  if(z !== old) p.moved = GA.moveRecord(p, z, today());   // acclimatisation: when it left the house, greenhouse or shade
+  const remember = (k, kp) => { p[k] = old; if(oldPl) p[kp] = oldPl; else delete p[kp]; };   // where it goes back to (and in which of your places)
+  if(ZONES[old] && ZONES[old].area === "house") remember("lastInside", "lastInPl");
+  if(ZONES[old] && (ZONES[old].area === "outside" || ZONES[old].area === "balcony")) remember("lastOutside", "lastOutPl");
+  if(z !== old || pl !== oldPl) p.moved = GA.moveRecord(p, z, today());   // acclimatisation: when it left the house, greenhouse or shade
   applyZone(p, z, planting);
-  let text = `Moved to: ${ZONES[z].label}`;
-  if(planting === "ground" && oldPlant !== "ground") text = `Planted in the ground (${ZONES[z].short.toLowerCase()})`;
-  else if(oldPlant === "ground" && planting !== "ground") text = `Dug up, now: ${ZONES[z].label}`;
+  if(pl) p.place = pl; else delete p.place;
+  const where = L && pl ? L.n + (placeZones(L).length > 1 ? ", " + ZONES[z].short : "") : ZONES[z].label;
+  let text = `Moved to: ${where}`;
+  if(planting === "ground" && oldPlant !== "ground") text = `Planted in the ground (${L && pl ? L.n : ZONES[z].short.toLowerCase()})`;
+  else if(oldPlant === "ground" && planting !== "ground") text = `Dug up, now: ${where}`;
   addLog(p.id, "move", text);
   jNoteMove(p);   // and in its journal
   return true;
@@ -198,7 +211,8 @@ function moveGroup(ids, to, wx){
   ids.forEach(id => {
     const p = state.plants.find(x => x.id === id); if(!p) return;
     const z = to === "inside" ? (p.lastInside || "house-window") : to === "greenhouse" ? "greenhouse" : (p.lastOutside || (isApt() ? "balc-sun" : "out-sun"));
-    if(!setZone(p, z, "pot") || !WX_KINDS.includes(wx)) return;
+    const pl = to === "inside" ? p.lastInPl : to === "greenhouse" ? null : p.lastOutPl;   // back to the same one of your places
+    if(!setZone(p, z, "pot", pl) || !WX_KINDS.includes(wx)) return;
     const l = state.log[0];
     if(l && l.plantId === p.id && l.type === "move"){
       l.wx = wx;
@@ -239,17 +253,23 @@ const TOPS = {
   store:{label:tr("Winter storage"), icon:"store", cls:"store", lead:""}
 };
 const topOf = area => area === "house" ? "inside" : area === "porch" ? "outside" : area || null;
-const topList = () => isApt() ? ["inside","balcony","store"] : ["inside","outside","greenhouse","store"];
+const topList = () => [...(isApt() ? ["inside","balcony","store"] : ["inside","outside","greenhouse","store"]), ...myPlaces().map(L => "pl:" + L.id)];
+/* sel: {area, zone, planting, top, place}. Your own places are tops of their own, after Alvor's. */
+const selTop = sel => sel.top || (placeById(sel.place) ? "pl:" + sel.place : topOf(sel.area));
+const topZones = t => { const L = plKey(t); return L ? placeZones(L) : t === "inside" ? AREAS.house.zones : t === "outside" ? [...AREAS.outside.zones, ...AREAS.porch.zones] : AREAS[t] ? AREAS[t].zones : []; };
 function pickerHtml(sel){
-  const top = sel.top || topOf(sel.area);
+  const top = selTop(sel);
   const tops = topList();
-  const topBtn = t => `<button class="area-opt ${top === t ? "on" : ""}" data-ptop="${t}" aria-pressed="${top === t}"><span class="zi a-${TOPS[t].cls}">${ICON[TOPS[t].icon]}</span><b>${TOPS[t].label}</b></button>`;
+  const topBtn = t => { const L = plKey(t), cls = L ? placeArea(L) : TOPS[t].cls, ic = L ? PLACE_KINDS[L.k].icon : TOPS[t].icon;
+    return `<button class="area-opt ${L ? "mine" : ""} ${top === t ? "on" : ""}" data-ptop="${t}" aria-pressed="${top === t}"><span class="zi a-${cls}">${ICON[ic]}</span><b>${esc(L ? L.n : TOPS[t].label)}</b></button>`; };
   const opt = z => `<button class="zone-opt" data-pzone="${z}" aria-pressed="${sel.zone === z}">${zi(z)}<span><b>${ZONES[z].short}</b><small>${ZONES[z].hint}</small></span></button>`;
-  let html = `<div class="area-row" style="grid-template-columns:repeat(${tops.length},minmax(0,1fr))">${tops.map(topBtn).join("")}</div>`;
-  if(top === "inside") html += `<p class="pick-lead">${TOPS.inside.lead}</p><div class="zone-pick">${AREAS.house.zones.map(opt).join("")}</div>`;
+  let html = `<div class="area-row" style="grid-template-columns:repeat(${Math.min(tops.length, 4)},minmax(0,1fr))">${tops.map(topBtn).join("")}</div>`;
+  const L = plKey(top);
+  if(L){ if(placeZones(L).length > 1) html += `<p class="pick-lead">${tr("Where in {place}?", {place:esc(L.n)})}</p><div class="zone-pick">${placeZones(L).map(opt).join("")}</div>`; }
+  else if(top === "inside") html += `<p class="pick-lead">${TOPS.inside.lead}</p><div class="zone-pick">${AREAS.house.zones.map(opt).join("")}</div>`;
   else if(top === "outside") html += `<p class="pick-lead">${TOPS.outside.lead}</p><div class="zone-pick"><h3 class="pick-h">${tr("In the garden")}</h3>${AREAS.outside.zones.map(opt).join("")}<h3 class="pick-h">${tr("On the porch")} <span>${tr("covered, rain doesn't reach")}</span></h3>${AREAS.porch.zones.map(opt).join("")}</div>`;
   else if(top === "balcony") html += `<p class="pick-lead">${TOPS.balcony.lead}</p><div class="zone-pick">${AREAS.balcony.zones.map(opt).join("")}</div>`;
-  if(sel.zone && canGround(sel.zone) && top === topOf(ZONES[sel.zone].area))
+  if(sel.zone && canGround(sel.zone) && topZones(top).includes(sel.zone))
     html += `<p class="pick-lead">${tr("How is it planted?")}</p><div class="seg small plant-seg" role="group" aria-label="${tr("Planted")}"><button data-pplant="pot" aria-pressed="${sel.planting !== "ground"}">${ICON.pot} ${tr("In a pot")}</button><button data-pplant="ground" aria-pressed="${sel.planting === "ground"}">${ICON.ground} ${tr("In the ground")}</button></div>`;
   return html;
 }
@@ -257,18 +277,24 @@ function pickerClick(e, sel){
   const b = e.target.closest("[data-ptop],[data-pzone],[data-pplant]"); if(!b) return null;
   if(b.dataset.ptop){
     sel.top = b.dataset.ptop;
-    if(sel.top === "greenhouse" || sel.top === "store"){ sel.zone = sel.top; sel.area = sel.top; }
-    else if(!sel.zone || topOf(ZONES[sel.zone].area) !== sel.top){ sel.zone = null; sel.area = null; }
+    const L = plKey(sel.top), zs = topZones(sel.top);
+    sel.place = L ? L.id : null;
+    if(zs.length === 1){ sel.zone = zs[0]; sel.area = ZONES[sel.zone].area; }
+    else if(!sel.zone || !zs.includes(sel.zone)){ sel.zone = null; sel.area = null; }
     return "top";
   }
-  if(b.dataset.pzone){ sel.zone = b.dataset.pzone; sel.area = ZONES[sel.zone].area; sel.top = topOf(sel.area); return "zone"; }
+  if(b.dataset.pzone){
+    sel.zone = b.dataset.pzone; sel.area = ZONES[sel.zone].area;
+    if(!(placeById(sel.place) && placeZones(placeById(sel.place)).includes(sel.zone))){ sel.place = null; sel.top = topOf(sel.area); }
+    return "zone";
+  }
   sel.planting = b.dataset.pplant; return "plant";
 }
 const moveDlg = $("#moveDlg");
 let movingId = null, moveSel = null;
 function openMove(id){
   const p = state.plants.find(x => x.id === id); if(!p) return;
-  movingId = id; moveSel = {area:p.area, zone:p.zone, planting:p.planting, top:topOf(p.area)};
+  movingId = id; moveSel = {area:p.area, zone:p.zone, planting:p.planting, place:plPlace(p) ? p.place : null}; moveSel.top = selTop(moveSel);
   $("#moveTitle").textContent = tr("Move {name}", {name:p.name});
   $("#zonePick").innerHTML = pickerHtml(moveSel);
   moveDlg.showModal();
@@ -278,8 +304,8 @@ $("#zonePick").addEventListener("click", e => {
   const p = state.plants.find(x => x.id === movingId);
   const done = (what === "zone" && !canGround(moveSel.zone)) || (what === "plant" && moveSel.zone) || (what === "top" && moveSel.zone === "store");
   if(done && p){
-    if(setZone(p, moveSel.zone, moveSel.planting)){
-      if(dlg.open && editingId === p.id){ editSel = {area:p.area, zone:p.zone, planting:p.planting}; drawEditPick(); }   // the sheet's own picker follows, so Save doesn't move it back
+    if(setZone(p, moveSel.zone, moveSel.planting, moveSel.place)){
+      if(dlg.open && editingId === p.id){ editSel = {area:p.area, zone:p.zone, planting:p.planting, place:p.place || null}; drawEditPick(); }   // the sheet's own picker follows, so Save doesn't move it back
       save(); render(); moveToast(p);
     }
     moveDlg.close(); return;
@@ -395,8 +421,8 @@ const idb = (() => {
   }
   const get = id => P("readonly", s => s.get(id));
   return {put, get,
+    all:() => P("readonly", s => s.getAll()),        // every photo whole (the test rig reads it; the app reads one at a time)
     del:async id => { await P("readwrite", s => s.delete(id)); await T("readwrite", s => s.delete(id)).catch(() => {}); dropThumbUrl(id); },
-    all:() => P("readonly", s => s.getAll()),        // every photo whole: only for the backup file
     // Every photo's details and small copy. If the copies can't be read, the photos themselves (as before).
     meta:() => T("readonly", s => s.getAll()).catch(() => P("readonly", s => s.getAll())),
     keys:() => P("readonly", s => s.getAllKeys()), thumbKeys:() => T("readonly", s => s.getAllKeys()),
@@ -867,7 +893,7 @@ function openDialog(id){
   $("#psRows").hidden = !p; $("#psEditBtn").hidden = !p;
   dlg.querySelectorAll(".ps-row").forEach(d => { d.open = false; });
   fillForm(p);
-  editSel = p ? {area:p.area, zone:p.zone, planting:p.planting} : {area:"outside", zone:"out-sun", planting:"ground"};
+  editSel = p ? {area:p.area, zone:p.zone, planting:p.planting, place:p.place || null} : {area:"outside", zone:"out-sun", planting:"ground", place:null};
   editMicro = {...((p && p.micro) || {})};
   drawEditPick();
   $("#careNow").innerHTML = p ? careBoxHtml(p) : "";
@@ -938,6 +964,7 @@ $("#dlgSave").addEventListener("click", async () => {
     const p = {id:uid(), created:new Date().toISOString(), ...data, lastWatered:null, visibility:editVis.visibility, micro:cleanMicro(editMicro)};
     p.own = KB.ownOf(p);
     applyZone(p, editSel.zone || "out-sun", editSel.planting);
+    const pl = placeById(editSel.place); if(pl && placeZones(pl).includes(p.zone)) p.place = pl.id;
     state.plants.push(p); addLog(p.id, "add", "Added");
     if(pending.length){
       for(const ph of pending){ ph.plantId = p.id; try{ await idb.put(ph); }catch(e){ toast(tr("Couldn't save the photo")); } }

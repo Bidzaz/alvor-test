@@ -91,16 +91,19 @@ const HUB_IC = {
 /* What Add a plant starts with when you're looking at one place: that place. */
 function hubZone(){
   if(currentTab !== "plants" || idsFilter) return null;
-  const f = plantFilter;
+  const f = plantFilter, L = plKey(f);
+  if(L) return placeZones(L)[0];   // one of your own places: its first spot
   const z = ZONES[f] ? f : f === "house" ? "house-window" : f === "garden" || f === "outside" ? "out-sun" : f === "porch" ? "porch-partial" : f === "greenhouse" ? "greenhouse" : f === "balcony" ? "balc-sun" : null;
   return z && ZONES[z] && (isApt() ? ["house","balcony"] : ["house","porch","outside","greenhouse"]).includes(ZONES[z].area) ? z : null;
 }
+const hubPlace = () => currentTab === "plants" && !idsFilter ? plKey(plantFilter) : null;
+const hubSpot = () => hubPlace() ? hubPlace().n : ZONES[hubZone()].label;
 function hubActions(){
   const has = state.plants.length > 0, net = navigator.onLine !== false, acct = online && !!token;
   const A = {
     identify:{label:tr("Identify a plant"), sub:tr("Take a photo and Alvor suggests what it is"),
       off:!net ? tr("Needs a connection. You can still add a plant by its name.") : !acct ? tr("Needs an Alvor account. You can still add a plant by its name.") : ""},
-    add:{label:hubZone() ? tr("Add a plant here") : tr("Add a plant"), sub:hubZone() ? tr("In {spot}, by its name", {spot:ZONES[hubZone()].label}) : tr("By its name, with its spot and care")},
+    add:{label:hubZone() ? tr("Add a plant here") : tr("Add a plant"), sub:hubZone() ? tr("In {spot}, by its name", {spot:hubSpot()}) : tr("By its name, with its spot and care")},
     moment:{label:tr("Take a photo"), sub:tr("For a plant's story: how it's growing, a flower, new leaves"), off:has ? "" : tr("Add a plant first.")},
     care:{label:tr("Log care"), sub:tr("Watered, fed, moved, repotted…"), off:has ? "" : tr("Add a plant first.")},
     task:{label:tr("Add a garden task"), sub:tr("Your own reminder: buy compost, plant bulbs…")}
@@ -126,7 +129,7 @@ hubDlg.addEventListener("cancel", e => { if(HUB && HUB.step !== "main"){ e.preve
 function hubPlantRow(p){
   const ph = latestPhoto(p.id);
   return `<button type="button" class="hub-plant" data-hubp="${p.id}">${ph ? `<img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async">` : `<span class="initial a-${p.area}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`}
-    <span class="hp-t"><b>${esc(p.name)}</b><small>${esc(ZONES[p.zone] ? ZONES[p.zone].label : "")}</small></span><span class="hp-f">${flagIcons(p.id)}</span></button>`;
+    <span class="hp-t"><b>${esc(p.name)}</b><small>${esc(spotName(p))}</small></span><span class="hp-f">${flagIcons(p.id)}</span></button>`;
 }
 function renderHub(){
   if(!HUB) return;
@@ -144,7 +147,7 @@ function renderHub(){
     const list = state.plants.filter(p => !q || fold([p.name, p.species, p.genus].join(" ").toLowerCase()).includes(q));
     /* The likeliest first: plants in the place you're looking at, then those that need something, then the ones
        you photographed lately; then by name. */
-    const z = HUB.zone, here = p => z && ZONES[z] && p.area === ZONES[z].area ? 0 : 1;
+    const z = HUB.zone, here = p => HUB.place ? (whereKey(p) === "pl:" + HUB.place ? 0 : 1) : z && ZONES[z] && inArea(p, ZONES[z].area) ? 0 : 1;
     const need = p => (plantFlags[p.id] || new Set()).size ? 0 : 1;
     const lastPh = p => { const ph = latestPhoto(p.id); return ph ? -(ph.ts || 0) : 0; };
     list.sort((a, b) => here(a) - here(b) || need(a) - need(b) || (HUB.kind === "moment" ? lastPh(a) - lastPh(b) : 0) || a.name.localeCompare(b.name));
@@ -173,11 +176,11 @@ function renderHub(){
 function hubRun(fn){ hubDlg.close(); setTimeout(fn, 0); }
 function hubDo(k){
   if(k === "identify") return hubRun(() => openWizard());
-  if(k === "add"){ const z = hubZone(); return hubRun(() => openWizard({step:1, typed:true, ...(z ? {zone:z, area:ZONES[z].area, top:null, zoneTouched:true, pattern:ZONES[z].area === "house" ? "indoor" : ZONES[z].area === "greenhouse" ? "greenhouse" : "outdoor", planting:canGround(z) && z !== "greenhouse" ? "ground" : "pot"} : {})})); }
+  if(k === "add"){ const z = hubZone(), L = hubPlace(); return hubRun(() => openWizard({step:1, typed:true, ...(z ? {zone:z, area:ZONES[z].area, top:null, place:L ? L.id : null, zoneTouched:true, pattern:ZONES[z].area === "house" ? "indoor" : ZONES[z].area === "greenhouse" ? "greenhouse" : ZONES[z].area === "store" ? "mover" : "outdoor", planting:canGround(z) && z !== "greenhouse" ? "ground" : "pot"} : {})})); }
   if(k === "task") return hubRun(() => openTasks({mode:"form", f:blankTask(), back:"home"}));
   if(k === "moment" || k === "care"){
     if(!state.plants.length) return;
-    HUB = {step:"pick", kind:k, q:"", zone:hubZone()};
+    HUB = {step:"pick", kind:k, q:"", zone:hubZone(), place:hubPlace() ? hubPlace().id : null};
     if(state.plants.length === 1) return hubPick(state.plants[0].id);   // only one plant: no need to choose
     renderHub(); focusHub();
   }

@@ -199,8 +199,12 @@ function applyBackdrop(){
 
 /* Winter storage (a garage, cellar or shed) shows only once a plant goes there, or when it's been given a temperature. */
 const STORE_LOC = {k:"store", label:tr("Winter storage"), sub:tr("Dark and frost-free"), areas:["store"], icon:"store"};
-const withStore = list => state.plants.some(p => p.area === "store") || isFinite(parseFloat(state.settings.storeLow)) ? [...list, STORE_LOC] : list;
-const LOCS = () => withStore(isApt()
+const withStore = list => state.plants.some(p => inArea(p, "store")) || isFinite(parseFloat(state.settings.storeLow)) ? [...list, STORE_LOC] : list;
+/* Your own places (Phase G) as cards after Alvor's: the kind's picture, your name. */
+const myLocs = () => myPlaces().map(L => ({k:"pl:" + L.id, loc:PLACE_KINDS[L.k].loc, label:L.n, sub:PLACE_KINDS[L.k].label, areas:[placeArea(L)], icon:PLACE_KINDS[L.k].icon, place:L}));
+const locHas = (L, p) => L.place ? p.place === L.place.id && !!plPlace(p) : L.areas.includes(p.area) && !plPlace(p);
+const LOCS = () => [...builtLocs(), ...myLocs()];
+const builtLocs = () => withStore(isApt()
   ? [{k:"house", label:tr("House"), sub:tr("Indoors"), areas:["house"], icon:"house"},
      {k:"balcony", label:tr("Balcony"), sub:tr("Outdoors"), areas:["balcony"], icon:"balcony"}]
   : [{k:"house", label:tr("House"), sub:tr("Indoors"), areas:["house"], icon:"house"},
@@ -210,17 +214,17 @@ function renderLocations(W){
   const el = $("#locList"); if(!el) return;
   const n = state.plants.length;
   if($("#allCount")) $("#allCount").textContent = n ? String(n) : "";
-  const used = LOCS().filter(L => state.plants.some(p => L.areas.includes(p.area))).length;
+  const used = LOCS().filter(L => state.plants.some(p => locHas(L, p))).length;
   $("#locSub").textContent = n ? trn(n, "{n} plant", "{n} plants") + " · " + trn(used, "{n} place", "{n} places") : tr("Where your plants live");
   const archived = (state.archive || []).length, vault = online ? state.plants.filter(p => visOf(p) === "vault").length : 0;
   if($("#allSub")) $("#allSub").textContent = n ? [trn(n, "{n} plant", "{n} plants"), vault ? trn(vault, "{n} only for you", "{n} only for you") : "", archived ? trn(archived, "{n} in the Archive", "{n} in the Archive") : ""].filter(Boolean).join(" · ") : tr("Search, filter, list, grid or tiles");
   const r0 = {frost:state.plants.filter(p => (plantFlags[p.id] || new Set()).has("frost"))};   // same plants as the alerts
   el.innerHTML = LOCS().map(L => {
-    const list = state.plants.filter(p => L.areas.includes(p.area));
-    const risk = r0.frost.filter(p => L.areas.includes(p.area)).length;
+    const list = state.plants.filter(p => locHas(L, p));
+    const risk = r0.frost.filter(p => locHas(L, p)).length;
     const thirsty = list.filter(p => (plantFlags[p.id] || new Set()).has("water")).length;
     const spots = [];
-    L.areas.forEach(a => {
+    if(!L.place) L.areas.forEach(a => {
       if(a === "porch"){ const c = list.filter(p => p.area === "porch").length; spots.push({f:"porch", icon:"porch", label:tr("Porch"), c}); return; }
       AREAS[a].zones.forEach(z => { if(z === "greenhouse" || z === "store") return; spots.push({f:z, icon:ZONES[z].icon, label:ZONES[z].short, c:list.filter(p => p.zone === z).length}); });
     });
@@ -228,30 +232,32 @@ function renderLocations(W){
     const temp = tempChip(L.k);
     const status = (risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk from the cold", {n:risk})}</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : "")
       + (temp ? `<button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button>` : "");
-    const mine = locPicSrc(L.k), canPic = online && !!me && !!token;
+    const mine = L.place ? null : locPicSrc(L.k), canPic = !L.place && online && !!me && !!token, cls = L.loc || L.k, to = L.place ? L.k : L.k === "garden" ? "garden" : L.areas[0];
     /* A place with no plants yet is offered, not claimed: a slim card with a way to start it. */
-    if(!list.length) return `<div class="loc loc-${L.k} empty slim">
-      <button class="loc-main" data-loc="${L.k === "garden" ? "garden" : L.areas[0]}"><span class="loc-ic" aria-hidden="true">${ICON[L.icon]}</span>
-        <span class="loc-t"><b>${L.label}</b><small>${tr("No plants here yet")}</small></span><span class="chev" aria-hidden="true">›</span></button>
+    if(!list.length) return `<div class="loc loc-${cls} ${L.place ? "loc-mine" : ""} empty slim">
+      <button class="loc-main" data-loc="${esc(to)}"><span class="loc-ic" aria-hidden="true">${ICON[L.icon]}</span>
+        <span class="loc-t"><b>${esc(L.label)}</b><small>${L.place ? esc(L.sub) + " · " : ""}${tr("No plants here yet")}</small></span><span class="chev" aria-hidden="true">›</span></button>
       ${temp ? `<div class="loc-status"><button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button></div>` : ""}</div>`;
-    return `<div class="loc loc-${L.k} ${mine ? "has-img" : ""}" style="${mine ? "" : locStyle(look().style, L.k)}">
+    return `<div class="loc loc-${cls} ${L.place ? "loc-mine" : ""} ${mine ? "has-img" : ""}" style="${mine ? "" : locStyle(look().style, cls)}">
       ${mine ? `<img class="loc-img" src="${mine}" alt="">` : `<span class="loc-art">${ICON[L.icon]}</span>`}
       ${canPic ? `<button class="loc-pic ${look().locs && look().locs[L.k] ? "on" : ""}" data-locpic="${L.k}" aria-label="${look().locs && look().locs[L.k] ? tr("Change your own {place} photo", {place:L.label.toLowerCase()}) : tr("Add your own {place} photo", {place:L.label.toLowerCase()})}">${look().locs && look().locs[L.k] ? ICON.camera : ICON.plus}</button>` : ""}
-      <button class="loc-main" data-loc="${L.k === "garden" ? "garden" : L.areas[0]}">
+      <button class="loc-main" data-loc="${esc(to)}">
         <span class="loc-ic" aria-hidden="true">${ICON[L.icon]}</span>
-        <span class="loc-t"><b>${L.label}</b><small>${L.sub} · ${list.length ? trn(list.length, "{n} plant", "{n} plants") : tr("no plants yet")}</small></span>
+        <span class="loc-t"><b>${esc(L.label)}</b><small>${esc(L.sub)} · ${list.length ? trn(list.length, "{n} plant", "{n} plants") : tr("no plants yet")}</small></span>
         <span class="chev" aria-hidden="true">›</span>
       </button>
       ${status ? `<div class="loc-status">${status}</div>` : ""}
       ${spots.length > 1 || L.k === "greenhouse" ? `<div class="loc-spots">${spots.filter(x => x.c || L.k !== "greenhouse").map(x => `<button class="spot" data-loc="${x.f}">${ICON[x.icon] || ""}<span>${esc(x.label)}</span><b>${x.c}</b></button>`).join("")}</div>` : ""}
     </div>`;
-  }).join("");
+  }).join("") + (myPlaces().length < MAX_PLACES ? `<button type="button" class="loc-add" data-place-new="1"><span class="loc-ic" aria-hidden="true">${ICON.plus}</span>
+      <span class="loc-t"><b>${tr("Add your own place")}</b><small>${isApt() ? tr("A cool room, a second balcony, a storage room…") : tr("A polytunnel, the garage, a cool bedroom, the vegetable patch…")}</small></span></button>` : "");
 }
 const LOC_TITLE = {all:tr("All plants"), garden:tr("Outside"), house:tr("House"), greenhouse:tr("Greenhouse"), balcony:tr("Balcony"), porch:tr("Porch"), outside:tr("Outside, not the porch"), store:tr("Winter storage"), vault:tr("Only me"), archive:tr("Archive")};
-const plantsTitle = () => idsFilter ? tr("Selected plants") : LOC_TITLE[plantFilter] || (ZONES[plantFilter] ? ZONES[plantFilter].label : tr("Plants"));
+const plantsTitle = () => idsFilter ? tr("Selected plants") : plKey(plantFilter) ? plKey(plantFilter).n : LOC_TITLE[plantFilter] || (ZONES[plantFilter] ? ZONES[plantFilter].label : tr("Plants"));
 $("#view-locations").addEventListener("click", e => {
   const pic = e.target.closest("[data-locpic]"); if(pic){ openLocPic(pic.dataset.locpic); return; }
   const th = e.target.closest("[data-loctemp]"); if(th){ openLocTemp(th.dataset.loctemp); return; }
+  if(e.target.closest("[data-place-new]")){ openPlace(null); return; }
   const b = e.target.closest("[data-loc]"); if(!b) return;
   idsFilter = null; plantFilter = b.dataset.loc;
   showTab("plants"); renderPlants();
@@ -266,7 +272,10 @@ const ROOM_ZONES = ["house-window","house-low","house-cabinet"];
 const isNum = v => v !== null && v !== undefined && v !== "" && isFinite(+v);
 const halfDeg = v => `${Math.round(+v * 2) / 2}°`;
 function tempChip(k){
-  const s = state.settings;
+  const s = state.settings, L = plKey(k);
+  if(L) return L.k === "greenhouse" ? (isNum(L.heat) ? tr("Heated · above {t}", {t:halfDeg(L.heat)}) : tr("Unheated · {t} warmer", {t:halfDeg(isNum(L.gh) ? +L.gh : GA.RULES.place.gh)}))
+    : L.k === "store" ? (isNum(L.low) ? tr("Lowest {t}", {t:halfDeg(L.low)}) : tr("About {t} on cold nights", {t:halfDeg(GA.RULES.store.low)}))
+    : L.k === "room" ? (isNum(L.low) ? tr("Coldest {t}", {t:halfDeg(L.low)}) : tr("Warm all year")) : "";
   if(k === "greenhouse") return isNum(s.ghHeat) ? tr("Heated · above {t}", {t:halfDeg(s.ghHeat)}) : tr("Unheated · {t} warmer", {t:halfDeg(+s.gh || 0)});
   if(k === "store") return isNum(s.storeLow) ? tr("Lowest {t}", {t:halfDeg(s.storeLow)}) : tr("About {t} on cold nights", {t:halfDeg(GA.RULES.store.low)});
   if(k === "house"){
@@ -278,6 +287,7 @@ function tempChip(k){
 const locTempDlg = $("#locTempDlg");
 let ltFor = null, ltHeated = false;
 function openLocTemp(k){
+  if(plKey(k)) return openPlace(plKey(k).id);   // your own place: its sheet has its temperature
   ltFor = k;
   const s = state.settings, place = k === "greenhouse" ? tr("Greenhouse") : k === "store" ? tr("Winter storage") : areaLabel("house");
   $("#ltTitle").textContent = tr("{place} temperature", {place});

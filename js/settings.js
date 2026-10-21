@@ -157,7 +157,7 @@ function renderColdPick(open){
     <p class="status">${tr("Untick plants you've already protected for the winter, or that take far more cold than your garden gets. Heat, wind and watering reminders still come for every plant.")}</p>
     <div class="pick-tools"><button class="linkish" data-cold-all="1">${tr("Tick all")}</button><button class="linkish" data-cold-all="0">${tr("Untick all")}</button></div>
     <div class="pick-list">${list.map(p => `<label class="pick-row"><input type="checkbox" data-cold="${p.id}" ${GA.coldOn(p) ? "checked" : ""}>
-      <span class="pt">${thumbHtml(p)}</span><span><b>${esc(p.name)}</b><small>${hasMin(p) ? tr("takes {t}", {t:deg(p.minTemp)}) : tr("no cold limit set")} · ${esc(areaLabel(p.area))}</small></span></label>`).join("")}</div></details>`;
+      <span class="pt">${thumbHtml(p)}</span><span><b>${esc(p.name)}</b><small>${hasMin(p) ? tr("takes {t}", {t:deg(p.minTemp)}) : tr("no cold limit set")} · ${esc(whereName(p))}</small></span></label>`).join("")}</div></details>`;
 }
 $("#coldPick").addEventListener("change", e => {
   const c = e.target.closest("[data-cold]"); if(!c) return;
@@ -201,37 +201,8 @@ document.addEventListener("click", e => {
   if(!confirm(tr("Forget what Alvor learned about your garden's nights?"))) return;
   state.settings.calib = []; save(); render(); fillCalib(); toast(tr("Forgotten"));
 });
-$("#exportBtn").addEventListener("click", async () => {
-  let allPhotos = [];
-  try{ allPhotos = await idb.all(); }catch(e){}
-  const blob = new Blob([JSON.stringify({...state, weather:null, photos:allPhotos})], {type:"application/json"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = `alvor-backup-${today()}.json`; a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-});
-$("#importBtn").addEventListener("click", () => $("#importFile").click());
-$("#importFile").addEventListener("change", async e => {
-  const f = e.target.files[0]; if(!f) return;
-  try{
-    const d = JSON.parse(await f.text());
-    if(!Array.isArray(d.plants)) throw new Error("bad");
-    if(!confirm(tr("Replace what's here with {n} plants from the backup?", {n:d.plants.length}))) return;
-    const base = defaults();
-    const imported = Array.isArray(d.photos) ? d.photos : null;
-    delete d.photos;
-    state = {...base, ...d, settings:{...base.settings, ...(d.settings||{})}, weather:null, account:me ? me.id : d.account};
-    const idMap = upgradeIds();
-    save();
-    if(imported){
-      try{ await idb.clear(); for(const ph of imported){ delete ph.synced; await idb.put(ph); } }catch(e){ toast(tr("Plants imported, but the photos couldn't be saved")); }
-      await upgradePhotoIds(idMap);
-      await loadPhotos();
-    } fillSettings(); fetchWeather(true); toast(tr("Backup imported"));
-  }catch(err){ toast(tr("That file isn't a garden backup")); }
-  e.target.value = "";
-});
 $("#resetBtn").addEventListener("click", () => {
-  if(!confirm(token ? tr("Delete all plants and history, on this phone and in your account? Export a backup first if you might want them back.") : tr("Delete all plants and history on this device? Export a backup first if you might want them back."))) return;
+  if(!confirm(token ? tr("Delete all plants and history, on this phone and in your account? Download your data first if you might want them back.") : tr("Delete all plants and history on this device?"))) return;
   const s = state.settings, acct = state.account; state = defaults(); state.settings = s; if(acct) state.account = acct; save();
   idb.clear().catch(() => {}); photos = {};
   // The garden starts again, and so do its discoveries (in the account too).
@@ -479,7 +450,7 @@ function renderShare(){
       <p class="onb-lead">${tr("Ticked plants are visible to friends. The rest stay in your Vault, with all their alerts.")}</p>
       <div class="pick-tools"><button class="linkish" data-oact="pickAll">${tr("Tick all")}</button><button class="linkish" data-oact="pickNone">${tr("Untick all")}</button></div>
       <div class="pick-list">${list.map(p => `<label class="pick-row"><input type="checkbox" data-pick="${p.id}" ${O.sel.has(p.id) ? "checked" : ""}>
-        <span class="pt">${thumbHtml(p)}</span><span><b>${esc(p.name)}</b><small>${esc(areaLabel(p.area))}</small></span></label>`).join("")}</div>
+        <span class="pt">${thumbHtml(p)}</span><span><b>${esc(p.name)}</b><small>${esc(whereName(p))}</small></span></label>`).join("")}</div>
       <button class="btn primary wide" data-oact="saveChoice">${k ? trn(k, "Share {n} plant", "Share {n} plants") : tr("Keep them all in the Vault")}</button>`;
   }
   else{

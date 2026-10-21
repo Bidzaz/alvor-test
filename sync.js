@@ -13,7 +13,8 @@
      each entry has an id and m (when it last changed); the newer m wins, and a deleted entry stays as
      {id, del:1, m} so it can't come back from a phone that still has it.
    - Your own garden tasks (settings.tasks) are merged the same way, task by task, so a task added on one phone
-     and another added on a second phone both stay, and a task ticked off or deleted on one phone stays that way. */
+     and another added on a second phone both stay, and a task ticked off or deleted on one phone stays that way.
+   - Your own places (settings.places, Phase G) are merged the same way, place by place. */
 (function(root){
   "use strict";
 
@@ -131,10 +132,12 @@
 
     const serverSettingsNewer = !!S.settings && (+S.sAt || 0) > (+local.sAt || 0);
     const settings = serverSettingsNewer ? syncSettings(S.settings) : syncSettings(local.settings);
-    const lt = (local.settings || {}).tasks, st = (S.settings || {}).tasks;
-    if(lt || st){
-      const tasks = mergeEntries(lt, st, now);
-      if(tasks.length) settings.tasks = tasks; else delete settings.tasks;
+    for(const key of ["tasks", "places"]){   // your own tasks and your own places: entry by entry
+      const lt = (local.settings || {})[key], st = (S.settings || {})[key];
+      if(lt || st){
+        const list = mergeEntries(lt, st, now);
+        if(list.length) settings[key] = list; else delete settings[key];
+      }
     }
     const sAt = serverSettingsNewer ? +S.sAt : (+local.sAt || 0);
 
