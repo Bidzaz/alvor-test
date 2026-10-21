@@ -116,7 +116,7 @@
 .fc-pill.p-task{background:color-mix(in srgb,#5B5FA8 14%,var(--surface));color:#4F5398}
 :root[data-theme="dark"] .fc-pill.p-task{color:#B9BCF0}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fc-pill.p-task{color:#B9BCF0}}
-.fc-badge{display:none}
+
 .fcd-why{color:var(--muted);margin:0 0 6px;font-size:.88rem}
 .fc-detail .dot.indoor{color:var(--ink)}
 .fc-detail .dot svg{width:16px;height:16px}
@@ -192,7 +192,7 @@
 .set-sec > summary::after{content:"";flex:none;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .2s}
 .set-sec[open] > summary::after{transform:rotate(45deg)}
 .set-sec .card{box-shadow:none!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;margin:0}
-.set-index{display:none}
+
 @media (prefers-reduced-motion:reduce){.set-sec > summary::after{transition:none}}
 
 /* Journal: photos first, by season */

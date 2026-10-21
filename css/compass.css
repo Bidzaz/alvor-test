@@ -142,7 +142,6 @@ dialog::backdrop{background:rgba(18,28,22,.42);-webkit-backdrop-filter:none;back
 .hero-upd{display:flex;align-items:center;gap:6px;margin:0;color:#fff;font-weight:600;font-size:.84rem;text-shadow:0 1px 8px rgba(0,0,0,.55)}
 .hero-upd svg{width:16px;height:16px;flex:none}
 .hero-upd.stale span{background:rgba(12,24,17,.55);padding:2px 8px;border-radius:999px}
-.hero-chips{display:none}
 
 .alerts{gap:12px;margin-top:4px}
 .acard{border-radius:var(--r-lg)!important;padding:16px;gap:4px 14px}
@@ -150,21 +149,13 @@ dialog::backdrop{background:rgba(18,28,22,.42);-webkit-backdrop-filter:none;back
 .a-ic svg{width:22px;height:22px}
 .acard h3{font-size:1.06rem;font-weight:700;letter-spacing:-.01em}
 .a-lab{letter-spacing:.07em;font-size:.7rem}
-.a-count,.a-chip{color:var(--muted)}
+
 /* Real risks carry a marker on the edge as well as their colour and icon */
 .acard.risk{position:relative;overflow:hidden}
 .acard.risk::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--a-ink)}
-.acard.acked{box-shadow:none!important;background:color-mix(in srgb,var(--surface) 55%,transparent)!important;padding:10px 14px}
-.acard.acked .a-ic{width:34px;height:34px}
-.acard.acked .a-ic svg{width:18px;height:18px}
-.acard.acked h3{font-size:.98rem}
-.acard.acked::before{display:none}
-.a-seen{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;font-weight:700;color:var(--muted)}
-.a-seen svg{width:14px;height:14px}
-.a-ack{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
-.a-ack small{color:var(--muted);font-size:.8rem}
+
 .acard li .pn{border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--ink);text-align:left;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--ink) 25%,transparent);text-underline-offset:3px;cursor:pointer}
-.a-sub .a-act{justify-content:flex-start}
+
 .acard{--a-ic:var(--fern-soft);--a-ink:var(--fern)}
 .t-frost{--a-ic:var(--frost-bg);--a-ink:var(--frost)}
 .t-heat{--a-ic:var(--heat-bg);--a-ink:var(--heat)}
@@ -189,7 +180,7 @@ dialog::backdrop{background:rgba(18,28,22,.42);-webkit-backdrop-filter:none;back
 .fc-day{min-height:44px}
 .fc-day.frost{background:var(--frost-bg)} .fc-day.heat{background:var(--heat-bg)}
 .fc-day.open{outline:2px solid var(--fern);outline-offset:-2px;background:color-mix(in srgb,var(--fern-soft) 55%,transparent)}
-.fc-badge{background:var(--surface);box-shadow:0 0 0 1px var(--line)}
+
 .fc-card .fc-detail{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:none;margin:10px 2px 4px;padding:12px 14px}
 .fcd-h{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
 .fcd-h small{color:var(--muted);font-weight:600}
@@ -202,18 +193,6 @@ dialog::backdrop{background:rgba(18,28,22,.42);-webkit-backdrop-filter:none;back
 .fcd-calm svg,.fc-detail .dot svg{width:16px;height:16px;flex:none}
 .fc-detail p .linkish{padding:0 0 0 2px}
 
-.tp-h{margin-top:14px;align-items:center}
-.tp-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.tp{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;gap:10px;min-height:96px;border:0;border-radius:var(--r-md);padding:12px;color:#fff;text-align:left;
-  background:var(--img,none) center/cover,var(--img0,none) center/cover,linear-gradient(135deg,var(--c1),var(--c2));box-shadow:var(--sh-1)}
-.tp.has-img{background:var(--img) center/cover}
-.tp::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgba(10,20,14,.74),rgba(10,20,14,.12) 70%)}
-.tp-ic{width:32px;height:32px;border-radius:50%;background:rgba(255,253,246,.94);color:var(--acc);display:grid;place-items:center;flex:none}
-.tp-ic svg{width:18px;height:18px}
-.tp-t{display:flex;flex-direction:column;line-height:1.25;min-width:0;text-shadow:0 1px 6px rgba(0,0,0,.45)}
-.tp-t b{font-size:1rem}
-.tp-t small{font-weight:600;font-size:.8rem}
-.tp-need{display:inline-flex;margin-top:3px;align-self:flex-start;background:rgba(255,253,246,.92);color:#26332A;text-shadow:none;border-radius:999px;padding:1px 8px}
 #todayLater{margin-top:14px}
 
 /* ===================== Garden ===================== */
@@ -294,10 +273,6 @@ dialog::backdrop{background:rgba(18,28,22,.42);-webkit-backdrop-filter:none;back
 .fg-head .who h2{font-size:1.4rem}
 .person .who{min-height:44px}
 
-/* ===================== Settings ===================== */
-.set-index{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
-.set-index button{min-height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 .88rem var(--body);padding:7px 14px}
-.set-index button[hidden]{display:none}
 #view-settings .card{scroll-margin-top:16px}
 .card h2:focus{outline:none}
 
@@ -377,7 +352,7 @@ dialog::backdrop{background:rgba(18,28,22,.42);-webkit-backdrop-filter:none;back
 }
 
 /* Text over photos stays readable; photos stay quiet */
-.loc-t,.tp-t,.hero-loc{text-shadow:0 1px 10px rgba(0,0,0,.5)}
+.loc-t,.hero-loc{text-shadow:0 1px 10px rgba(0,0,0,.5)}
 
 /* Reduced motion: nothing turns or slides */
 @media (prefers-reduced-motion:reduce){

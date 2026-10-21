@@ -60,12 +60,6 @@ body:not([data-page="today"]):not([data-page="locations"]) .bg::after{background
 .hn-s{display:flex;flex-direction:column;gap:2px;font-weight:700;font-size:1.02rem}
 .hn-s small{font-weight:600;opacity:.88;font-size:.88rem}
 .hn-wait{font-weight:700;padding:14px 0}
-.hero-chips{display:flex;gap:8px;flex-wrap:wrap}
-.hchip{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:8px 13px;font:600 .86rem var(--body);color:#fff;
-  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 4px 14px rgba(0,0,0,.15)}
-.hchip svg{width:16px;height:16px}
-.hchip.frost{background:rgba(47,108,192,.92)} .hchip.heat{background:rgba(190,105,30,.9)} .hchip.water{background:rgba(18,129,122,.9)}
-.hchip.calm{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35)}
 
 /* Section headings */
 .sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:2px 4px 8px}
@@ -78,7 +72,7 @@ body:not([data-page="today"]):not([data-page="locations"]) .bg::after{background
 .fc-card{padding:14px 10px 8px;margin-bottom:6px}
 .fc-card .fc{background:transparent;box-shadow:none;padding:0;margin:0}
 .fc-day{border-radius:16px}
-.fc-day.frost{background:color-mix(in srgb,var(--frost-red-bg) 70%,transparent)} .fc-badge.frost,.dot.frost{color:var(--frost-red)}
+.fc-day.frost{background:color-mix(in srgb,var(--frost-red-bg) 70%,transparent)} .dot.frost{color:var(--frost-red)}
 .fc-card .fc-detail{background:rgba(255,255,255,.55);box-shadow:none;margin:8px 4px 6px}
 
 /* Alert cards as glass with a tinted icon */
@@ -131,8 +125,6 @@ body:not([data-page="today"]):not([data-page="locations"]) .bg::after{background
 .spot svg{width:16px;height:16px}
 .spot b{min-width:22px;padding:1px 7px;border-radius:999px;background:rgba(255,255,255,.22);font-size:.78rem;text-align:center}
 
-/* Tab bar */
-.navbar{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:536px;margin:0 auto;z-index:20;display:flex;align-items:center;gap:8px}
 .tabbar{background:var(--glass);border:1px solid var(--glass-bd);box-shadow:0 12px 34px rgba(12,30,18,.22);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5)}
 .tabbar{flex:1;min-width:0;height:72px;display:flex;align-items:center;justify-content:space-around;padding:0 4px;border-radius:28px}
 
@@ -159,7 +151,6 @@ body:not([data-page="today"]):not([data-page="locations"]) .bg::after{background
 .auth-brand .auth-logo svg{height:66px;width:auto;margin:0 auto;filter:drop-shadow(0 0 22px rgba(255,248,225,.9))}
 .auth-tag{margin:8px 0 0;font-weight:700;color:#1F3B29;text-shadow:0 0 14px rgba(255,252,238,.95)}
 .auth-card{margin-top:auto;border-radius:28px;background:var(--glass);border:1px solid var(--glass-bd);box-shadow:0 14px 40px rgba(10,25,15,.25);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4)}
-
 
 /* Option B: Manrope, calmer weights, one step smaller */
 html{font-size:93.75%}
@@ -225,8 +216,7 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 /* Onboarding choice cards */
 .home-card{background:var(--glass);border:2px solid var(--glass-bd);padding:18px 12px 16px}
 .home-card[aria-pressed=true]{border-color:var(--fern);background:var(--fern-soft)}
-.hc-ic{width:76px;height:76px;border-radius:50%;margin-bottom:8px;display:flex;align-items:center;justify-content:center;background:var(--fern-soft);color:var(--fern)}
-.hc-ic svg{width:36px;height:36px}
+
 /* Welcome choice: a photo fills the top of each card, with a tick on the chosen one */
 .home-card.hc-pic{position:relative;padding:0 0 14px;overflow:hidden}
 .home-card img.hc-photo{width:100%;aspect-ratio:4/3;border-radius:0;box-shadow:none;object-fit:cover;margin:0 0 8px}
@@ -289,7 +279,6 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .lp-btns .btn{padding:11px 16px}
 .lp-btns .btn[hidden]{display:none}
 
-
 /* Plants: small tiles, four a row */
 .v-tiles .pgroup{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:6px}
 .ptile{position:relative;isolation:isolate;display:block;aspect-ratio:1;border:0;padding:0;border-radius:16px;overflow:hidden;color:#fff;text-align:left;
@@ -305,23 +294,7 @@ dialog::backdrop{background:rgba(8,20,12,.42);-webkit-backdrop-filter:blur(4px);
 .pt-flags .flag svg{width:11px;height:11px}
 .ptile:active{transform:scale(.97)}
 
-/* Alerts grouped by kind: closed shows the count, open shows the plants */
-.agroup{align-items:center}
-.agroup .a-ic{grid-row:auto}
-.a-head{grid-column:2;display:block;width:100%;min-width:0;background:none;border:0;padding:0 30px 0 0;text-align:left;color:inherit;font:inherit;position:relative;cursor:pointer}
-.a-head .a-top{display:flex}
-.a-head .a-lab{white-space:nowrap}
-.a-head .a-chip{min-width:0;overflow:hidden;text-overflow:ellipsis}
-.a-count{display:block;color:var(--muted);font-weight:600;font-size:.9rem}
-.a-chev{position:absolute;right:0;top:50%;width:22px;height:22px;transform:translateY(-50%);color:var(--a-ink);transition:transform .2s}
-.agroup.open .a-chev{transform:translateY(-50%) rotate(180deg)}
-.a-body{grid-column:1/-1;margin-top:8px}
-.a-sub + .a-sub{border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent);margin-top:12px;padding-top:12px}
-.a-sub h4{margin:0 0 4px;font-size:.95rem}
-.a-sub .a-act{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:8px}
-.a-done{display:flex;align-items:center;gap:6px;margin:0;color:var(--fern);font-weight:700;font-size:.9rem}
-.a-done svg{width:18px;height:18px}
-@media (prefers-reduced-motion: reduce){.a-chev{transition:none}}
+/* Alerts grouped by kind: closed shows the count{align-items:center}
 
 /* ===================== Care engine: Garden today, feedback, "why", spot details ===================== */
 .gtoday h3{font-size:1.12rem;margin-bottom:6px}

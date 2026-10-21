@@ -1,9 +1,9 @@
 /* Alvor · The circle: friends, account basics and life in the circle. */
 /* ---------- The circle: friends ---------- */
 .top-btns{display:flex;gap:8px}
-.friends-btn{position:relative}
-.friends-btn[hidden],.req-badge[hidden]{display:none}
-.friends-btn[aria-current=page]{background:var(--fern);color:var(--on-fern)}
+
+.req-badge[hidden]{display:none}
+
 .req-badge{position:absolute;top:-3px;right:-3px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#D2604C;color:#fff;font-size:.72rem;font-weight:700;line-height:19px;text-align:center;box-shadow:0 0 0 2px var(--bg)}
 @media (max-width:380px){.top .brand{display:none}.top{grid-template-columns:minmax(0,1fr) auto auto}}
 .f-card h2{display:flex;align-items:center;gap:8px}
@@ -44,9 +44,7 @@
 .fg-head .who{min-width:0;flex:1}
 .fg-head .who h2{font-size:1.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fg-head .who span{color:var(--muted);font-size:.88rem}
-.fg-scene{margin-bottom:16px}
-.fg-scene .orb{width:min(100%,420px)}
-.fg-scene .pill{animation:none}
+
 .fg-count{text-align:center;color:var(--muted);font-size:.88rem;margin:12px 0 0}
 .fg-msg{padding:22px 18px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:var(--shadow);text-align:center}
 .fg-msg h3{margin-bottom:4px}.fg-msg p{margin:0;color:var(--muted)}
