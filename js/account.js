@@ -439,6 +439,22 @@ async function saveResetPassword(){
   finally{ btn.disabled = false; }
 }
 
+/* After signing in with the old Alvor's garden on the phone (see signedIn): plants only this phone has, and that
+   the account hasn't deleted, join the account with their history; their photos follow with the photo sync. */
+async function keepPhoneOnly(phone){
+  const have = new Set(allPlants().map(p => p.id)), gone = syncMeta().gone || {};
+  const extra = phone.plants.filter(p => p && UUID_RE.test(String(p.id)) && !have.has(p.id) && !gone[p.id]);
+  if(!extra.length) return 0;
+  if(!confirm(trn(extra.length, "This phone has {n} plant that isn't in your account yet. Add it?", "This phone has {n} plants that aren't in your account yet. Add them?"))) return 0;
+  const ids = new Set(extra.map(p => p.id));
+  state.plants.push(...extra.filter(p => !p.archived));
+  state.archive.push(...extra.filter(p => p.archived));
+  state.log = [...state.log, ...phone.log.filter(e => ids.has(e.plantId))].sort((a, b) => (+b.t || 0) - (+a.t || 0));
+  normalizePlants(); migrateJournal();
+  save(); render();
+  await syncGarden();
+  return extra.length;
+}
 async function signedIn(session){
   await loadMe(session);
   let gp = null;
@@ -448,8 +464,14 @@ async function signedIn(session){
   const otherAccount = state.account && !mine && !oldGarden;
   if(otherAccount){ try{ await idb.clear(); }catch(e){} photos = {}; writeDels([]); }
   if(gp){
+    // A phone still holding the old Alvor's garden, signing in to an account that already has one (the move was
+    // done early, from a backup): the account's garden is the one kept, and plants added in the old app since
+    // then, which the account has never seen, are offered so nothing on the phone is lost. Old ids always become
+    // the same new ids (idFromOld), so a plant in both is recognised and never doubled.
+    const phone = oldGarden ? {plants:allPlants().map(p => ({...p})), log:state.log.slice()} : null;
     if(!mine){ state = defaults(); state.account = me.id; saveLocal(); }
     await syncGarden();   // merges: changes on this phone not yet sent are kept
+    if(phone) await keepPhoneOnly(phone);
   }else if(state.plants.length && (mine || oldGarden || !state.account)
       && confirm(trn(state.plants.length, "This phone has {n} plant. Move it into this account?", "This phone has {n} plants. Move them into this account?"))){
     state.account = me.id; state.updatedAt = Date.now(); saveLocal();

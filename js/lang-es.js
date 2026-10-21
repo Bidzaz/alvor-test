@@ -531,6 +531,7 @@ window.ALVOR_LANG.es = {
 "Please sign in again.":"Vuelve a iniciar sesión.", "Saved to your account at {time}.":"Guardado en tu cuenta a las {time}.", "Saving photos…":"Guardando fotos…", "Getting photos…":"Descargando fotos…",
 "Some photos aren't saved to your account yet. Alvor tries again next time.":"Algunas fotos aún no están guardadas en tu cuenta. Alvor lo volverá a intentar la próxima vez.",
 "This phone has {n} plant. Move it into this account?":"Este móvil tiene {n} planta. ¿Pasarla a esta cuenta?", "This phone has {n} plants. Move them into this account?":"Este móvil tiene {n} plantas. ¿Pasarlas a esta cuenta?",
+"This phone has {n} plant that isn't in your account yet. Add it?":"Este móvil tiene {n} planta que aún no está en tu cuenta. ¿Añadirla?", "This phone has {n} plants that aren't in your account yet. Add them?":"Este móvil tiene {n} plantas que aún no están en tu cuenta. ¿Añadirlas?",
 "Welcome, {name}":"Hola, {name}", "You're signed out.":"Has cerrado la sesión.", "Sign out on this phone? Your garden stays saved in your account.":"¿Cerrar sesión en este móvil? Tu jardín sigue guardado en tu cuenta.",
 "Couldn't use that link. Check your connection and open it again.":"No se ha podido usar ese enlace. Revisa la conexión y vuelve a abrirlo.",
 "Reports":"Denuncias", "Only you see this, as the owner of Alvor. People's reports land here; the person reported isn't told who sent them.":"Solo lo ves tú, como dueño de Alvor. Aquí llegan las denuncias; a la persona denunciada no se le dice quién las mandó.",
