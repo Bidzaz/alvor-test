@@ -18,7 +18,15 @@ async function fetchWeather(force){
 /* Everything the care engine (alerts.js) needs to know about now. Works offline from the saved forecast. */
 const ctx = () => ({settings:state.settings, daily:state.weather && state.weather.daily, hourly:state.weather && state.weather.hourly,
   today:today(), month:new Date().getMonth()+1, mode:"full", lang:LANG, hour:new Date().getHours(), weatherAt:state.weather && state.weather.at, now:Date.now()});
-function wx(){ return state.weather ? GA.splitWeather(state.weather.daily, today(), state.weather.hourly) : null; }
+/* The week ahead as your garden has it (clear nights, what you told Alvor after cold nights: alerts.js nightAdjust).
+   Worked out once per forecast, day and calibration, since every plant on every redraw asks for it. */
+let wxMemo = {k:null, W:null};
+function wx(){
+  if(!state.weather) return null;
+  const k = [state.weather.at, today(), JSON.stringify(state.settings.calib || [])].join("|");
+  if(wxMemo.k !== k || wxMemo.w !== state.weather) wxMemo = {k, w:state.weather, W:GA.splitWeather(state.weather.daily, today(), state.weather.hourly, state.settings)};
+  return wxMemo.W;
+}
 const waterStatus = (p, W) => GA.waterStatus(p, W, ctx(), state.plants);
 const effMin = (p, d) => GA.effMin(p, d, state.settings);
 const coldLimit = p => GA.coldLimit(p, state.settings, {W:wx(), today:today()});

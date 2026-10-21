@@ -4,10 +4,7 @@
    which moments are yours. Nothing is guessed from photos or the weather. Made on the phone, nothing new is stored.
    Plain script (no build step): loaded by index.html in a fixed order and sharing one global scope. */
 "use strict";
-const storyDlg = $("#storyDlg");
-let ST = null;   // {f: all | ms | photos, months: how many months are shown}
-const STORY_KINDS = ["acquired","planted","growth","flower","fruit","pruned","repotted","propagated","protected","unprotected","moved","issue","note","gone","back"];
-function openStory(){ ST = {f:"all", months:12}; renderStory(); storyDlg.showModal(); $("#storyBody").scrollTop = 0; }
+const STORY_KINDS = ["acquired","planted","growth","flower","fruit","pruned","repotted","propagated","protected","unprotected","moved","issue","outcome","note","gone","back"];
 
 /* Everything, newest first. mine: you recorded it; alvor: Alvor noticed it. */
 function storyItems(f){
@@ -62,7 +59,7 @@ function storyItemHtml(it){
   return "";
 }
 /* The timeline as HTML, for the Journal page and the garden journal sheet. S = {f, months, q (plant or note), place}. */
-const STORY_PLACE = p => p.archived ? "archive" : p.area === "porch" || p.area === "outside" ? "garden" : p.area;
+const STORY_PLACE = p => p.archived ? "archive" : p.area === "porch" || p.area === "outside" ? "garden" : p.area;   // "garden": outside and the porch
 function storyHtml(S, page){
   const q = fold(String(S.q || "").trim().toLowerCase());
   const hit = it => (!S.place || (it.p && STORY_PLACE(it.p) === S.place)) &&
@@ -101,7 +98,6 @@ function storyHtml(S, page){
     <p class="status jr-private">${ICON.lock}${tr("Only you see your garden's story. Friends see your shared plants' photos and happy moments, as before.")}</p>`;
   return h;
 }
-function renderStory(){ if(ST) $("#storyBody").innerHTML = storyHtml(ST, false); }
 
 /* ---------- The Journal page (the Compass's third place) ---------- */
 let JP = {f:"all", months:12, q:"", place:""};
@@ -115,12 +111,22 @@ function renderJournalPage(){
   if(typeof renderDiscCard === "function") renderDiscCard();
   /* Where: only the places that have plants (and the Archive when it has some). */
   const places = [...new Set(plants.map(STORY_PLACE))];
-  const PL = {house:areaLabel("house"), garden:tr("Garden"), greenhouse:tr("Greenhouse"), balcony:tr("Balcony"), archive:tr("Archive")};
-  const order = ["house", "garden", "greenhouse", "balcony", "archive"].filter(k => places.includes(k));
+  const PL = {house:areaLabel("house"), garden:tr("Outside"), greenhouse:tr("Greenhouse"), balcony:tr("Balcony"), store:tr("Winter storage"), archive:tr("Archive")};
+  const order = ["house", "garden", "greenhouse", "balcony", "store", "archive"].filter(k => places.includes(k));
   if(JP.place && !order.includes(JP.place)) JP.place = "";
   $("#jpPlaces").innerHTML = order.length > 1 ? [`<button type="button" class="chip" data-jpp="" aria-pressed="${!JP.place}">${tr("All places")}</button>`, ...order.map(k => `<button type="button" class="chip" data-jpp="${k}" aria-pressed="${JP.place === k}">${PL[k]}</button>`)].join("") : "";
   $("#jpSearch").value = JP.q;
+  $("#jpTop").innerHTML = JP.q || JP.place ? "" : jpTopHtml();
   $("#journalBody").innerHTML = storyHtml(JP, true);
+}
+/* Photos first: last month's snapshot early in a month, then the season's newest photos across the garden. */
+const SEASON_WORD = {spring:tr("This spring"), summer:tr("This summer"), autumn:tr("This autumn"), winter:tr("This winter")};
+function jpTopHtml(){
+  const m = GA.seasonMonth(new Date().getMonth() + 1, state.settings), season = [3,4,5].includes(m) ? "spring" : [6,7,8].includes(m) ? "summer" : [9,10,11].includes(m) ? "autumn" : "winter";
+  const list = state.plants.flatMap(p => (photos[p.id] || []).map(ph => ({p, ph}))).sort((a, b) => (b.ph.ts || 0) - (a.ph.ts || 0)).slice(0, 12);
+  const snap = typeof snapCardHtml === "function" ? snapCardHtml() : "";
+  return (snap ? `<div class="jp-snap">${snap}</div>` : "") + (list.length ? `<h2 class="jp-season">${SEASON_WORD[season]}</h2>
+    <div class="jp-photos">${list.map(({p, ph}) => `<button type="button" data-story="photo" data-id="${p.id}" data-ph="${ph.id}" aria-label="${esc(tr("{name}, {date}", {name:p.name, date:jDate(ph.date)}))}"><img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async"><span>${esc(p.name)}</span></button>`).join("")}</div>` : "");
 }
 $("#jpSearch").addEventListener("input", e => { JP.q = e.target.value; JP.months = 12; $("#journalBody").innerHTML = storyHtml(JP, true); });
 $("#jpPlaces").addEventListener("click", e => { const b = e.target.closest("[data-jpp]"); if(!b) return; JP.place = b.dataset.jpp; JP.months = 12; renderJournalPage(); });
@@ -128,21 +134,17 @@ $("#view-journal").addEventListener("click", e => {
   const b = e.target.closest("[data-jp]"); if(!b) return;
   if(b.dataset.jp === "clear"){ JP.q = ""; JP.place = ""; renderJournalPage(); $("#jpSearch").focus(); }
 });
-$("#storyClose").addEventListener("click", () => storyDlg.close());
-/* The same buttons work in the sheet and on the Journal page: whichever the button is in. */
-const storyOn = el => el.closest("#journalBody") ? "page" : "sheet";
 document.addEventListener("click", e => {
   const f = e.target.closest("[data-stf]");
-  if(f && storyOn(f) === "page"){ JP.f = f.dataset.stf; JP.months = 12; $("#journalBody").innerHTML = storyHtml(JP, true); return; }
-  if(f && ST){ ST.f = f.dataset.stf; ST.months = 12; renderStory(); return; }
+  if(f && f.closest("#journalBody")){ JP.f = f.dataset.stf; JP.months = 12; $("#journalBody").innerHTML = storyHtml(JP, true); return; }
   const b = e.target.closest("[data-story]"); if(!b) return;
   const a = b.dataset.story;
-  if(a === "open") return openStory();
-  if(a === "more"){ if(storyOn(b) === "page"){ JP.months += 12; $("#journalBody").innerHTML = storyHtml(JP, true); } else if(ST){ ST.months += 12; renderStory(); } }
+  if(a === "open") return showTab("journal");
+  if(a === "more"){ JP.months += 12; $("#journalBody").innerHTML = storyHtml(JP, true); }
   else if(a === "plant"){ if(plantById(b.dataset.id)) openJournal(b.dataset.id); }
   else if(a === "photo"){
     const p = plantById(b.dataset.id); if(!p) return;
     if(p.archived){ openJournal(p.id); return; }   // a plant in the Archive opens its journal, where its photos are
-    storyDlg.close(); openDialog(p.id); setTimeout(() => viewPhoto(b.dataset.ph), 50);
+    openDialog(p.id); setTimeout(() => viewPhoto(b.dataset.ph), 50);
   }
 });

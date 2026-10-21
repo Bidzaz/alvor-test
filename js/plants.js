@@ -2,7 +2,8 @@
    Plain script (no build step): loaded by index.html in a fixed order and sharing one global scope. */
 "use strict";
 /* ---------- Plants: list or grid ---------- */
-let plantView = (() => { try{ const v = localStorage.getItem("garden-view"); return ["list","grid","tiles"].includes(v) ? v : "list"; }catch(e){ return "list"; } })();
+/* Two views: a list, and a grid of photos ("tiles" from before is the grid now). */
+let plantView = (() => { try{ const v = localStorage.getItem("garden-view"); return v === "tiles" || v === "grid" ? "grid" : "list"; }catch(e){ return "list"; } })();
 let idsFilter = null;
 /* At the top of a place's plants: its picture, how it's doing right now, and adding a plant right there. */
 const ctxLoc = f => ["house","house-window","house-low","house-cabinet"].includes(f) ? "house" : f === "greenhouse" ? "greenhouse"
@@ -46,8 +47,11 @@ function renderPlants(){
   const match = p => idsFilter ? idsFilter.includes(p.id) : plantFilter === "all" || (plantFilter === "vault" ? visOf(p) === "vault" : plantFilter === "garden" ? (p.area === "outside" || p.area === "porch") : p.area === plantFilter || p.zone === plantFilter);
   const list = state.plants.filter(p => match(p) && (!q || [p.name, p.species, p.genus, p.notes].join(" ").toLowerCase().includes(q)));
   const el = $("#plantList");
-  if(plantFilter === "archive" && !idsFilter){ renderArchiveList(el, q); return; }
-  el.className = "plist v-" + plantView;
+  /* The Archive is its own list: no place chips or views from the garden as it is now. */
+  const arc = plantFilter === "archive" && !idsFilter;
+  $("#chips").hidden = arc; document.querySelector("#view-plants .viewtog").hidden = arc;
+  if(arc){ renderArchiveList(el, q); return; }
+  el.className = "plist v-" + (plantView === "grid" ? "tiles" : "list");
   if(!state.plants.length){
     el.innerHTML = `<div class="empty"><h3>${tr("No plants yet")}</h3><p>${tr("Tap Add plant and take a photo; the app suggests the species for you.")}</p><button class="btn primary" data-hub="add">${tr("Add plant")}</button></div>`;
     return;
@@ -58,7 +62,7 @@ function renderPlants(){
   list.sort((a, b) => a.name.localeCompare(b.name)).forEach(p => by[p.area].push(p));
   el.innerHTML = ALL_AREAS.filter(a => by[a].length).map(a => `
     <h2 class="group-h">${zi(a)} ${areaLabel(a)} <small>${by[a].length}</small></h2>
-    <div class="pgroup">${by[a].map(p => plantView === "grid" ? plantCard(p, W) : plantView === "tiles" ? plantTile(p) : plantRow(p, W)).join("")}</div>`).join("");
+    <div class="pgroup">${by[a].map(p => plantView === "grid" ? plantTile(p) : plantRow(p, W)).join("")}</div>`).join("");
 }
 const vaultMark = p => online && visOf(p) === "vault" ? `<span class="vmark" title="${tr("In your Vault: only you see it")}" aria-label="${tr("(in your Vault)")}">${ICON.lock}</span>` : "";
 function thumbHtml(p){
@@ -73,6 +77,12 @@ function wateredText(p, W){
 const waterTagCls = (p, W) => "tag w-" + waterStatus(p, W).stage;
 const ownMini = p => online && me && token && typeof miniCounts === "function" ? miniCounts({owner:me.id, type:"plant", id:p.id}) : "";
 const plantBg = p => { const ph = latestPhoto(p.id); return ph ? `<img class="p-bg" src="${phSrc(ph)}" alt="" aria-hidden="true" loading="lazy" decoding="async">` : ""; };
+/* The one button a plant card carries, only when there's something to do now: its job's own tick (Today's jobs). */
+function cardAction(p){
+  const j = typeof plantJob === "function" ? plantJob(p) : null;
+  if(!j) return "";
+  return `<button class="btn small ${j.risk || j.key === "water" ? "primary" : ""}" data-today="tick" data-job="${esc(j.id)}" aria-label="${esc(j.tick.label + " · " + p.name)}">${esc(j.tick.label)}</button>`;
+}
 function plantRow(p, W){
   return `<div class="plant ${latestPhoto(p.id) ? "has-bg" : ""}">${plantBg(p)}
     <button class="thumb" data-act="edit" data-id="${p.id}" aria-label="${tr("Open {name}", {name:esc(p.name)})}">${thumbHtml(p)}</button>
@@ -81,7 +91,7 @@ function plantRow(p, W){
       <div class="where">${zi(p.zone)}<span>${esc(zoneLabel(p))}</span></div>${ownMini(p)}</div>
     <div class="flags">${flagIcons(p.id)}</div>
     <div class="facts">${coldTag(p)}<span class="${waterTagCls(p, W)}">${wateredText(p, W)}</span>
-      <span class="acts"><button class="btn small" data-act="move" data-id="${p.id}">${tr("Move")}</button><button class="btn small primary" data-act="water" data-id="${p.id}">${tr("Watered")}</button></span></div>
+      <span class="acts">${cardAction(p)}</span></div>
   </div>`;
 }
 /* Small tiles: four plants a row, just the photo and the name; tap to open */
@@ -104,19 +114,6 @@ document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click"
   plantView = b.dataset.view; try{ localStorage.setItem("garden-view", plantView); }catch(e){}
   renderPlants();
 }));
-
-function renderLog(){
-  const el = $("#logList");
-  if(!state.log.length){ el.innerHTML = `<div class="empty"><h3>${tr("No history yet")}</h3><p>${tr("Every watering and every move you log shows up here.")}</p></div>`; return; }
-  const names = Object.fromEntries(allPlants().map(p => [p.id, p.name]));
-  let html = "", lastDay = "";
-  for(const e of state.log.slice(0,300)){
-    const d = new Date(e.t), key = ymd(d);
-    if(key !== lastDay){ html += `<div class="log-day">${d.toLocaleDateString(LOCALE,{weekday:"long", day:"numeric", month:"long"})}</div>`; lastDay = key; }
-    html += `<div class="log-row"><span>${esc(names[e.plantId] || tr("Deleted plant"))}</span><span>${esc(logText(e.detail))}</span></div>`;
-  }
-  el.innerHTML = html;
-}
 
 /* ---------- Actions ---------- */
 /* Watering and feedback go through the care engine, which also notes what it had estimated (for learning). */
@@ -160,6 +157,7 @@ function careFeedback(id, kind){
   if(kind === "skip"){ const p = plantById(id); if(!p) return; p.feedSkip = today(); save(); render(); refreshCareBox(); return toast(tr("Skipped. Alvor counts the next feed from today.")); }
   if(kind === "repotted") return openMs(id, null, {k:"repotted"});
   if(kind === "notYear") return repotNotYear(id);
+  if(kind === "unprotect") return unprotect([id]);
   const p = state.plants.find(x => x.id === id); if(!p) return;
   const f = GA.feedback(p, kind, wx(), ctx(), state.plants);
   Object.assign(p, f.patch);
@@ -213,13 +211,15 @@ function moveGroup(ids, to, wx){
 const WX_KINDS = ["frost", "heat", "wind"];
 /* "Mark as protected" under a frost plan (fleece, wrap the pots, protect the crown…): a "Protected from cold" entry
    in each plant's journal, saying what was done. Once a day per plant, so a second tap adds nothing. */
-function protectGroup(ids, what, wx){
+/* pk: the plan it carried out (mulchRoots, potProtect…): the care engine then knows the plant is protected until
+   "Protection off", and suggests taking it off when the cold has passed. */
+function protectGroup(ids, what, wx, pk){
   const d = today(); let n = 0;
   ids.forEach(id => {
     const p = state.plants.find(x => x.id === id); if(!p) return;
     n++;
     if(jEntries(p).some(e => e.k === "protected" && e.d === d)) return;
-    jPut(p, {id:uid(), d, k:"protected", ...(what ? {n:String(what).slice(0, 200)} : {}), ...(WX_KINDS.includes(wx) ? {wx} : {})});
+    jPut(p, {id:uid(), d, k:"protected", ...(what ? {n:String(what).slice(0, 200)} : {}), ...(WX_KINDS.includes(wx) ? {wx} : {}), ...(GA.PROTECT_KEYS.includes(pk) ? {pk} : {})});
     addLog(id, "protect", "Protected from cold", WX_KINDS.includes(wx) ? {wx} : null);
   });
   if(!n) return;
@@ -235,10 +235,11 @@ const TOPS = {
   inside:{label:tr("Inside"), icon:"house", cls:"house", lead:tr("Where inside?")},
   outside:{label:tr("Outside"), icon:"outside", cls:"outside", lead:tr("Where outside?")},
   greenhouse:{label:tr("Greenhouse"), icon:"greenhouse", cls:"greenhouse", lead:""},
-  balcony:{label:tr("Balcony"), icon:"balcony", cls:"balcony", lead:tr("Which part of the balcony?")}
+  balcony:{label:tr("Balcony"), icon:"balcony", cls:"balcony", lead:tr("Which part of the balcony?")},
+  store:{label:tr("Winter storage"), icon:"store", cls:"store", lead:""}
 };
 const topOf = area => area === "house" ? "inside" : area === "porch" ? "outside" : area || null;
-const topList = () => isApt() ? ["inside","balcony"] : ["inside","outside","greenhouse"];
+const topList = () => isApt() ? ["inside","balcony","store"] : ["inside","outside","greenhouse","store"];
 function pickerHtml(sel){
   const top = sel.top || topOf(sel.area);
   const tops = topList();
@@ -256,7 +257,7 @@ function pickerClick(e, sel){
   const b = e.target.closest("[data-ptop],[data-pzone],[data-pplant]"); if(!b) return null;
   if(b.dataset.ptop){
     sel.top = b.dataset.ptop;
-    if(sel.top === "greenhouse"){ sel.zone = "greenhouse"; sel.area = "greenhouse"; }
+    if(sel.top === "greenhouse" || sel.top === "store"){ sel.zone = sel.top; sel.area = sel.top; }
     else if(!sel.zone || topOf(ZONES[sel.zone].area) !== sel.top){ sel.zone = null; sel.area = null; }
     return "top";
   }
@@ -275,7 +276,7 @@ function openMove(id){
 $("#zonePick").addEventListener("click", e => {
   const what = pickerClick(e, moveSel); if(!what) return;
   const p = state.plants.find(x => x.id === movingId);
-  const done = (what === "zone" && !canGround(moveSel.zone)) || (what === "plant" && moveSel.zone);
+  const done = (what === "zone" && !canGround(moveSel.zone)) || (what === "plant" && moveSel.zone) || (what === "top" && moveSel.zone === "store");
   if(done && p){
     if(setZone(p, moveSel.zone, moveSel.planting)){
       if(dlg.open && editingId === p.id){ editSel = {area:p.area, zone:p.zone, planting:p.planting}; drawEditPick(); }   // the sheet's own picker follows, so Save doesn't move it back
@@ -300,7 +301,7 @@ document.addEventListener("click", e => {
   else if(act === "move") openMove(b.dataset.id);
   else if(act === "health") openHealth(b.dataset.id);
   else if(act === "moveAll") moveGroup(ids, b.dataset.to, b.dataset.wx);
-  else if(act === "protectAll") protectGroup(ids, b.dataset.what, b.dataset.wx);
+  else if(act === "protectAll") protectGroup(ids, b.dataset.what, b.dataset.wx, b.dataset.pk);
   else if(act === "seePlants"){ idsFilter = ids; showTab("plants"); renderPlants(); }
   else if(act === "allPlants") openAllPlants(b.dataset.focus === "search");
   else if(act === "clearFind"){ idsFilter = null; plantFilter = "all"; $("#search").value = ""; renderPlants(); }
@@ -336,13 +337,13 @@ function showTab(tab, opt){
   document.body.dataset.page = tab;
   document.body.dataset.root = rootTab;
   document.querySelectorAll("#dial [data-tab]").forEach(b => { if(b.dataset.tab === rootTab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
-  ["today","locations","plants","journal","log","settings","profile","friends","friend"].forEach(t => $("#view-" + t).hidden = t !== tab);
+  ["today","locations","plants","journal","settings","profile","friends","friend"].forEach(t => $("#view-" + t).hidden = t !== tab);
   if(tab === "settings") fillSettings();
   if(tab === "profile") fillProfile();
   if(tab === "friends") openFriends();
   if(tab === "friend") renderFriend();
   if(tab === "journal") renderJournalPage();
-  if(tab === "today") applySky(); else { cancelAnimationFrame(fxState.raf); applyBackdrop(); }
+  applyBackdrop();
   applyLook();
   window.scrollTo(0,0);
   syncTrap();
@@ -569,7 +570,7 @@ $("#photoFile").addEventListener("change", async e => {
       }else pending = sortPh([ph, ...pending]);
     }catch(err){ toast(tr("Couldn't add that photo")); }
   }
-  renderGallery(); renderPlants(); renderLog(); refreshJournal();
+  renderGallery(); renderPlants(); refreshJournal();
   if(older) toast(tr("Dated {date}, the day it was taken", {date:jDate(older)}));
 });
 let viewing = null;
@@ -628,8 +629,25 @@ function onVisClick(e, st, el){
   if(st.visOpen) el.scrollIntoView({block:"nearest", behavior:"smooth"});
 }
 let editVis = {visibility:"vault", visOpen:false};
-$("#fVis").addEventListener("click", e => { onVisClick(e, editVis, $("#fVis")); if(dlg.open && editingId) drawCutBox(plantById(editingId)); });
-$("#healthBtn").addEventListener("click", () => { if(editingId) openHealth(editingId); });
+/* In the plant page, who sees it changes at once (it isn't part of the Edit screen's Save). */
+$("#fVis").addEventListener("click", e => {
+  onVisClick(e, editVis, $("#fVis"));
+  const p = dlg.open && editingId && plantById(editingId);
+  if(!p) return;
+  if(e.target.closest("[data-vis]") && visOf(p) !== editVis.visibility){
+    p.visibility = editVis.visibility;
+    if(p.visibility === "vault") delete p.cuttings;
+    addLog(p.id, "share", p.visibility === "vault" ? "Moved to the Vault" : "Shared with friends");
+    save(); render(); fillRowSums(p);
+    toast(p.visibility === "vault" ? tr("Only you see it now") : tr("Friends can see it now"));
+  }
+  drawCutBox(p);
+});
+$("#fCut").addEventListener("change", () => {
+  const p = dlg.open && editingId && plantById(editingId); if(!p) return;
+  if($("#fCut").checked && visOf(p) !== "vault") p.cuttings = true; else delete p.cuttings;
+  save(); drawCutBox(p); toast($("#fCut").checked ? tr("Friends can ask you for a cutting") : tr("No more cuttings offered"));
+});
 const drawEditPick = () => { $("#fZonePick").innerHTML = pickerHtml(editSel); drawMicro(); if(dlg.open && editingId) drawFeedChoices(plantById(editingId)); };
 /* About this spot: only what changes Alvor's advice (frost, rain, drying, wind). Outdoors only. */
 let editMicro = {};
@@ -646,28 +664,56 @@ $("#fMicro").addEventListener("click", e => {
   if(k === "exposed" || k === "sheltered") editMicro.wind = editMicro.wind === k ? undefined : k;
   else editMicro[k] = !editMicro[k];
   drawMicro();
+  /* An existing plant's spot details save at once; a new plant takes them with Save plant. */
+  const p = dlg.open && editingId && plantById(editingId);
+  if(p){ p.micro = cleanMicro(editMicro); save(); render(); fillRowSums(p); }
 });
 const cleanMicro = m => { const o = {}; ["wall","tree","pm"].forEach(k => { if(m[k]) o[k] = true; }); if(m.wind) o.wind = m.wind; return o; };
-/* ---------- The top of the plant sheet: the plant, where it is, how it's doing, and the common actions ----------
-   Above the fold: its newest photo, its spot (with Move), Alvor's estimate in words that say it's an estimate, who
-   sees it, and Watered / Add a moment / Move / Something wrong. Everything else (care, journal, editing) follows. */
+/* ---------- The plant page, layer 1: the plant, where it is, what it needs now, and the actions that fit ----------
+   One status sentence: Alvor's most important job for this plant right now (from the same jobs as Today), or else
+   how its watering stands. The first action is that job's own tick; then Watered, Move, a photo, Something wrong. */
+function plantJob(p){ return (typeof JOBS !== "undefined" ? JOBS : []).find(j => j.p.id === p.id && !j.done) || null; }
 function psTopHtml(p){
-  const ph = latestPhoto(p.id), W = wx(), st = waterStatus(p, W), flags = [...(plantFlags[p.id] || [])].sort();
+  const ph = latestPhoto(p.id), W = wx(), st = waterStatus(p, W);
   const kb = findPreset(p.species, p.genus), common = kb ? plantName(kb.s, kb.n) : "";
-  const vis = online ? VIS[visOf(p)] : null;
-  const care = ["consider","likely","urgent"].includes(st.stage) ? STAGE_WORD[st.stage] : st.stage === "unknown" ? STAGE_WORD.unknown : STAGE_WORD[st.stage];
+  const vis = online ? VIS[visOf(p)] : null, j = plantJob(p), doneJ = (typeof JOBS !== "undefined" ? JOBS : []).find(x => x.p.id === p.id && x.done);
+  const K = j ? (j.risk ? "frost" : ["heat","vent"].includes(j.key) ? "heat" : ["water","waterUnknown"].includes(j.key) ? "water" : "calm") : "calm";
+  const when = j && j.date && j.risk ? GA.nightWord(j.date, today()) : "";
+  const head = j ? (when ? tr("{what} {when}", {what:j.title, when}) : j.title)
+    : doneJ ? tr("Protected · {what}", {what:doneJ.title})
+    : st.stage === "rest" ? STAGE_WORD.rest
+    : ["ok","soon"].includes(st.stage) ? tr("Fine for now") : STAGE_WORD[st.stage];
+  const small = j ? j.why : doneJ ? doneJ.why : [st.reasons && st.reasons[0], st.stage !== "rest" ? tr("an estimate") : ""].filter(Boolean).join(" · ");
+  const icon = K === "frost" ? ICON.snow : K === "heat" ? ICON.heat : K === "water" ? ICON.drop : ICON.leaf;
+  const tick = j ? `<button class="btn primary" data-today="tick" data-job="${esc(j.id)}">${ICON.check}${esc(j.tick.label)}</button>` : "";
+  const waterBtn = !j || j.key !== "water" ? `<button class="btn ${j ? "" : "primary"}" data-act="water" data-id="${p.id}">${ICON.drop}${tr("Watered")}</button>` : "";
   return `<div class="ps-hero ${ph ? "has-ph" : ""}">${ph ? `<button class="ps-img" data-act="viewPhoto" data-ph="${ph.id}" aria-label="${tr("Open the newest photo of {name}", {name:esc(p.name)})}"><img src="${phSrc(ph)}" data-full="${ph.id}" alt=""></button>`
       : `<span class="ps-img ps-none a-${p.area}" aria-hidden="true">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`}
     <div class="ps-id">${p.species ? `<i>${esc(p.species)}</i>` : ""}${common && common !== p.name && common !== p.species ? `<small>${esc(common)}</small>` : ""}
       ${vis ? `<span class="ps-vis">${vis.icon}${esc(vis.short)}</span>` : ""}</div></div>
     <div class="ps-where">${zi(p.zone)}<span><b>${esc(zoneLabel(p))}</b><small>${esc(PAT_WORD[p.pattern] || "")}</small></span><button class="btn small" data-act="move" data-id="${p.id}">${ICON.move}${tr("Move")}</button></div>
-    <details class="ps-care st-${st.stage}" ${psCareOpen ? "open" : ""}><summary><span class="ps-ci">${ICON.drop}</span><span><b>${esc(care)}</b><small>${esc((st.reasons || [])[0] || "")}${st.reasons && st.reasons.length ? " · " : ""}${tr("an estimate")}</small></span><span class="ps-why">${tr("Why?")}</span></summary>${careBoxHtml(p)}</details>
-    ${flags.length ? `<div class="ps-flags">${flags.map(k => `<span class="lflag f-${k}">${ICON[FLAG_INFO[k][0]]}${FLAG_INFO[k][1]}</span>`).join("")}</div>` : ""}
-    <div class="ps-acts">
-      <button class="btn primary" data-act="water" data-id="${p.id}">${ICON.drop}${tr("Watered")}</button>
-      <button class="btn" data-j="add">${ICON.plus}${tr("Add a moment")}</button>
+    <div class="ps-status k-${K}" role="status">${icon}<span><b>${esc(cap(head))}</b><small>${esc(small)}</small></span></div>
+    <div class="ps-acts">${tick}${waterBtn}
+      <button class="btn" data-j="add">${ICON.camera}${tr("Add a moment")}</button>
       <button class="btn" data-act="health" data-id="${p.id}">${ICON.warn}${tr("Something wrong?")}</button>
     </div>`;
+}
+/* Layer 3: one line each, saying where it stands, so the page reads at a glance before anything is opened. */
+function fillRowSums(p){
+  if(!p) return;
+  const st = waterStatus(p, wx()), f = feedState(p), n = (photos[p.id] || []).length, kb = findPreset(p.species, p.genus);
+  const days = st.days == null ? "" : st.byRain ? tr("rain {n}d ago", {n:st.days}) : tr("watered {n}d ago", {n:st.days});
+  $("#rowWaterSum").textContent = [STAGE_WORD[st.stage], days].filter(Boolean).join(" · ");
+  $("#rowFeedSum").textContent = {due:tr("Ready for feeding"), soon:tr("Feed soon"), ok:tr("Fed"), rest:tr("Resting"), fresh:tr("Fresh compost"), unknown:tr("Not logged yet"), none:tr("No feeding")}[f.stage] || "";
+  const m = p.micro || {}, micro = MICRO.filter(([k]) => microOn(m, k)).map(([, l]) => l.toLowerCase());
+  $("#rowSpotSum").textContent = [zoneLabel(p), ...micro].join(" · ");
+  const nt = myTasks().filter(x => (x.ids || []).includes(p.id) && GA.taskState(x, today()).stage !== "done").length;
+  $("#rowTaskSum").textContent = nt ? trn(nt, "{n} task", "{n} tasks") : "";
+  $("#rowAboutSum").textContent = kb ? [plantName(kb.s, kb.n) || kb.s, tr("takes {t}", {t:deg(kb.min)})].filter(Boolean).join(" · ") : tr("Not known to Alvor yet");
+  $("#rowPhotosSum").textContent = n ? trn(n, "{n} photo", "{n} photos") : tr("No photos yet");
+  const ownT = online && token && me ? {owner:me.id, type:"plant", id:p.id} : null, tc = ownT && typeof talkCount === "function" ? talkCount(ownT) : {r:0, c:0};
+  $("#rowFriendsSum").textContent = [VIS[visOf(p)].short, p.cuttings ? tr("cuttings to share") : "", tc.r ? trn(tc.r, "{n} reaction", "{n} reactions") : "", tc.c ? trn(tc.c, "{n} comment", "{n} comments") : ""].filter(Boolean).join(" · ");
+  $("#spotNote").textContent = canGround(p.zone) ? (p.planting === "ground" ? tr("In the ground. Move it to change its spot.") : tr("In a pot. Move it to change its spot.")) : tr("Move it to change its spot.");
 }
 let psCareOpen = false;   // "Why?" under the watering estimate stays open while you use the sheet
 document.addEventListener("toggle", e => { if(e.target.classList && e.target.classList.contains("ps-care")) psCareOpen = e.target.open; }, true);
@@ -675,7 +721,8 @@ function refreshPsTop(){
   if(!dlg.open || !editingId) return;
   const p = state.plants.find(x => x.id === editingId); if(!p) return;
   $("#psTop").innerHTML = psTopHtml(p); upFull($("#psTop"));
-  $("#dlgTitle").textContent = p.name;
+  if(!dlg.classList.contains("editing")) $("#dlgTitle").textContent = p.name;
+  fillRowSums(p);
 }
 /* Water now: Alvor's estimate for this plant, why, and what you found. */
 function careBoxHtml(p){
@@ -742,14 +789,22 @@ function drawFeedChoices(p){
   const every = fe === "" ? L.alvor : +fe;
   $("#fFeedWinterRow").hidden = !every || every >= 180;   // nothing to keep going in winter
 }
-["#fFe", "#fRpy"].forEach(id => $(id).addEventListener("change", e => { e.target.dataset.v = e.target.value; drawFeedChoices(plantById(editingId)); }));
+/* Feeding and repotting choices save at once. Empty follows Alvor, so the key is left out. */
+function saveFeedChoices(){
+  const p = editingId && plantById(editingId); if(!p) return;
+  const setOwn = (k, v) => { if(v === "" || v == null) delete p[k]; else p[k] = +v; };
+  setOwn("fe", $("#fFe").value); setOwn("rpy", $("#fRpy").value);
+  if($("#fFeedWinter").checked && !$("#fFeedWinterRow").hidden) p.feedWinter = true; else delete p.feedWinter;
+  save(); render(); refreshCareBox();
+}
+["#fFe", "#fRpy"].forEach(id => $(id).addEventListener("change", e => { e.target.dataset.v = e.target.value; drawFeedChoices(plantById(editingId)); if(editingId) saveFeedChoices(); }));
+$("#fFeedWinter").addEventListener("change", () => { if(editingId) saveFeedChoices(); });
 function refreshCareBox(){
   if(!dlg.open || !editingId) return;
   const p = state.plants.find(x => x.id === editingId); if(!p) return;
   $("#careNow").innerHTML = careBoxHtml(p);
   $("#feedNow").innerHTML = feedBoxHtml(p);
   showSettle(p);
-  $("#fLast").value = p.lastWatered || "";
   refreshPsTop();
 }
 $("#fZonePick").addEventListener("click", e => { if(pickerClick(e, editSel)) drawEditPick(); });
@@ -772,39 +827,55 @@ $("#fKbSrc").addEventListener("click", e => {
   else { $("#fWs").value = r.ws; $("#fWw").value = r.ww; }
   showKbSource();
 });
-function openDialog(id){
-  editingId = id;
-  const p = id ? state.plants.find(x => x.id === id) : null;
-  $("#dlgTitle").textContent = p ? p.name : tr("Add plant");
-  $("#dlgDelete").hidden = !p;
-  $("#psTop").innerHTML = p ? psTopHtml(p) : ""; upFull($("#psTop"));
-  $("#psEdit").open = !p;
-  $("#arcBox").hidden = !p;
+/* Editing: the same sheet, its own layer (name, species, care values), with one Save. A new plant starts there. */
+function setEditing(on){
+  dlg.classList.toggle("editing", !!on);
+  const p = editingId && plantById(editingId);
+  $("#psBack").hidden = !on || !p;
+  $("#dlgTitle").textContent = !p ? tr("Add plant") : on ? tr("Edit {name}", {name:p.name}) : p.name;
+  $("#dlgSave").textContent = p ? tr("Save") : tr("Save plant");
+  $(".plant-dlg .dlg-b").scrollTop = 0;
+}
+$("#psEditBtn").addEventListener("click", () => { setEditing(true); setTimeout(() => $("#fName").focus({preventScroll:true}), 30); });
+function leaveEdit(){ const p = editingId && plantById(editingId); if(!p) return dlg.close(); fillForm(p); setEditing(false); refreshPsTop(); }
+$("#psBack").addEventListener("click", leaveEdit);
+$("#dlgCancel").addEventListener("click", leaveEdit);
+/* Escape or the phone's back on the Edit screen goes back to the plant first. */
+dlg.addEventListener("cancel", e => { if(dlg.classList.contains("editing") && editingId && plantById(editingId)){ e.preventDefault(); leaveEdit(); } });
+function fillForm(p){
   $("#fName").value = p ? p.name : "";
   $("#fSpecies").value = p ? p.species : "";
   $("#fGenus").value = p ? (p.genus || "") : "";
   $("#fPattern").innerHTML = patternOptions();
   $("#fPattern").value = p ? (isApt() && p.pattern === "greenhouse" ? "mover" : p.pattern) : "outdoor";
+  $("#fMin").value = p && hasMin(p) ? p.minTemp : "";
+  $("#fCold").checked = p ? p.coldAlert !== false : true;
+  coldHintEdit();
+  $("#fWs").value = p ? p.ws : 7;
+  $("#fWw").value = p ? p.ww : 14;
+  $("#fNotes").value = p ? p.notes || "" : "";
+  formKB = p ? findPreset(p.species, p.genus) : null;
+  showPresetNote();
+}
+function openDialog(id){
+  editingId = id;
+  const p = id ? state.plants.find(x => x.id === id) : null;
+  $("#dlgDelete").hidden = !p;
+  $("#psTop").innerHTML = p ? psTopHtml(p) : ""; upFull($("#psTop"));
+  $("#arcBox").hidden = !p;
+  $("#fZoneF").hidden = !!p;   // an existing plant moves with Move
+  $("#psRows").hidden = !p; $("#psEditBtn").hidden = !p;
+  dlg.querySelectorAll(".ps-row").forEach(d => { d.open = false; });
+  fillForm(p);
   editSel = p ? {area:p.area, zone:p.zone, planting:p.planting} : {area:"outside", zone:"out-sun", planting:"ground"};
   editMicro = {...((p && p.micro) || {})};
   drawEditPick();
-  $("#careBox").hidden = true;   // the watering estimate lives at the top of the sheet now (psTop), with its why
-  psCareOpen = false;
   $("#careNow").innerHTML = p ? careBoxHtml(p) : "";
   $("#feedBox").hidden = !p || !!p.archived;
   $("#feedNow").innerHTML = p && !p.archived ? feedBoxHtml(p) : "";
   delete $("#fFe").dataset.v; delete $("#fRpy").dataset.v;
   $("#fFeedWinter").checked = !!(p && p.feedWinter);
   showSettle(p);
-  $("#fMin").value = p && hasMin(p) ? p.minTemp : "";
-  $("#fCold").checked = p ? p.coldAlert !== false : true;
-  coldHintEdit();
-  $("#fWs").value = p ? p.ws : 7;
-  $("#fWw").value = p ? p.ww : 14;
-  $("#fLast").value = p && p.lastWatered ? p.lastWatered : "";
-  $("#fNotes").value = p ? p.notes || "" : "";
-  formKB = p ? findPreset(p.species, p.genus) : null;
-  showPresetNote();
   pending = [];
   renderGallery();
   const ownT = p && online && token && me ? {owner:me.id, type:"plant", id:p.id, name:p.name, ownerName:tr("You")} : null;
@@ -816,9 +887,10 @@ function openDialog(id){
   $("#fVis").innerHTML = visBlock(editVis.visibility, false);
   renderJBox();
   renderPlantTasks();
-  $("#healthBox").hidden = !p || !!p.archived;
+  $("#rowFriends").hidden = !online || !p;
   drawCutBox(p);
-  if(p) drawFeedChoices(p);
+  if(p){ drawFeedChoices(p); fillRowSums(p); }
+  setEditing(!p);
   dlg.showModal();
   if(!p) $("#fName").focus();
 }
@@ -851,25 +923,19 @@ $("#dlgSave").addEventListener("click", async () => {
   if(!name){ toast(tr("Give the plant a name")); $("#fName").focus(); return; }
   const coldAlert = $("#fCold").checked;
   if(coldAlert && isNaN(min)){ toast(tr("Add the lowest temperature it takes, or switch low temperature warnings off")); $("#fMin").focus(); return; }
+  /* The Edit screen saves only what it shows; spot, sharing, cuttings and feeding are saved where they're changed. */
   const data = {
     name, species:$("#fSpecies").value.trim(), genus:$("#fGenus").value.trim() || ($("#fSpecies").value.trim().split(" ")[0] || ""), pattern:$("#fPattern").value, minTemp:isNaN(min) ? null : min, coldAlert,
-    ws:Math.max(1, parseInt($("#fWs").value) || 7), ww:Math.max(1, parseInt($("#fWw").value) || 14),
-    lastWatered:$("#fLast").value || null, notes:$("#fNotes").value.trim(), visibility:editVis.visibility, micro:cleanMicro(editMicro)
+    ws:Math.max(1, parseInt($("#fWs").value) || 7), ww:Math.max(1, parseInt($("#fWw").value) || 14), notes:$("#fNotes").value.trim()
   };
-  if(!$("#cutBox").hidden){ if($("#fCut").checked && data.visibility !== "vault") data.cuttings = true; }
   if(editingId){
     const p = state.plants.find(x => x.id === editingId);
-    if(online && visOf(p) !== data.visibility) addLog(p.id, "share", data.visibility === "vault" ? "Moved to the Vault" : "Shared with friends");
     Object.assign(p, data);
-    if(!data.cuttings && !$("#cutBox").hidden) delete p.cuttings;   // offered only on plants friends can see
     p.own = KB.ownOf(p);
-    /* Feeding and repotting: empty follows Alvor, so the key is left out. */
-    const setOwn = (k, v) => { if(v === "" || v == null) delete p[k]; else p[k] = +v; };
-    setOwn("fe", $("#fFe").value); setOwn("rpy", $("#fRpy").value);
-    if($("#fFeedWinter").checked && !$("#fFeedWinterRow").hidden) p.feedWinter = true; else delete p.feedWinter;
-    if(editSel.zone) setZone(p, editSel.zone, editSel.planting);
+    save(); render(); setEditing(false); refreshPsTop(); drawFeedChoices(p); refreshCareBox(); toast(tr("Saved"));
+    return;
   }else{
-    const p = {id:uid(), created:new Date().toISOString(), ...data};
+    const p = {id:uid(), created:new Date().toISOString(), ...data, lastWatered:null, visibility:editVis.visibility, micro:cleanMicro(editMicro)};
     p.own = KB.ownOf(p);
     applyZone(p, editSel.zone || "out-sun", editSel.planting);
     state.plants.push(p); addLog(p.id, "add", "Added");

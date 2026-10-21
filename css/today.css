@@ -1,0 +1,219 @@
+/* Alvor · Today built around what to do (js/today.js), the week ahead with its jobs, the plant page in three layers,
+   and the smaller fixes from the October 2026 audit. Loaded last: it settles what came before. */
+
+/* ===================== The band: the style's (or your own) backdrop, now a calm strip ===================== */
+:root{--band:min(250px,40vh)}
+.hero{min-height:0;padding:4px 2px 12px;gap:6px}
+.hero-top{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;margin-bottom:6px}
+.hero-top .hero-loc{min-width:0}
+.hero-top .hero-btns{flex:none}
+@media (max-width:420px){.hero-now .hn-s > span{display:none}}
+.hero-now{display:inline-flex;align-items:center;gap:8px;flex:none;width:auto;padding:6px 12px 6px 8px;border-radius:999px;min-height:44px;color:#fff;cursor:pointer;font:inherit;text-align:left}
+.hero-now .hn-ic svg,.hero-now .hn-ic img{width:30px;height:30px}
+.hn-t{font-size:1.5rem;font-weight:700;line-height:1}
+.hero-now .hn-s{display:flex;flex-direction:column;line-height:1.15;flex:none;min-width:0}
+.hero-now .hn-s > span{font-size:.82rem;font-weight:600}
+.hero-now .hn-s small{font-size:.76rem;opacity:.95}
+.hero-now .hn-r{display:none}
+.hero-now .hn-wait{font-size:.86rem;font-weight:600;max-width:16em}
+.hero-upd{min-height:0}
+.hero-upd:empty{display:none}
+#nowAfter:not(:empty),#nowAsk:not(:empty){display:flex;flex-direction:column;gap:12px;margin:4px 0 12px}
+
+/* ===================== The decision card ===================== */
+.gt-h{font-size:1.28rem;font-weight:700;letter-spacing:-.015em;margin:2px 0 6px;line-height:1.25}
+.gtoday .a-lab svg{width:14px;height:14px;vertical-align:-2px;margin-right:4px}
+.cold-card{display:block}
+.cold-card .a-main{display:block}
+.cold-card .a-lab{color:var(--frost);font-weight:800}
+.cold-card .a-lead{margin:0 0 4px;color:var(--muted)}
+.gt-prog{display:flex;align-items:center;gap:10px;margin:10px 0 2px;font-size:.88rem;color:var(--fern)}
+.gt-prog .pbar,.rd-bar .pbar{flex:1;height:8px;border-radius:9px;background:color-mix(in srgb,var(--ink) 9%,transparent);overflow:hidden;display:block}
+.gt-prog .pbar i,.rd-bar .pbar i{display:block;height:100%;background:var(--fern);border-radius:9px}
+.gt-prog b{white-space:nowrap}
+.cold-card .gt-lines{margin-top:12px}
+
+/* The frost line: each plant at the coldest night it can be left as it is, the night as a line */
+.frl{margin:14px 0 4px;padding:0}
+.frl-area{position:relative;margin:22px 4px 0}
+.frl-band{position:absolute;top:-6px;bottom:24px;width:22%;transform:translateX(-50%);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--frost) 16%,transparent),transparent);pointer-events:none}
+.frl-low{position:absolute;top:-22px;bottom:24px;width:2px;background:var(--frost);transform:translateX(-1px)}
+.frl-low b{position:absolute;top:0;left:6px;white-space:nowrap;font-size:.78rem;color:var(--frost);font-weight:800;transform:translateY(-2px)}
+.frl-dot{position:absolute;transform:translateX(-50%);width:32px;height:32px;padding:0;border-radius:50%;border:2px solid var(--surface);background:var(--fern-soft);box-shadow:0 1px 3px rgba(0,0,0,.22);display:grid;place-items:center;cursor:pointer}
+.frl-dot img,.frl-dot .frl-i{width:100%;height:100%;border-radius:50%;object-fit:cover;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:var(--fern)}
+.frl-dot.risk{box-shadow:0 0 0 2.5px var(--frost),0 1px 3px rgba(0,0,0,.22)}
+.frl-dot.done{box-shadow:0 0 0 2.5px var(--fern),0 1px 3px rgba(0,0,0,.22)}
+.frl-ok{position:absolute;right:-5px;bottom:-4px;width:16px;height:16px;border-radius:50%;background:var(--fern);color:var(--on-fern);display:grid;place-items:center}
+.frl-ok svg{width:11px;height:11px}
+.frl-n{position:absolute;top:33px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.68rem;font-weight:700;color:var(--ink);line-height:1.1}
+.frl-axis{position:absolute;left:0;right:0;height:2px;background:var(--line)}
+.frl-tick{position:absolute;transform:translateX(-50%);font-size:.7rem;color:var(--muted);font-weight:600}
+.frl-cap{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:.78rem;font-weight:700}
+.frl-cap span{display:inline-flex;align-items:center;gap:4px;color:var(--fern)}
+.frl-cap .frl-cap-r{color:var(--frost)}
+.frl-cap svg{width:14px;height:14px}
+
+/* ===================== Walk the garden ===================== */
+.walk-card{display:block}
+.walk-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.walk-h h2{font-size:1.12rem;margin:0}
+.walk-pl{border-top:1px solid var(--line);padding:10px 0 4px}
+.walk-pl:first-of-type{border-top:0}
+.walk-pl h3{display:flex;align-items:center;gap:8px;font-size:.78rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:2px 0 6px;font-weight:800}
+.walk-pl h3 svg{width:16px;height:16px}
+.jobs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.job{display:flex;align-items:flex-start;gap:10px;padding:6px 0}
+.job-tick{flex:none;width:44px;height:44px;margin:-2px -4px 0 -6px;border:0;background:none;display:grid;place-items:center;cursor:pointer;padding:0;color:transparent}
+.job-tick::before{content:"";grid-area:1/1;width:26px;height:26px;border-radius:8px;border:2px solid color-mix(in srgb,var(--ink) 30%,transparent);background:var(--surface)}
+.job-tick svg{grid-area:1/1;width:16px;height:16px;position:relative}
+.job-tick[aria-pressed=true]{color:var(--on-fern)}
+.job-tick[aria-pressed=true]::before{background:var(--fern);border-color:var(--fern)}
+.job-ph{flex:none;width:42px;height:42px;border-radius:12px;overflow:hidden;border:0;padding:0;background:var(--fern-soft);display:grid;place-items:center}
+.job-ph img{width:100%;height:100%;object-fit:cover}
+.job-ph .initial{width:100%;height:100%;display:grid;place-items:center;font-weight:700;color:var(--fern)}
+.job-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.job-t .pn{align-self:flex-start;border:0;background:none;padding:0;font:inherit;font-weight:800;color:var(--ink);text-align:left;min-height:24px;cursor:pointer}
+.job-t b{font-weight:600;font-size:.94rem}
+.job-t small{color:var(--muted);font-size:.82rem}
+.job-t .fb{margin-top:6px}
+.job.done .job-t b,.job.done .job-t .pn{text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--ink) 40%,transparent);color:var(--muted)}
+.job .btn.small{flex:none;align-self:center}
+.walk-tasks .tk-list{margin:0 0 8px}
+.walk-tasks .status{margin:0 0 8px}
+
+/* ===================== The morning after, a question, the season ===================== */
+.after-card,.season-card,.ask-card{display:block}
+.after-card .a-main,.season-card .a-main{display:block}
+.after-card .a-lab{color:var(--frost);font-weight:800}
+.af-temps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 6px}
+.af-temps > div{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:8px 10px;display:flex;flex-direction:column;min-width:0}
+.af-temps small{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.af-temps b{font-size:1.4rem;color:var(--frost)}
+.af-temps input{width:100%;min-height:36px;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);border-radius:10px;padding:4px 8px;font:700 1.1rem var(--body);background:var(--surface);color:var(--ink)}
+.af-fz{display:inline-flex;align-items:center;gap:4px;margin:4px 0 6px;padding:3px}
+.af-q{padding:0 8px;font-weight:700;font-size:.88rem}
+.af-list{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:6px}
+.af-list li{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.af-list .job-t{flex:1 1 5.5em;min-width:0}
+.af-list .af-o{margin-left:auto}
+.af-o{display:inline-flex;padding:3px}
+.af-o button{min-height:40px;padding:0 8px;font-size:.84rem}
+.ask-card{display:grid}
+.season-card .a-lab{color:var(--fern);font-weight:800}
+.season-card .a-lab svg{width:14px;height:14px;vertical-align:-2px;margin-right:4px}
+.season-card .jobs{margin-top:8px}
+.season-card .job{align-items:center}
+
+/* ===================== The week ahead ===================== */
+.fc-day{padding-bottom:6px}
+.fc-jobs{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:20px;margin-top:4px}
+.fc-pill{display:inline-flex;align-items:center;gap:2px;border-radius:7px;padding:1px 5px;font-size:.66rem;font-weight:800;line-height:1.4;max-width:100%}
+.fc-pill svg{width:11px;height:11px;flex:none}
+.fc-pill.p-frost{background:var(--surface);color:var(--frost);box-shadow:0 0 0 1px color-mix(in srgb,var(--frost) 30%,transparent)}
+.fc-pill.p-heat{background:var(--surface);color:var(--heat)}
+.fc-pill.p-wind{background:var(--wind-bg);color:var(--wind)}
+.fc-pill.p-rain{background:var(--water-bg);color:var(--water)}
+.fc-pill.p-task{background:color-mix(in srgb,#5B5FA8 14%,var(--surface));color:#4F5398}
+:root[data-theme="dark"] .fc-pill.p-task{color:#B9BCF0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fc-pill.p-task{color:#B9BCF0}}
+.fc-badge{display:none}
+.fcd-why{color:var(--muted);margin:0 0 6px;font-size:.88rem}
+.fc-detail .dot.indoor{color:var(--ink)}
+.fc-detail .dot svg{width:16px;height:16px}
+
+/* ===================== One at a time ===================== */
+.round-dlg{width:min(460px,100%)}
+.rd-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.rd-ph{width:100%;aspect-ratio:16/10;border-radius:var(--r-md);overflow:hidden;background:var(--fern-soft);display:grid;place-items:center;margin-bottom:6px}
+.rd-ph img{width:100%;height:100%;object-fit:cover}
+.rd-ph .initial{font:700 3rem var(--head);color:var(--fern)}
+.rd-card h3{font-size:1.35rem;margin:0}
+.rd-what{font-weight:700;font-size:1.05rem;margin:0}
+.rd-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;width:100%}
+.rd-acts .btn{flex:1 1 auto}
+.rd-bar{width:100%;margin-top:12px}
+.rd-end{text-align:center;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.rd-end > svg{width:44px;height:44px;color:var(--fern)}
+
+/* ===================== The plant page in three layers ===================== */
+.ps-status{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);background:var(--surface-2);border:1px solid var(--line)}
+.ps-status.k-frost{background:var(--frost-bg);border-color:transparent}
+.ps-status.k-heat{background:var(--heat-bg);border-color:transparent}
+.ps-status.k-water{background:var(--water-bg);border-color:transparent}
+.ps-status.k-calm{background:color-mix(in srgb,var(--fern-soft) 55%,var(--surface))}
+.ps-status > svg{width:20px;height:20px;flex:none;margin-top:2px}
+.ps-status.k-frost > svg{color:var(--frost)} .ps-status.k-heat > svg{color:var(--heat)} .ps-status.k-water > svg{color:var(--water)} .ps-status.k-calm > svg{color:var(--fern)}
+.ps-status b{display:block;font-size:1.02rem;line-height:1.3}
+.ps-status small{display:block;color:var(--muted);font-size:.85rem;line-height:1.4;margin-top:2px}
+.ps-story{display:flex;flex-direction:column;gap:8px}
+.ps-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}
+.ps-strip > button{flex:none;width:96px;border:0;background:none;padding:0;text-align:left;scroll-snap-align:start;color:var(--ink);font:inherit;cursor:pointer}
+.ps-strip .im{display:grid;place-items:center;width:96px;height:110px;border-radius:12px;overflow:hidden;background:var(--fern-soft);color:var(--fern)}
+.ps-strip .im img{width:100%;height:100%;object-fit:cover}
+.ps-strip .im svg{width:30px;height:30px}
+.ps-strip small{display:block;font-size:.74rem;font-weight:700;color:var(--muted);margin-top:4px;line-height:1.25}
+.ps-strip .add .im{border:1.5px dashed color-mix(in srgb,var(--ink) 22%,transparent);background:transparent}
+.ps-story-h{display:flex;flex-direction:column;gap:2px}
+.ps-story-h h3{margin:0;font-size:.98rem}
+.ps-story-h .jr-since{margin:0;color:var(--muted);font-size:.84rem}
+.ps-rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
+.ps-row{border-top:1px solid var(--line)}
+.ps-row:first-child{border-top:0}
+.ps-row > summary{min-height:52px;display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;list-style:none}
+.ps-row > summary::-webkit-details-marker{display:none}
+.ps-row > summary b{font-weight:700}
+.ps-row > summary small{color:var(--muted);font-size:.84rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ps-row > summary::after{content:"";flex:none;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .2s;margin-left:auto}
+.ps-row[open] > summary::after{transform:rotate(45deg)}
+.ps-row .ps-row-b{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}
+.ps-row .ps-row-b > .field{margin:0}
+.ps-row .ps-row-b .care-now{margin:0}
+.ps-edit-btn{width:100%;justify-content:space-between!important}
+/* The edit screen: the same sheet, its own layer, one Save */
+.plant-dlg.editing #psView{display:none}
+.plant-dlg:not(.editing) #psEditBody,.plant-dlg:not(.editing) .dlg-f{display:none}
+#psEditBody{display:flex;flex-direction:column;gap:12px}
+#psEditBody .field{margin:0}
+#psEditBody .field input,#psEditBody .field select,#psEditBody .field textarea{width:100%;min-width:0;max-width:100%}
+#psEditBody .row3{display:grid;gap:10px}
+#psEditBody .row3 .field{min-width:0}
+.ps-danger{border-top:1px solid var(--line);padding-top:14px}
+@media (prefers-reduced-motion:reduce){.ps-row > summary::after{transition:none}}
+
+/* Plant cards: no buttons that aren't needed now */
+.plant .acts:empty{display:none}
+
+/* Settings by sections that open */
+.set-sec{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--sh-1);margin-bottom:10px;overflow:hidden}
+.set-sec > summary{min-height:58px;display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;list-style:none;font-weight:700;font-size:1.02rem}
+.set-sec > summary::-webkit-details-marker{display:none}
+.set-sec > summary small{display:block;font-weight:500;color:var(--muted);font-size:.84rem}
+.set-sec > summary > span{flex:1;min-width:0}
+.set-sec > summary::after{content:"";flex:none;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .2s}
+.set-sec[open] > summary::after{transform:rotate(45deg)}
+.set-sec .card{box-shadow:none!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;margin:0}
+.set-index{display:none}
+@media (prefers-reduced-motion:reduce){.set-sec > summary::after{transition:none}}
+
+/* Journal: photos first, by season */
+.jp-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px;margin:0 0 14px}
+.jp-photos button{aspect-ratio:1;border:0;padding:0;border-radius:12px;overflow:hidden;background:var(--fern-soft);position:relative;cursor:pointer}
+.jp-photos img{width:100%;height:100%;object-fit:cover;display:block}
+.jp-photos span{position:absolute;left:0;right:0;bottom:0;padding:10px 6px 4px;font-size:.68rem;font-weight:700;color:#fff;text-align:left;background:linear-gradient(transparent,rgba(0,0,0,.55));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jp-season{font-size:.95rem;margin:16px 4px 8px;color:var(--muted)}
+.jp-snap{margin:0 0 14px}
+
+/* Winter storage: a garage, cellar or shed. No stock picture: its own colours, or your photo. */
+.loc-store{--acc:#6B5B4D;--c1:#3E352E;--c2:#7D6D5F}
+.zi.a-store,.a-store{--zbg:#ECE5DC;--zink:#6B5B4D}
+:root[data-theme="dark"] .zi.a-store,:root[data-theme="dark"] .a-store{--zbg:#33291F;--zink:#D9C3A9}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .zi.a-store,:root:not([data-theme="light"]) .a-store{--zbg:#33291F;--zink:#D9C3A9}}
+
+/* The + is a camera now: it doesn't turn when the menu opens */
+.hub-open .tb-cam{transform:none}
+.hub-new .initial{background:var(--fern);color:var(--on-fern)}
+.hub-new .initial svg{width:22px;height:22px}
+
+/* Fields inside an opened section (Settings, the plant page) ran past their card: the section's content box doesn't
+   take part in "box-sizing:inherit", so its children fell back to content-box. Everything is border-box. */
+*,*::before,*::after{box-sizing:border-box}

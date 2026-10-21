@@ -143,7 +143,7 @@ function fillSettings(){
   fillProfileCard(); fillPrivacy(); fillLook(); fillLang();
   refreshNotifyStatus();
   if(me && me.owner && token){ loadAdmin(); loadUsage(); }
-  fillSetIndex();
+  fillSetIndex(); fillCalib();
   renderColdPick();
   $("#sMargin").value = s.margin; $("#sHeat").value = s.heat; $("#sWind").value = s.wind; $("#sRain").value = s.rain;
 }
@@ -176,12 +176,30 @@ $("#coldPick").addEventListener("click", e => {
   save(); render(); renderColdPick(true);
   if(skipped) toast(trn(skipped, "{n} plant has no cold limit yet", "{n} plants have no cold limit yet"));
 });
-$("#saveSettings").addEventListener("click", () => {
-  const n = (sel, fb) => { const v = parseFloat($(sel).value); return isNaN(v) ? fb : v; };
+/* Alert rules save as you type, like everything else in Settings. */
+["#sMargin", "#sHeat", "#sWind", "#sRain"].forEach(sel => $(sel).addEventListener("change", () => {
+  const n = (q, fb) => { const v = parseFloat($(q).value); return isNaN(v) ? fb : v; };
   const s = state.settings;
-  state.settings = {...s,
-    margin:n("#sMargin", s.margin), heat:n("#sHeat", s.heat), wind:n("#sWind", s.wind), rain:n("#sRain", s.rain)};
-  save(); toast(tr("Settings saved")); fetchWeather(true);
+  state.settings = {...s, margin:n("#sMargin", s.margin), heat:n("#sHeat", s.heat), wind:n("#sWind", s.wind), rain:n("#sRain", s.rain)};
+  save(); render(); toast(tr("Saved"));
+}));
+/* What Alvor has learned about your garden's nights (the morning-after answers), with a way to start over. */
+function fillCalib(){
+  const el = $("#calibBox"); if(!el) return;
+  const K = GA.calibration(state.settings, today()), min = GA.RULES.calib.min;
+  const word = o => o.off < 0 ? tr("about {t} colder than the forecast", {t:Math.abs(o.off) + "°"}) : o.off > 0 ? tr("about {t} warmer than the forecast", {t:o.off + "°"}) : tr("about as the forecast says");
+  const lines = [];
+  if(K.clear.n >= min) lines.push(tr("On clear, calm nights your garden runs {how}.", {how:word(K.clear)}));
+  if(K.other.n >= min) lines.push(tr("On cloudy or windy nights it runs {how}.", {how:word(K.other)}));
+  if(!lines.length && K.all.n >= min) lines.push(tr("Your garden runs {how} on cold nights.", {how:word(K.all)}));
+  el.innerHTML = `<h3 class="sub-h">${tr("Your garden's nights")}</h3>` + (K.all.n
+    ? `<p class="status" style="margin-top:0">${esc(lines.join(" ") || tr("Alvor needs one more answer before it uses them."))} ${esc(trn(K.all.n, "From {n} morning-after answer.", "From {n} morning-after answers."))}</p><button type="button" class="btn small" id="calibReset">${tr("Forget what it learned")}</button>`
+    : `<p class="status" style="margin-top:0">${tr("Until you've told Alvor how a few cold nights went (the morning after, on Today), it plans clear, calm nights {t} colder than the forecast.", {t:GA.RULES.frost.clearNight + "°"})}</p>`);
+}
+document.addEventListener("click", e => {
+  if(!e.target.closest("#calibReset")) return;
+  if(!confirm(tr("Forget what Alvor learned about your garden's nights?"))) return;
+  state.settings.calib = []; save(); render(); fillCalib(); toast(tr("Forgotten"));
 });
 $("#exportBtn").addEventListener("click", async () => {
   let allPhotos = [];

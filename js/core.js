@@ -43,6 +43,7 @@ const ICON = {
   feed:SV('<path d="M10 2.8h4v3l2.2 2.6V20a1.2 1.2 0 0 1-1.2 1.2H9A1.2 1.2 0 0 1 7.8 20V8.4L10 5.8z"/><path d="M7.8 12h8.4"/><path d="M12 14.4c-1.2 1.4-1.2 2.9 0 3.6 1.2-.7 1.2-2.2 0-3.6z"/>'),
   repot:SV('<path d="M5 11h14l-1.6 9H6.6z"/><path d="M4 11h16"/><path d="M12 8V2.8M9.5 5.2 12 2.8l2.5 2.4"/>'),
   warn:SV('<path d="M12 3.5 21 19.5H3z"/><path d="M12 10v4.5"/><circle cx="12" cy="17" r=".9" fill="currentColor"/>'),
+  store:SV('<path d="M3.5 10 12 4.5l8.5 5.5"/><path d="M5.5 9v11h13V9"/><path d="M9 20v-6h6v6"/><path d="M9 16.5h6"/>'),
   cutting:SV('<path d="M7 21c0-6 2.5-10 7-12"/><path d="M14 9c-.5-3.5 1.5-6 5.5-6.5.3 4-1.7 6.6-5.5 6.5z"/><path d="M9.8 14.5C7 13.6 5.5 11.4 5.6 8.3c3 .3 4.7 2.6 4.2 6.2z"/><path d="M4 21h7"/>')
 };
 /* Who sees a plant. "Everyone" comes later, when Alvor opens up. */
@@ -57,11 +58,12 @@ const AREAS = {
   porch:{label:tr("Porch"), hint:tr("Covered, rain doesn't reach"), zones:["porch-partial","porch-shade"]},
   outside:{label:tr("Outside"), hint:tr("In the open garden"), zones:["out-sun","out-partial","out-shade"]},
   greenhouse:{label:tr("Greenhouse"), hint:tr("Sheltered, a few degrees warmer"), zones:["greenhouse"]},
-  balcony:{label:tr("Balcony"), hint:tr("Outside on the balcony"), zones:["balc-sun","balc-partial","balc-shade"]}
+  balcony:{label:tr("Balcony"), hint:tr("Outside on the balcony"), zones:["balc-sun","balc-partial","balc-shade"]},
+  store:{label:tr("Winter storage"), hint:tr("A garage, cellar or shed: dark and frost-free"), zones:["store"]}
 };
-const ALL_AREAS = ["house","balcony","porch","outside","greenhouse"];
+const ALL_AREAS = ["house","balcony","porch","outside","greenhouse","store"];
 const isApt = () => state.settings.home === "apartment";
-const areaOrder = () => isApt() ? ["house","balcony"] : ["house","porch","outside","greenhouse"];
+const areaOrder = () => isApt() ? ["house","balcony","store"] : ["house","porch","outside","greenhouse","store"];
 const areaLabel = a => a === "house" && isApt() ? tr("Inside") : AREAS[a].label;
 const areaHint = a => a === "house" && isApt() ? tr("Inside the apartment") : AREAS[a].hint;
 function defaultZone(pattern){ return isApt() ? (pattern === "indoor" ? "house-window" : "balc-sun") : DEFAULT_ZONE[pattern]; }
@@ -83,7 +85,8 @@ const ZONES = {
   "greenhouse":   {area:"greenhouse", light:null, icon:"greenhouse", label:tr("Greenhouse"), short:tr("Greenhouse"), hint:tr("Sheltered, a few degrees warmer")},
   "balc-sun":     {area:"balcony", light:"sun", icon:"sun", label:tr("Balcony, sun"), short:tr("Sun"), hint:tr("Sun most of the day")},
   "balc-partial": {area:"balcony", light:"partial", icon:"partial", label:tr("Balcony, partial sun"), short:tr("Partial sun"), hint:tr("Sun for part of the day")},
-  "balc-shade":   {area:"balcony", light:"shade", icon:"shade", label:tr("Balcony, shade"), short:tr("Shade"), hint:tr("Mostly in shade")}
+  "balc-shade":   {area:"balcony", light:"shade", icon:"shade", label:tr("Balcony, shade"), short:tr("Shade"), hint:tr("Mostly in shade")},
+  "store":        {area:"store", light:null, icon:"store", label:tr("Winter storage"), short:tr("Winter storage"), hint:tr("Dark and frost-free, for dormant plants")}
 };
 const ZONE_ORDER = Object.keys(ZONES);
 const DEFAULT_ZONE = {indoor:"house-window", outdoor:"out-sun", mover:"out-sun", greenhouse:"out-sun"};
@@ -103,7 +106,7 @@ function zoneFromOld(p){
 function applyZone(p, z, planting){
   const Z = ZONES[z];
   p.zone = z; p.area = Z.area; p.light = Z.light;
-  p.current = Z.area === "house" ? "inside" : Z.area === "greenhouse" ? "greenhouse" : "outside";
+  p.current = Z.area === "house" ? "inside" : Z.area === "greenhouse" ? "greenhouse" : Z.area === "store" ? "store" : "outside";
   p.planting = canGround(z) ? (planting || p.planting || "pot") : "pot";
   p.rainCounts = Z.area === "outside" || (Z.area === "balcony" && !!state.settings.balconyRain);
   p.sun = Z.light === "sun" ? "full" : Z.light === "partial" ? "partial" : "none";
@@ -265,7 +268,7 @@ function careCardHtml(r){
   </div>`;
 }
 /* How Alvor words its watering estimate. It has no soil sensor, so it says "likely", never "needs 2 litres". */
-const STAGE_WORD = {ok:tr("No need"), soon:tr("Probably not yet"), consider:tr("Consider watering"), likely:tr("Likely needs water"), urgent:tr("Needs attention"), unknown:tr("Not sure yet")};
+const STAGE_WORD = {ok:tr("No need"), soon:tr("Probably not yet"), consider:tr("Consider watering"), likely:tr("Likely needs water"), urgent:tr("Needs attention"), unknown:tr("Not sure yet"), rest:tr("Resting")};
 /* Cold warnings start switched on, except for very hardy plants. */
 const COLD_DEFAULT_OFF = -15;
 const coldDefault = min => !(isFinite(parseFloat(min)) && parseFloat(min) <= COLD_DEFAULT_OFF);

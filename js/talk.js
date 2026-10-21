@@ -266,6 +266,15 @@ function forgetTalk(){
 /* Links from notifications: #talk=<owner>.<plant|area|garden>.<id> */
 function openFromHash(h){
   if(openCutFromHash(h)) return true;   // a cutting asked for, agreed or given (js/cuttings.js)
+  /* A notification's own buttons: "Mark all watered" opens Alvor with the plants it named. "today" opens Today. */
+  const act = String(h || "").match(/act=water&ids=([0-9a-f,-]+)/);
+  if(act){
+    history.replaceState(null, "", location.pathname);
+    const ids = act[1].split(",").filter(id => state.plants.some(p => p.id === id));
+    if(ids.length){ showTab("today"); water(ids); }
+    return true;
+  }
+  if(/(^|#)today$/.test(String(h || ""))){ history.replaceState(null, "", location.pathname); showTab("today"); return true; }
   const m = String(h || "").match(/talk=([0-9a-f-]{36})\.(plant|area|garden)\.([A-Za-z0-9-]{1,40})/);
   if(!m) return false;
   if(location.hash.includes("talk=")) history.replaceState(null, "", location.pathname);
@@ -347,9 +356,11 @@ async function openFeedItem(i){
   }else openTalk({owner:f.garden_owner, type:f.target_type, id:f.target_id, name:f.target_name, home:f.owner_home, ownerName});
 }
 
-/* ---------- In a friend's garden: the whole garden, the chosen area, and counts on each plant ---------- */
-const friendGardenTalkHtml = () => `<div class="card tk-card" id="fgTalkGarden"></div>`;
-const friendAreaTalkHtml = V => V.filter && V.filter !== "all" ? `<div class="card tk-card" id="fgTalkArea"></div>` : "";
+/* ---------- In a friend's garden: counts on each plant ----------
+   Reactions and comments are on plants (October 2026): the boxes for a whole garden or one of its places are gone.
+   Older ones still open from What's new (openTalk), and the database keeps them. */
+const friendGardenTalkHtml = () => "";
+const friendAreaTalkHtml = V => "";
 function mountFriendTalk(V, home){
   const ownerName = personName(V.prof || {}), g = $("#fgTalkGarden"), a = $("#fgTalkArea");
   if(g){

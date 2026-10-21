@@ -153,7 +153,7 @@ let discWait = null;
 function discFree(){
   if(document.hidden || document.querySelector("dialog[open]") || !$("#auth").hidden || !$("#onb").hidden || $("#discMoment")) return false;
   // On Home, a frost, heat or wind warning has the screen to itself: the moment waits for another page or a calm day.
-  if(currentTab === "today" && document.querySelector("#alerts .agroup.t-frost, #alerts .agroup.t-heat, #alerts .agroup.t-wind")) return false;
+  if(currentTab === "today" && document.querySelector("#alerts .cold-card, #alerts .gt-line.k-frost, #alerts .gt-line.k-heat, #alerts .gt-line.k-wind")) return false;
   return true;
 }
 function discMoments(){

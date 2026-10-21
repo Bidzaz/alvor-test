@@ -337,11 +337,11 @@ async function openFriend(id){
 }
 const fgMsg = (t, p) => `<div class="fg-msg"><h3>${t}</h3><p>${p}</p></div>`;
 function friendScene(V, home){
-  const order = home === "apartment" ? ["house","balcony"] : ["house","outside","greenhouse","porch"];
-  const tiles = order.filter(a => a !== "porch" || V.plants.some(x => x.area === "porch"));
+  const order = home === "apartment" ? ["house","balcony","store"] : ["house","outside","greenhouse","porch","store"];
+  const tiles = order.filter(a => !["porch","store"].includes(a) || V.plants.some(x => x.area === a));
   return `<div class="fl-tiles">${tiles.map(a => {
     const list = V.plants.filter(x => x.area === a);
-    const k = a === "outside" ? "garden" : a, label = a === "outside" ? tr("Garden") : fAreaLabel(a, home);
+    const k = a === "outside" ? "garden" : a, label = a === "outside" ? tr("Outside") : fAreaLabel(a, home);
     const own = V.locUrls && V.locUrls[k];
     return `<button class="fl-tile loc-${k} ${own ? "has-img" : ""}" data-gact="area" data-a="${a}" aria-pressed="${V.filter === a}" style="${own ? "" : locStyle(V.style || "classic", k)}">${own ? `<img src="${esc(own)}" alt="">` : ""}
       <span class="fl-art">${ICON[a]}</span>

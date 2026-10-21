@@ -21,6 +21,7 @@ const JI = {
   moved:ICON.move,
   note:SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
   issue:SV('<path d="M12 3.5 21 19.5H3z"/><path d="M12 10v4.5"/><circle cx="12" cy="17" r=".9" fill="currentColor"/>'),
+  outcome:SV('<path d="M12 3.5 19 6v5.6c0 4.4-3 7.5-7 8.9-4-1.4-7-4.5-7-8.9V6z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.6"/>'),
   photo:ICON.camera, care:ICON.drop, start:ICON.leaf,
   gone:SV('<rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"/><path d="M10 13h4"/>'),
   back:SV('<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/><path d="M12 16v-4.5"/><path d="M12 12.5c0-2 1.3-3.3 3.3-3.3 0 2-1.3 3.3-3.3 3.3z"/>')
@@ -39,6 +40,7 @@ const JK = {
   unprotected:{label:tr("Protection off"), hint:tr("Took the fleece or wrapping off…")},
   moved:{label:tr("Moved"), hint:tr("Where to, and why…")},
   issue:{label:tr("Problem noticed"), hint:tr("What you saw, and what you did about it…")},
+  outcome:{label:tr("After the cold"), hint:tr("How it came through, what you'd do next time…")},
   note:{label:tr("Note"), hint:tr("Anything worth remembering…")}
 };
 const JK_ORDER = ["acquired","planted","growth","flower","fruit","pruned","repotted","fed","propagated","protected","unprotected","moved","issue","note"];
@@ -75,7 +77,7 @@ const jFromLog = e => ({id:jLogId(e), d:ymd(new Date(e.t)), k:"moved", txt:e.det
 function jNoteMove(p){
   const e = state.log[0];
   if(!e || e.plantId !== p.id || e.type !== "move") return;
-  p.journal = GS.mergeJournal(p.journal, [jFromLog(e)]);
+  p.journal = GS.mergeJournal(p.journal, [{...jFromLog(e), to:p.zone}]);   // where it went: the season's moves read it back
 }
 /* Once per start: moves still in the history that aren't in their plant's journal yet. Returns true if any. */
 function migrateJournal(){
@@ -167,19 +169,26 @@ function jTimeline(p, filter){
 }
 
 /* ---------- In the plant sheet: the start of the journal ---------- */
+/* The plant page, layer 2: its story, newest first, photos and milestones in one strip, and the way into the whole
+   journal. Feeding (its own row) and Alvor's own move lines stay out. */
 function renderJBox(){
   const p = editingId && plantById(editingId);
   $("#jrnBox").hidden = !p; if(!p) return;
-  // Feeding has its own box in the plant sheet, so the three latest things leave it out.
-  const recent = jItems(p, "all").filter(it => it.type !== "waterings" && it.type !== "start" && !(it.type === "ms" && it.e.k === "fed")).slice(0, 3);
+  const items = jItems(p, "all").filter(it => !["waterings", "start", "move"].includes(it.type) && !(it.type === "ms" && it.e.k === "fed")).slice(0, 10);
   const n = jEntries(p).filter(e => !e.auto).length, nph = (photos[p.id] || []).length;
-  $("#jrnPrev").innerHTML = jSinceHtml(p, true) +
-    (recent.length ? `<div class="jr-list mini">${recent.map(it => jItemHtml(it, p)).join("")}</div>`
-      : `<p class="status jr-empty">${tr("Note when it flowers, gets repotted or pruned, and watch it grow over the years.")}</p>`) +
-    `<div class="jr-acts"><button type="button" class="btn small primary" data-j="add">${ICON.plus}${tr("Add to journal")}</button>` +
-    (nph >= 2 ? `<button type="button" class="btn small" data-j="cmp">${tr("Before and after")}</button>` : "") +
-    (n || nph || recent.length ? `<button type="button" class="btn small" data-j="open">${tr("Whole journal")}</button>` : "") + `</div>`;
+  const tile = it => {
+    if(it.type === "photos"){ const ph = it.list && it.list[it.list.length - 1]; if(!ph) return "";
+      return `<button type="button" data-act="viewPhoto" data-ph="${ph.id}"><span class="im"><img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async"></span><small>${esc(jDate(it.d, false))}${it.list && it.list.length > 1 ? ` · ${it.list.length}` : ""}</small></button>`; }
+    if(it.type === "ms"){ const e = it.e, ph = e.ph && galleryPhoto(e.ph), K = JK[e.k] || JK.note;
+      if(e.k === "gone" || e.k === "back") return "";
+      return `<button type="button" data-j="edit" data-e="${esc(e.id)}"><span class="im">${ph ? `<img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async">` : (JI[e.k] || JI.note)}</span><small>${esc(K.label)} · ${esc(jDate(e.d, false))}</small></button>`; }
+    return "";
+  };
+  $("#jrnPrev").innerHTML = `<div class="ps-story-h"><h3>${tr("Its story")}</h3>${jSinceHtml(p, true)}</div>
+    <div class="ps-strip"><button type="button" class="add" data-j="add"><span class="im">${ICON.plus}</span><small>${tr("Add a moment")}</small></button>${items.map(tile).join("")}</div>
+    <div class="jr-acts">${nph >= 2 ? `<button type="button" class="btn small" data-j="cmp">${tr("Before and after")}</button>` : ""}${n || nph ? `<button type="button" class="btn small" data-j="open">${tr("Whole journal")}</button>` : ""}</div>`;
 }
+const galleryPhoto = id => Object.values(photos).flat().find(x => x.id === id);
 
 /* ---------- The whole journal ---------- */
 const jrnDlg = $("#jrnDlg");

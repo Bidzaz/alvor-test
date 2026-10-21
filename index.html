@@ -14,18 +14,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Styles by area, in this order. ?v= goes up with every new version, so phones never mix old and new files. -->
-<link rel="stylesheet" href="css/base.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/botanical.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/circle.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/look.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/journal.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/archive.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/tasks.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/snapshots.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/health.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/discover.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/themes.css?v=2026-10-20-finish1">
-<link rel="stylesheet" href="css/compass.css?v=2026-10-20-finish1">
+<link rel="stylesheet" href="css/base.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/botanical.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/circle.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/look.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/journal.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/archive.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/tasks.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/snapshots.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/health.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/discover.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/themes.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/compass.css?v=2026-10-21-audit1">
+<link rel="stylesheet" href="css/today.css?v=2026-10-21-audit1">
 </head>
 <body data-page="today">
 <div class="bg" aria-hidden="true"><div class="bg-photo"></div><div class="bg-sun"></div><div class="bg-tint"></div><canvas id="fx"></canvas><div class="fx-flash"></div></div>
@@ -46,18 +47,18 @@
     <section id="view-today" aria-labelledby="todayTitle">
       <div class="hero" id="hero">
         <div class="hero-top"><div class="hero-loc"><svg class="pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22s-7.5-6.6-7.5-12.2a7.5 7.5 0 0 1 15 0C19.5 15.4 12 22 12 22zm0-9.3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg><h1 id="todayTitle"><span id="heroPlace"></span></h1><small id="heroDate"></small></div>
+          <button class="hero-now" id="heroNow"></button>
           <div class="hero-btns"><button class="me-btn hb" data-tab="settings" aria-label="Settings and account"></button></div></div>
-        <button class="hero-now" id="heroNow"></button>
         <p class="hero-upd" id="heroUpd" role="status"></p>
       </div>
+      <div id="nowAfter"></div>
+      <div id="nowAsk"></div>
       <div class="alerts" id="alerts" aria-label="Today in your garden" role="region"></div>
       <div class="glass fc-card" role="region" aria-labelledby="fcTitle">
-        <div class="sec-h"><h2 id="fcTitle">Next 7 days</h2><span class="sec-sub" id="fcSrc"></span></div>
+        <div class="sec-h"><h2 id="fcTitle">The week ahead</h2><span class="sec-sub" id="fcSrc"></span></div>
         <div class="fc" id="forecast"></div>
         <div class="fc-detail" id="fcDetail" hidden></div>
       </div>
-      <div id="todayPlaces"></div>
-      <div id="todayLater"></div>
     </section>
 
     <section id="view-locations" hidden aria-labelledby="gardenTitle">
@@ -73,7 +74,7 @@
       <div class="toolbar">
         <input type="search" id="search" placeholder="Search plants" aria-label="Search plants">
         <div class="viewtog" role="group" aria-label="Show plants as">
-          <button data-view="list" aria-label="List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg></button><button data-view="grid" aria-label="Grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></button><button data-view="tiles" aria-label="Small tiles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3.5" y="3.5" width="4.5" height="4.5" rx="1"/><rect x="9.75" y="3.5" width="4.5" height="4.5" rx="1"/><rect x="16" y="3.5" width="4.5" height="4.5" rx="1"/><rect x="3.5" y="9.75" width="4.5" height="4.5" rx="1"/><rect x="9.75" y="9.75" width="4.5" height="4.5" rx="1"/><rect x="16" y="9.75" width="4.5" height="4.5" rx="1"/><rect x="3.5" y="16" width="4.5" height="4.5" rx="1"/><rect x="9.75" y="16" width="4.5" height="4.5" rx="1"/><rect x="16" y="16" width="4.5" height="4.5" rx="1"/></svg></button>
+          <button data-view="list" aria-label="List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg></button><button data-view="grid" aria-label="Photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></button>
         </div>
       </div>
       <div class="chips" id="chips"></div>
@@ -92,12 +93,8 @@
         <input type="search" id="jpSearch" placeholder="Search by plant or note" aria-label="Search the journal by plant or note">
         <div class="chips" id="jpPlaces" role="group" aria-label="Where"></div>
       </div>
+      <div id="jpTop"></div>
       <div id="journalBody"></div>
-    </section>
-
-    <section id="view-log" hidden>
-      <div class="page-head"><button class="round-back" data-tab="settings" aria-label="Back to settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button><h1>Activity history</h1></div>
-      <div id="logList"></div>
     </section>
 
     <section id="view-profile" hidden>
@@ -131,21 +128,7 @@
         <div class="prof-txt"><b id="profName"></b><span id="profUser"></span></div>
         <button class="btn small" data-tab="profile">Edit profile</button>
       </div>
-      <nav class="set-index" aria-label="Settings sections">
-        <button type="button" data-goto="lookCard">Appearance</button>
-        <button type="button" data-goto="langCard">Language</button>
-        <button type="button" data-goto="privCard" data-need="privCard">Sharing and privacy</button>
-        <button type="button" data-goto="homeCard">Your home</button>
-        <button type="button" data-goto="rulesCard">Alert rules</button>
-        <button type="button" data-goto="notifCard">Notifications</button>
-        <button type="button" data-goto="dataCard" data-need="dataCard">Your data and privacy</button>
-        <button type="button" data-goto="accountCard">Account</button>
-        <button type="button" data-goto="adminCard" data-need="adminCard">Owner</button>
-      </nav>
-      <div class="card" id="discCard" hidden>
-        <h2>Discoveries</h2>
-        <label class="check" id="discMomentsRow" hidden><input type="checkbox" id="discMomentsOn"><span>Show a small moment when you find a discovery<br><span class="status">At the bottom of the screen, never over a warning. Off: they still collect in Journal, quietly.</span></span></label>
-      </div>
+      <details class="set-sec" id="secLook"><summary><span>Appearance and language<small>Style, backdrop, colours, light or dark, language</small></span></summary>
       <div class="card" id="lookCard">
         <h2>Appearance</h2>
         <h3 class="look-h">Style</h3>
@@ -165,21 +148,12 @@
         <div class="acc-row" id="accRow" role="group" aria-label="Accent colour"></div>
         <h3 class="look-h">Light or dark</h3>
         <div class="seg small" role="group" aria-label="Light or dark" id="modeSeg"></div>
-      </div>
-      <div class="card" id="langCard">
+      </div>      <div class="card" id="langCard">
         <h2>Language</h2>
         <div class="seg small" role="group" aria-label="Language" id="langSeg"></div>
         <p class="status" id="langHint"></p>
-      </div>
-      <div class="card" id="privCard" hidden>
-        <h2>Sharing and privacy</h2>
-        <p class="status" style="margin-top:0">New plants you add are visible to</p>
-        <div class="seg small priv-seg" role="group" aria-label="New plants are visible to" id="defVisSeg"></div>
-        <p class="status" id="defVisHint"></p>
-        <button class="btn small" id="chooseShareBtn" style="margin-top:12px">Choose which plants friends see</button>
-        <label class="check" style="margin:16px 0 0"><input type="checkbox" id="shareMoments"><span>Show friends my plants' happy moments<br><span class="status">Got it, new growth, flowering and fruiting, with their day and photo, on plants friends can see. Never the notes, the rest of the journal or watering.</span></span></label>
-        <label class="check" style="margin:16px 0 0"><input type="checkbox" id="findable"><span>Let people find me<br><span class="status">When it's on, people can find you by your name or @username and send you a friend request. When it's off, only people you give your friend link to can add you.</span></span></label>
-      </div>
+      </div>      </details>
+      <details class="set-sec" id="secPlaces"><summary><span>Your garden and its alerts<small>Home, location, alert rules, what Alvor has learned</small></span></summary>
       <div class="card" id="homeCard">
         <h2>Your home</h2>
         <div class="seg" role="group" aria-label="Home type">
@@ -188,8 +162,7 @@
         </div>
         <p class="status" id="homeLine" style="margin-top:0"></p>
         <label class="check" id="balcRainRow" hidden><input type="checkbox" id="balcRain"><span>Rain reaches my balcony<br><span class="status">Tick it if the balcony is open to the sky. Then rain counts as watering for balcony plants.</span></span></label>
-      </div>
-      <div class="card" id="locCard">
+      </div>      <div class="card" id="locCard">
         <h2>Location</h2>
         <p class="status" style="margin-top:0">The forecast and all the alerts use this location.</p>
         <div class="seg" role="group" aria-label="Which location to use">
@@ -218,9 +191,9 @@
             <button class="btn small" id="locManualSave">Save this place</button>
           </details>
         </div>
-      </div>
-      <div class="card" id="rulesCard">
+      </div>      <div class="card" id="rulesCard">
         <h2>Alert rules</h2>
+        <div class="calib-box" id="calibBox"></div>
         <div class="row2">
           <div class="field"><label for="sMargin">Low temperature margin °C</label><input id="sMargin" type="number" step="0.5"><span class="hint">Warn when the forecast gets this close to a plant's limit.</span></div>
           <div class="field"><label>Greenhouse and rooms</label><span class="hint">How warm your greenhouse and the spots in the house stay is set in Garden: tap the thermometer on their cards.</span></div>
@@ -230,9 +203,60 @@
           <div class="field"><label for="sWind">Gusts km/h</label><input id="sWind" type="number"></div>
           <div class="field"><label for="sRain">Rain counts as watering, mm</label><input id="sRain" type="number" step="0.5"></div>
         </div>
-        <button class="btn primary" id="saveSettings">Save settings</button>
+        <p class="status">Changes are saved as you type.</p>
         <div id="coldPick"></div>
-      </div>
+      </div>      </details>
+      <details class="set-sec" id="secNotif"><summary><span>Notifications<small>Morning summary, evening cold check, friends</small></span></summary>
+      <div class="card" id="notifCard">
+        <h2>Notifications</h2>
+        <div class="row2">
+          <div class="field"><label for="sMorning">Morning summary at</label><select id="sMorning"></select></div>
+          <div class="field"><label for="sEvening">Evening cold check at</label><select id="sEvening"></select></div>
+        </div>
+        <label class="check"><input type="checkbox" id="sEveningOn"><span>Send the evening cold check<br><span class="status">Only arrives when a plant is at risk that night.</span></span></label>
+        <label class="check" id="sSocialRow"><input type="checkbox" id="sSocialOn"><span>Reactions and comments from friends<br><span class="status">When someone reacts to or comments on your plants, or replies where you commented.</span></span></label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn primary" id="notifyBtn">Turn on notifications</button>
+          <button class="btn" id="testBtn">Send a test</button>
+        </div>
+        <p class="status" id="notifyStatus"></p>
+        <p class="status warn-line" id="engineWarn" hidden>The notify function on Supabase runs older care rules than this app. Deploy notify again so notifications and the app agree.</p>
+      </div>      </details>
+      <details class="set-sec" id="secShare" data-need="privCard"><summary><span>Sharing and privacy<small>Who sees your plants, being found, discoveries</small></span></summary>
+      <div class="card" id="privCard" hidden>
+        <h2>Sharing and privacy</h2>
+        <p class="status" style="margin-top:0">New plants you add are visible to</p>
+        <div class="seg small priv-seg" role="group" aria-label="New plants are visible to" id="defVisSeg"></div>
+        <p class="status" id="defVisHint"></p>
+        <button class="btn small" id="chooseShareBtn" style="margin-top:12px">Choose which plants friends see</button>
+        <label class="check" style="margin:16px 0 0"><input type="checkbox" id="shareMoments"><span>Show friends my plants' happy moments<br><span class="status">Got it, new growth, flowering and fruiting, with their day and photo, on plants friends can see. Never the notes, the rest of the journal or watering.</span></span></label>
+        <label class="check" style="margin:16px 0 0"><input type="checkbox" id="findable"><span>Let people find me<br><span class="status">When it's on, people can find you by your name or @username and send you a friend request. When it's off, only people you give your friend link to can add you.</span></span></label>
+      </div>      <div class="card" id="discCard" hidden>
+        <h2>Discoveries</h2>
+        <label class="check" id="discMomentsRow" hidden><input type="checkbox" id="discMomentsOn"><span>Show a small moment when you find a discovery<br><span class="status">At the bottom of the screen, never over a warning. Off: they still collect in Journal, quietly.</span></span></label>
+      </div>      </details>
+      <details class="set-sec" id="secData"><summary><span>Your data<small>Download, backup, delete</small></span></summary>
+      <div class="card" id="dataCard" hidden>
+        <h2>Your data and privacy</h2>
+        <p class="status" style="margin-top:0">Get everything Alvor keeps about you in one file: your plants, notes, history, photos, friends and settings.</p>
+        <div class="btn-row"><button class="btn" id="dataBtn">Download my data</button><a class="btn" href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></div>
+        <p class="status" id="dataStatus" role="status"></p>
+        <h3 class="sub-h">Delete my account</h3>
+        <p class="status" style="margin-top:0">Deletes your account and everything in it, from every phone and for good. Download your data first if you'd like a copy.</p>
+        <button class="btn danger" id="delAcctBtn" style="margin-top:10px">Delete my account</button>
+      </div>      <div class="card">
+        <h2>Backup</h2>
+        <p style="margin-top:0;color:var(--muted)">Your plants and photos are saved in your account. You can also export a backup file to keep a copy of your own. The file grows as you add photos.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="exportBtn">Export backup</button>
+          <button class="btn" id="importBtn">Import backup</button>
+          <input type="file" id="importFile" accept="application/json" hidden>
+        </div>
+      </div>      <div class="card">
+        <h2>Reset</h2>
+        <button class="btn danger" id="resetBtn">Delete all plants and history</button>
+      </div>      </details>
+      <details class="set-sec" id="secAcct"><summary><span>Account<small>Sign in, password, invite</small></span></summary>
       <div class="card" id="accountCard">
         <h2>Account</h2>
         <p class="status" style="margin-top:0" id="acctLine"></p>
@@ -248,59 +272,17 @@
           <div class="field"><label for="pwNew">New password</label><input id="pwNew" type="password" autocomplete="new-password"><span class="hint">At least 8 characters.</span></div>
           <button class="btn primary" id="pwSave">Save new password</button>
         </div>
-      </div>
+      </div>      </details>
+      <details class="set-sec" id="secOwner" hidden><summary><span>Owner<small>Only you see this: reports and how Alvor is used</small></span></summary>
       <div class="card" id="adminCard" hidden>
         <h2>Reports <small id="adminCount" class="status"></small></h2>
         <p class="status" style="margin-top:0">Only you see this, as the owner of Alvor. People's reports land here; the person reported isn't told who sent them.</p>
         <div id="adminList"></div>
-      </div>
-      <div class="card" id="usageCard" hidden>
+      </div>      <div class="card" id="usageCard" hidden>
         <h2>How Alvor is used</h2>
         <p class="status" style="margin-top:0">Only you see this, as the owner of Alvor: totals for everyone, never one person's days.</p>
         <div id="usageBody"></div>
-      </div>
-      <div class="card" id="notifCard">
-        <h2>Notifications</h2>
-        <div class="row2">
-          <div class="field"><label for="sMorning">Morning summary at</label><select id="sMorning"></select></div>
-          <div class="field"><label for="sEvening">Evening cold check at</label><select id="sEvening"></select></div>
-        </div>
-        <label class="check"><input type="checkbox" id="sEveningOn"><span>Send the evening cold check<br><span class="status">Only arrives when a plant is at risk that night.</span></span></label>
-        <label class="check" id="sSocialRow"><input type="checkbox" id="sSocialOn"><span>Reactions and comments from friends<br><span class="status">When someone reacts to or comments on your plants, or replies where you commented.</span></span></label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn primary" id="notifyBtn">Turn on notifications</button>
-          <button class="btn" id="testBtn">Send a test</button>
-        </div>
-        <p class="status" id="notifyStatus"></p>
-        <p class="status warn-line" id="engineWarn" hidden>The notify function on Supabase runs older care rules than this app. Deploy notify again so notifications and the app agree.</p>
-      </div>
-      <div class="card">
-        <h2>Activity history</h2>
-        <p class="status" style="margin-top:0">Every watering, move and photo, for all your plants. Each plant's own history is also in its edit screen.</p>
-        <button class="btn" data-tab="log" style="margin-top:10px">Open history</button>
-      </div>
-      <div class="card">
-        <h2>Backup</h2>
-        <p style="margin-top:0;color:var(--muted)">Your plants and photos are saved in your account. You can also export a backup file to keep a copy of your own. The file grows as you add photos.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn" id="exportBtn">Export backup</button>
-          <button class="btn" id="importBtn">Import backup</button>
-          <input type="file" id="importFile" accept="application/json" hidden>
-        </div>
-      </div>
-      <div class="card" id="dataCard" hidden>
-        <h2>Your data and privacy</h2>
-        <p class="status" style="margin-top:0">Get everything Alvor keeps about you in one file: your plants, notes, history, photos, friends and settings.</p>
-        <div class="btn-row"><button class="btn" id="dataBtn">Download my data</button><a class="btn" href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></div>
-        <p class="status" id="dataStatus" role="status"></p>
-        <h3 class="sub-h">Delete my account</h3>
-        <p class="status" style="margin-top:0">Deletes your account and everything in it, from every phone and for good. Download your data first if you'd like a copy.</p>
-        <button class="btn danger" id="delAcctBtn" style="margin-top:10px">Delete my account</button>
-      </div>
-      <div class="card">
-        <h2>Reset</h2>
-        <button class="btn danger" id="resetBtn">Delete all plants and history</button>
-      </div>
+      </div>      </details>
     </section>
   </main>
 </div>
@@ -344,7 +326,7 @@
   <div class="compass-dock">
     <button class="tb" data-tab="today" aria-current="page"><span class="tb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 18.5h18"/><path d="M7 18.5a5 5 0 0 1 10 0"/><path d="M12 7v2.4M5.6 10.6l1.6 1.6M18.4 10.6l-1.6 1.6M3.2 15h1.6M19.2 15h1.6"/></svg></span><span class="tb-l">Today</span></button>
     <button class="tb" data-tab="locations"><span class="tb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M12 20.5v-8"/><path d="M12 12.5C12 8 8.8 6.2 5 6.6c0 3.8 2.8 5.9 7 5.9zM12 10.6c0-3.7 2.8-6 7-6 0 3.7-2.8 6-7 6z"/><path d="M5.5 20.5h13"/></svg></span><span class="tb-l">Garden</span></button>
-    <button class="tb-add" id="addBtn" aria-haspopup="dialog" aria-controls="hubDlg" aria-expanded="false" aria-label="Add or log something"><svg class="tb-ring" viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="33" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M36 1.5v5M36 65.5v5M1.5 36h5M65.5 36h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M36 8.5l2.2 4.2h-4.4z" fill="currentColor" stroke="none"/></svg><span class="tb-core"><svg class="tb-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></button>
+    <button class="tb-add" id="addBtn" aria-haspopup="dialog" aria-controls="hubDlg" aria-expanded="false" aria-label="Camera and more: a photo, a new plant, care, a task"><svg class="tb-ring" viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="33" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M36 1.5v5M36 65.5v5M1.5 36h5M65.5 36h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M36 8.5l2.2 4.2h-4.4z" fill="currentColor" stroke="none"/></svg><span class="tb-core"><svg class="tb-plus tb-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 8.5h3.2L9 6h6l1.8 2.5H20V19H4z"/><circle cx="12" cy="13.3" r="3.4"/></svg></span></button>
     <button class="tb" data-tab="journal"><span class="tb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M12 7.5c-2-1.6-4.8-2-7.5-1.5v12c2.7-.5 5.5-.1 7.5 1.5 2-1.6 4.8-2 7.5-1.5V6c-2.7-.5-5.5-.1-7.5 1.5z"/><path d="M12 7.5v11.5"/></svg></span><span class="tb-l">Journal</span></button>
     <button class="tb" data-tab="friends" id="friendsBtn"><span class="tb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17" cy="9.5" r="2.5"/><path d="M16 14.2c2.9.2 5 2.3 5 5.3"/></svg></span><span class="tb-l">Circle</span><i class="req-badge" id="reqBadge" aria-hidden="true" hidden></i><span class="vh" id="reqSay"></span></button>
   </div>
@@ -356,70 +338,72 @@
 </dialog>
 
 <dialog id="dlg" class="plant-dlg" aria-labelledby="dlgTitle">
-  <div class="dlg-h"><h2 id="dlgTitle">Add plant</h2><button class="btn small" id="dlgClose">Close</button></div>
+  <div class="dlg-h"><button class="round-back ps-back" id="psBack" aria-label="Back to the plant" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2 id="dlgTitle">Add plant</h2><button class="btn small" id="dlgClose">Close</button></div>
   <div class="dlg-b">
-    <div class="ps-top" id="psTop"></div>
-    <div class="field" id="settleBox" hidden><label>Settling in</label><div id="settleNow"></div></div>
-    <div class="field" id="careBox" hidden><label>Water now</label><div id="careNow"></div></div>
-    <div class="field jr-box" id="jrnBox" hidden><label>Journal</label><div id="jrnPrev"></div></div>
-    <div class="photos ps-photos">
-      <h3 class="ps-h">Photos</h3>
-      <div class="gallery" id="gallery"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn small primary" id="takePhoto">Take a photo</button>
-        <button class="btn small" id="addPhoto">From gallery</button>
+    <!-- 1 · Status and actions · 2 · Its story · 3 · Details (one line each). Everything here saves at once. -->
+    <div id="psView">
+      <div class="ps-top" id="psTop"></div>
+      <div class="field" id="settleBox" hidden><label>Settling in</label><div id="settleNow"></div></div>
+      <div class="ps-story" id="jrnBox" hidden><div id="jrnPrev"></div></div>
+      <div class="ps-rows" id="psRows">
+        <details class="ps-row" id="rowWater"><summary><b>Watering</b><small id="rowWaterSum"></small></summary><div class="ps-row-b" id="careBox"><div id="careNow"></div></div></details>
+        <details class="ps-row" id="feedBox" hidden><summary><b>Feeding and repotting</b><small id="rowFeedSum"></small></summary><div class="ps-row-b"><div id="feedNow"></div>
+          <div class="feed-sel">
+            <div class="field"><label for="fFe">Feed</label><select id="fFe"></select></div>
+            <div class="field" id="fRpyF"><label for="fRpy">Repot</label><select id="fRpy"></select></div>
+          </div>
+          <label class="check" id="fFeedWinterRow"><input type="checkbox" id="fFeedWinter"><span>Keep feeding in winter<br><span class="status">For plants that keep growing under grow lights or in a warm room: half as often.</span></span></label></div></details>
+        <details class="ps-row" id="rowSpot"><summary><b>Its spot</b><small id="rowSpotSum"></small></summary><div class="ps-row-b">
+          <div class="field" id="microBox" hidden><label>About this spot</label><div class="micro" id="fMicro"></div><span class="hint">Only what changes Alvor's advice on frost, rain, drying and wind. Leave them off if you're not sure.</span></div>
+          <p class="status" id="spotNote"></p></div></details>
+        <details class="ps-row" id="taskBox" hidden><summary><b>Your tasks for it</b><small id="rowTaskSum"></small></summary><div class="ps-row-b"><div id="plantTasks"></div></div></details>
+        <details class="ps-row" id="psAbout"><summary><b>About this plant</b><small id="rowAboutSum"></small></summary><div class="ps-row-b">
+          <div class="field kb-about" id="kbAbout" hidden><div class="preset-note kb-card" id="presetNote"></div></div></div></details>
+        <details class="ps-row" id="rowPhotos"><summary><b>Photos</b><small id="rowPhotosSum"></small></summary><div class="ps-row-b photos ps-photos">
+          <div class="gallery" id="gallery"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn small primary" id="takePhoto">Take a photo</button>
+            <button class="btn small" id="addPhoto">From gallery</button>
+          </div></div></details>
+        <details class="ps-row ps-share" id="rowFriends"><summary><b>Friends</b><small id="rowFriendsSum"></small></summary><div class="ps-row-b">
+          <div class="vis-box" id="fVis"></div>
+          <div class="field cut-box" id="cutBox" hidden><label class="check"><input type="checkbox" id="fCut"><span>Cuttings to share<br><span class="status" id="fCutHint">Friends see it on your plant and can ask you for one.</span></span></label><div id="cutReqs"></div></div>
+          <div class="field" id="plantTalkBox" hidden><label>From friends</label><div id="plantTalk"></div></div></div></details>
       </div>
-      <input type="file" id="photoFile" accept="image/*" multiple hidden>
-      <input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
+      <button type="button" class="btn ps-edit-btn" id="psEditBtn"><span>Edit, archive or delete</span><span class="chev" aria-hidden="true">›</span></button>
     </div>
-    <div class="field feed-box" id="feedBox" hidden><label>Feeding and repotting</label><div id="feedNow"></div>
-      <div class="feed-sel">
-        <div class="field"><label for="fFe">Feed</label><select id="fFe"></select></div>
-        <div class="field" id="fRpyF"><label for="fRpy">Repot</label><select id="fRpy"></select></div>
+    <!-- The Edit screen: name, species and care values, saved together with Save plant -->
+    <div id="psEditBody">
+      <div class="field"><label for="fName">Name</label><input id="fName" placeholder="e.g. Big banana by the pond"></div>
+      <div class="field"><label for="fSpecies">Species</label><input id="fSpecies" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Start typing, e.g. Musa basjoo"><span class="hint">Pick one from the list to fill in the genus, cold limit and watering.</span></div>
+      <datalist id="presetList"></datalist>
+      <div class="field"><label for="fGenus">Genus</label><input id="fGenus" autocapitalize="words" placeholder="e.g. Musa"></div>
+      <div class="field"><label for="fPattern">Where it lives through the year</label>
+        <select id="fPattern">
+          <option value="indoor">Inside all year</option>
+          <option value="outdoor">Outside all year</option>
+          <option value="mover">Outside in summer, inside in winter</option>
+          <option value="greenhouse">Outside in summer, greenhouse in winter</option>
+        </select></div>
+      <div class="field" id="fZoneF"><label>Where it is now</label><div id="fZonePick" class="picker"></div></div>
+      <label class="check"><input type="checkbox" id="fCold"><span>Low temperature warnings for this plant<br><span class="status" id="fColdHint"></span></span></label>
+      <div class="row3">
+        <div class="field"><label for="fMin">Lowest °C it takes</label><input id="fMin" type="number" step="0.5"></div>
+        <div class="field"><label for="fWs">Water every (summer)</label><input id="fWs" type="number" min="1"><span class="hint">days</span></div>
+        <div class="field"><label for="fWw">Water every (winter)</label><input id="fWw" type="number" min="1"><span class="hint">days</span></div>
       </div>
-      <label class="check" id="fFeedWinterRow"><input type="checkbox" id="fFeedWinter"><span>Keep feeding in winter<br><span class="status">For plants that keep growing under grow lights or in a warm room: half as often.</span></span></label>
+      <div class="kb-src" id="fKbSrc"></div>
+      <div class="field"><label for="fNotes">Notes</label><textarea id="fNotes" rows="3"></textarea><span class="hint">Only for you, never shared.</span></div>
+      <div class="field arc-box ps-danger" id="arcBox" hidden><label>Left your garden?</label><p class="status">Lost it, gave it away, swapped or sold it: the Archive keeps its photos and journal, and you can bring it back.</p>
+        <div class="btn-row"><button type="button" class="btn small" data-arc="open">Move to the Archive</button><button type="button" class="btn small danger" id="dlgDelete">Delete for good</button></div></div>
     </div>
-    <div class="field tk-box" id="taskBox" hidden><label>Your tasks for it</label><div id="plantTasks"></div></div>
-    <div class="field hl-box" id="healthBox" hidden><label>Something wrong?</label><p class="status">Yellow leaves, spots, wilting, insects: tell Alvor what you see and get the likely causes for this plant.</p><button type="button" class="btn small" id="healthBtn">Check what's wrong</button></div>
-    <details class="ps-sec" id="psAbout"><summary>About this plant</summary>
-      <div class="field kb-about" id="kbAbout" hidden><div class="preset-note kb-card" id="presetNote"></div></div>
-    </details>
-    <details class="ps-sec" id="psEdit"><summary>Name, spot and care values</summary>
-    <div class="field"><label for="fName">Name</label><input id="fName" placeholder="e.g. Big banana by the pond"></div>
-    <div class="field"><label for="fSpecies">Species</label><input id="fSpecies" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Start typing, e.g. Musa basjoo"><span class="hint">Pick one from the list to fill in the genus, cold limit and watering.</span></div>
-    <datalist id="presetList"></datalist>
-    <div class="field"><label for="fGenus">Genus</label><input id="fGenus" autocapitalize="words" placeholder="e.g. Musa"></div>
-    <div class="field"><label for="fPattern">Where it lives through the year</label>
-      <select id="fPattern">
-        <option value="indoor">Inside all year</option>
-        <option value="outdoor">Outside all year</option>
-        <option value="mover">Outside in summer, inside in winter</option>
-        <option value="greenhouse">Outside in summer, greenhouse in winter</option>
-      </select></div>
-    <div class="field"><label>Where it is now</label><div id="fZonePick" class="picker"></div></div>
-    <div class="field" id="microBox" hidden><label>About this spot</label><div class="micro" id="fMicro"></div><span class="hint">Only what changes Alvor's advice on frost, rain, drying and wind. Leave them off if you're not sure.</span></div>
-    <label class="check"><input type="checkbox" id="fCold"><span>Low temperature warnings for this plant<br><span class="status" id="fColdHint"></span></span></label>
-    <div class="row3">
-      <div class="field"><label for="fMin">Lowest °C it takes</label><input id="fMin" type="number" step="0.5"></div>
-      <div class="field"><label for="fWs">Water every (summer)</label><input id="fWs" type="number" min="1"><span class="hint">days</span></div>
-      <div class="field"><label for="fWw">Water every (winter)</label><input id="fWw" type="number" min="1"><span class="hint">days</span></div>
-    </div>
-    <div class="kb-src" id="fKbSrc"></div>
-    <div class="field"><label for="fLast">Last watered</label><input id="fLast" type="date"></div>
-    <div class="field"><label for="fNotes">Notes</label><textarea id="fNotes" rows="3"></textarea><span class="hint">Only for you, never shared.</span></div>
-    </details>
-    <div class="ps-share">
-      <div class="vis-box" id="fVis"></div>
-      <div class="field cut-box" id="cutBox" hidden><label class="check"><input type="checkbox" id="fCut"><span>Cuttings to share<br><span class="status" id="fCutHint">Friends see it on your plant and can ask you for one.</span></span></label><div id="cutReqs"></div></div>
-      <div class="field" id="plantTalkBox" hidden><label>From friends</label><div id="plantTalk"></div></div>
-    </div>
-    <div class="field arc-box" id="arcBox" hidden><label>Left your garden?</label><p class="status">Lost it, gave it away, swapped or sold it: the Archive keeps its photos and journal, and you can bring it back.</p>
-      <div class="btn-row"><button type="button" class="btn small" data-arc="open">Move to the Archive</button><button type="button" class="btn small danger" id="dlgDelete">Delete for good</button></div></div>
   </div>
   <div class="dlg-f">
-    <span class="dlg-f-note" id="dlgFNote">Changes to the name, spot and care values are kept when you save.</span>
+    <button class="btn" id="dlgCancel">Cancel</button>
     <button class="btn primary" id="dlgSave">Save plant</button>
   </div>
+  <input type="file" id="photoFile" accept="image/*" multiple hidden>
+  <input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
 </dialog>
 
 <dialog id="wiz" aria-labelledby="wizTitle">
@@ -478,9 +462,10 @@
   <div class="dlg-b" id="snapBody"></div>
 </dialog>
 
-<dialog id="storyDlg" class="jrn-dlg story-dlg" aria-labelledby="storyTitle">
-  <div class="dlg-h"><h2 id="storyTitle">Garden journal</h2><button class="btn small" id="storyClose">Close</button></div>
-  <div class="dlg-b" id="storyBody"></div>
+
+<dialog id="roundDlg" class="round-dlg" aria-labelledby="roundTitle">
+  <div class="dlg-h"><h2 id="roundTitle">One at a time</h2><button class="btn small" id="roundClose">Close</button></div>
+  <div class="dlg-b" id="roundBody"></div>
 </dialog>
 
 <dialog id="discDlg" class="disc-dlg" aria-labelledby="discTitle">
@@ -582,37 +567,39 @@
 <div class="vh" id="discLive" aria-live="polite"></div>
 
 <!-- Scripts in this order; they share one global scope. js/i18n.js (languages) runs before the app, js/start.js last. ?v= as for the styles. -->
-<script src="plant-kb.js?v=2026-10-20-finish1"></script>
-<script src="alerts.js?v=2026-10-20-finish1"></script>
-<script src="plant-health.js?v=2026-10-20-finish1"></script>
-<script src="discoveries.js?v=2026-10-20-finish1"></script>
-<script src="sync.js?v=2026-10-20-finish1"></script>
-<script src="species-es.js?v=2026-10-20-finish1"></script>
-<script src="supabase.js?v=2026-10-20-finish1"></script>
-<script src="qrcode.js?v=2026-10-20-finish1"></script>
-<script src="js/lang-es.js?v=2026-10-20-finish1"></script>
-<script src="js/i18n.js?v=2026-10-20-finish1"></script>
-<script src="js/core.js?v=2026-10-20-finish1"></script>
-<script src="js/weather.js?v=2026-10-20-finish1"></script>
-<script src="js/home.js?v=2026-10-20-finish1"></script>
-<script src="js/plants.js?v=2026-10-20-finish1"></script>
-<script src="js/journal.js?v=2026-10-20-finish1"></script>
-<script src="js/archive.js?v=2026-10-20-finish1"></script>
-<script src="js/tasks.js?v=2026-10-20-finish1"></script>
-<script src="js/snapshots.js?v=2026-10-20-finish1"></script>
-<script src="js/discover.js?v=2026-10-20-finish1"></script>
-<script src="js/story.js?v=2026-10-20-finish1"></script>
-<script src="js/health.js?v=2026-10-20-finish1"></script>
-<script src="js/add-plant.js?v=2026-10-20-finish1"></script>
-<script src="js/settings.js?v=2026-10-20-finish1"></script>
-<script src="js/account.js?v=2026-10-20-finish1"></script>
-<script src="js/circle.js?v=2026-10-20-finish1"></script>
-<script src="js/talk.js?v=2026-10-20-finish1"></script>
-<script src="js/cuttings.js?v=2026-10-20-finish1"></script>
-<script src="js/your-data.js?v=2026-10-20-finish1"></script>
-<script src="js/notifications.js?v=2026-10-20-finish1"></script>
-<script src="js/themes.js?v=2026-10-20-finish1"></script>
-<script src="js/compass.js?v=2026-10-20-finish1"></script>
-<script src="js/start.js?v=2026-10-20-finish1"></script>
+<script src="plant-kb.js?v=2026-10-21-audit1"></script>
+<script src="alerts.js?v=2026-10-21-audit1"></script>
+<script src="plant-health.js?v=2026-10-21-audit1"></script>
+<script src="discoveries.js?v=2026-10-21-audit1"></script>
+<script src="sync.js?v=2026-10-21-audit1"></script>
+<script src="species-es.js?v=2026-10-21-audit1"></script>
+<script src="supabase.js?v=2026-10-21-audit1"></script>
+<script src="qrcode.js?v=2026-10-21-audit1"></script>
+<script src="js/lang-es.js?v=2026-10-21-audit1"></script>
+<script src="js/i18n.js?v=2026-10-21-audit1"></script>
+<script src="js/core.js?v=2026-10-21-audit1"></script>
+<script src="js/weather.js?v=2026-10-21-audit1"></script>
+<script src="js/home.js?v=2026-10-21-audit1"></script>
+<script src="js/plants.js?v=2026-10-21-audit1"></script>
+<script src="js/journal.js?v=2026-10-21-audit1"></script>
+<script src="js/archive.js?v=2026-10-21-audit1"></script>
+<script src="js/tasks.js?v=2026-10-21-audit1"></script>
+<script src="js/snapshots.js?v=2026-10-21-audit1"></script>
+<script src="js/discover.js?v=2026-10-21-audit1"></script>
+<script src="js/story.js?v=2026-10-21-audit1"></script>
+<script src="js/health.js?v=2026-10-21-audit1"></script>
+<script src="js/add-plant.js?v=2026-10-21-audit1"></script>
+<script src="js/settings.js?v=2026-10-21-audit1"></script>
+<script src="js/account.js?v=2026-10-21-audit1"></script>
+<script src="js/circle.js?v=2026-10-21-audit1"></script>
+<script src="js/talk.js?v=2026-10-21-audit1"></script>
+<script src="js/cuttings.js?v=2026-10-21-audit1"></script>
+<script src="js/your-data.js?v=2026-10-21-audit1"></script>
+<script src="js/notifications.js?v=2026-10-21-audit1"></script>
+<script src="js/themes.js?v=2026-10-21-audit1"></script>
+<script src="js/today.js?v=2026-10-21-audit1"></script>
+<script src="js/seasons.js?v=2026-10-21-audit1"></script>
+<script src="js/compass.js?v=2026-10-21-audit1"></script>
+<script src="js/start.js?v=2026-10-21-audit1"></script>
 </body>
 </html>

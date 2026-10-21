@@ -14,6 +14,15 @@
      spot really behaves. Answers are stages (No need … Needs attention), never litres: Alvor has no soil sensor.
    - Frost: a plan per plant (bring inside, shelter the pot, protect the crown, mulch the roots, fleece, cover new
      growth, or nothing to do), from its limit, pot or ground, the spot, the species and how long the cold lasts.
+   - Your garden's own nights: on clear, calm nights the cold at plant height is lower than the forecast's 2 m air
+     temperature, and every garden has its frost pockets. Alvor plans for that (RULES.frost.clearNight) until it has
+     learned your garden from what you tell it ("Did it freeze last night?", a thermometer reading): settings.calib.
+   - Protection stays on: "Mark as protected" (fleece, mulch, wrapped pots) is remembered from the journal until you
+     take it off, so a protected plant isn't warned again, and Alvor says when the cold has passed.
+   - The morning after a risk night Alvor asks how the plants did (Fine, Damaged, Lost): a plant damaged at a
+     temperature it was supposed to take is warned earlier next time.
+   - Winter storage: a dark, frost-free place (garage, cellar, shed) for dormant plants: no watering or feeding
+     reminders, only a warning when the storage itself gets too cold.
    - Garden today: what matters now, in a few lines, and plainly when nothing else is urgent.
    - Your own tasks (settings.tasks: buy compost, plant bulbs…) sit next to Alvor's: due ones join Garden today and the
      morning notification.
@@ -25,7 +34,7 @@
   else root.GardenAlerts = lib;
 })(typeof self !== "undefined" ? self : this, function(){
 "use strict";
-const VERSION = "2026-10-15.care-8";
+const VERSION = "2026-10-21.care-9";
 
 /* What Alvor knows about each kind of plant (lowest temperature, traits, watering) lives in plant-kb.js:
    in the browser it is loaded before this file, in notify it is copied in above it, in the tests it is required. */
@@ -58,8 +67,24 @@ const RULES = {
     rootSafety:2,                                     // "mulch the roots" only when the roots have this much to spare
     spring:[3,4,5],                                   // months when new growth is tender (hemisphere-adjusted)
     okWithin:4,                                       // "no action needed" lists plants within this of their limit
-    roomCold:5                                        // a night this cold outside brings rooms down to their lowest (Locations)
+    roomCold:5,                                       // a night this cold outside brings rooms down to their lowest (Locations)
+    /* Clear, calm nights: the ground and the plants lose heat to the open sky and get colder than the 2 m air
+       temperature the forecast gives. Used until the garden's own calibration knows better. */
+    clearNight:1, clear:{cloud:30, wind:10}           // °C colder; a clear night: cloud below 30 %, wind below 10 km/h
   },
+  /* Your garden's own nights (settings.calib): what you told Alvor after cold nights. An answer counts for this long,
+     at least min answers of a kind of night are needed before they replace the default, and the learned difference
+     stays within lim. A "Yes, it froze" when the forecast said above 0 counts as about −0.5 °C, a "No" when it said
+     below 0 as about +0.5 °C. */
+  calib:{keep:730, min:2, lim:[-6, 3], froze:-0.5, notFrozen:0.5, max:40},
+  /* Protection (fleece, wrapping, mulch) counts for this many days after "Mark as protected", until "Taken off".
+     Alvor suggests taking it off once this many nights ahead stay this far above the plant's limit. */
+  protect:{keep:60, off:5, offMargin:3},
+  /* Winter storage (a garage, cellar or shed): its lowest on cold nights when not set, and the outside cold that
+     brings it there (as rooms). */
+  store:{low:4},
+  /* The morning after: plants this close to their limit last night are asked about too. */
+  after:{near:2},
   heat:{partial:3, pm:2, greenhouse:8, ghVent:35},
   /* Acclimatisation: a plant that just left the house or the greenhouse has soft growth that isn't used to cold nights,
      wind or strong sun yet. Hardening off (in and out for a night or two) counts as one move out. */
@@ -92,7 +117,7 @@ const RULES = {
 
 /* Spanish (Spain, "tú"). Another language: add a table like this one and list it in TABLES. */
 const ES = {
-  "today":"hoy", "tomorrow":"mañana", "tonight":"esta noche",
+  "today":"hoy", "tomorrow":"mañana", "tonight":"esta noche", "on {day}":"el {day}",
   "Bring inside":"Meter dentro", "Cold is coming that these can't take outside.":"Llega un frío que estas plantas no aguantan fuera.",
   "Move to the greenhouse":"Pasar al invernadero",
   "Protect in the greenhouse":"Proteger en el invernadero", "The greenhouse could drop to about {t}. Add fleece or turn on a heater.":"El invernadero podría bajar a unos {t}. Pon manta térmica o enciende un calefactor.",
@@ -176,7 +201,21 @@ const ES = {
   "1 plant is ready for feeding":"1 planta pide abono", "{n} plants are ready for feeding":"{n} plantas piden abono",
   "1 pot could be repotted this spring":"1 maceta se podría trasplantar esta primavera", "{n} pots could be repotted this spring":"{n} macetas se podrían trasplantar esta primavera",
   "Your task for today: {t}":"Tu tarea de hoy: {t}", "{n} of your tasks are due today":"Hoy tienes {n} tareas tuyas", "Your tasks":"Tus tareas",
-  "Tell Alvor when 1 plant was last watered":"Dile a Alvor cuándo regaste 1 planta", "Tell Alvor when {n} plants were last watered":"Dile a Alvor cuándo regaste {n} plantas"
+  "Tell Alvor when 1 plant was last watered":"Dile a Alvor cuándo regaste 1 planta", "Tell Alvor when {n} plants were last watered":"Dile a Alvor cuándo regaste {n} plantas",
+  "already protected":"ya protegida", "damaged at {t} on {date}":"se dañó a {t} el {date}", "came through {t} before":"ya aguantó {t}",
+  "clear, calm night":"noche despejada y sin viento", "your garden runs about {t} colder on nights like this":"tu jardín suele quedarse unos {t} más frío en noches así",
+  "your garden runs about {t} warmer on nights like this":"tu jardín suele quedarse unos {t} más templado en noches así",
+  "Take the protection off":"Quita la protección", "The cold has passed: no night this week comes near their limit. Fleece left on too long keeps the light out and traps damp.":"El frío ha pasado: ninguna noche de esta semana se acerca a su límite. La manta térmica puesta demasiado tiempo quita luz y guarda humedad.",
+  "Pull the mulch back":"Retira el acolchado", "Spring is here and the nights are safe: pull the mulch back from the stems so new growth gets light and air.":"Ha llegado la primavera y las noches son seguras: aparta el acolchado de los tallos para que los brotes tengan luz y aire.",
+  "protected {n} days ago":"protegida hace {n} días", "protected yesterday":"protegida ayer", "protected today":"protegida hoy",
+  "Storage too cold":"El almacén está demasiado frío", "Your winter storage could drop to about {t}, colder than these take. Add insulation or move them somewhere warmer.":"Tu almacén de invierno podría bajar a unos {t}, más frío de lo que aguantan. Aíslalo o llévalas a un sitio más cálido.",
+  "in winter storage":"en el almacén de invierno", "Resting":"En reposo", "resting in winter storage: water very little, only if the stems shrivel":"en reposo en el almacén: riega muy poco, solo si los tallos se arrugan",
+  "Indoors: move 1 plant away from the cold window":"Dentro de casa: aparta 1 planta de la ventana fría", "Indoors: move {n} plants away from the cold windows":"Dentro de casa: aparta {n} plantas de las ventanas frías",
+  "1 plant protected for {when}":"1 planta protegida para {when}", "All {n} plants protected for {when}":"Las {n} plantas protegidas para {when}",
+  "1 more plant needs protection {when}":"1 planta más necesita protección {when}", "{n} more plants need protection {when}":"{n} plantas más necesitan protección {when}",
+  "Take the protection off 1 plant":"Quita la protección a 1 planta", "Take the protection off {n} plants":"Quita la protección a {n} plantas",
+  "Winter storage is too cold for 1 plant":"El almacén está demasiado frío para 1 planta", "Winter storage is too cold for {n} plants":"El almacén está demasiado frío para {n} plantas",
+  "Mark all watered":"Marcar todas regadas", "Open Alvor":"Abrir Alvor"
 };
 const TABLES = {es:ES}, LOCALES = {en:"en-GB", es:"es-ES"};
 let lang = "en";
@@ -200,11 +239,12 @@ function when(date, today){
   const n = daysBetween(today, date);
   if(n === 0) return T("today");
   if(n === 1) return T("tomorrow");
-  return weekday(date);
+  return T("on {day}", {day:weekday(date)});
 }
 /* A day's low comes around dawn, so tomorrow's low is tonight's cold. */
 const nightWord = (date, today, evening) => evening || daysBetween(today, date) === 1 ? T("tonight") : when(date, today);
 const weekday = date => new Date(utc(date)).toLocaleDateString(LOCALES[lang] || "en-GB", {weekday:"long", timeZone:"UTC"});
+const shortDate = date => new Date(utc(date)).toLocaleDateString(LOCALES[lang] || "en-GB", {day:"numeric", month:"short", timeZone:"UTC"});
 
 /* ---------- Seasons ---------- */
 /* Months as the northern hemisphere has them, so "summer" means summer south of the equator too. */
@@ -237,7 +277,7 @@ function weatherUrl(lat, lon, opt){
   return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     (o.app ? `&current=temperature_2m,weather_code,is_day,cloud_cover` : "") +
     `&daily=${DAILY}${o.app ? ",weather_code,sunrise,sunset" : ""}${o.basic ? "" : "," + EXTRA}` +
-    (o.basic ? "" : "&hourly=temperature_2m") +
+    (o.basic ? "" : "&hourly=temperature_2m,cloud_cover,wind_speed_10m") +
     `&past_days=7&forecast_days=8&timezone=auto`;
 }
 /* MET Norway's terms: at most 4 decimals, and the server says who it is (browsers send no extra headers). */
@@ -311,7 +351,7 @@ function fromMet(j, opt){
   const days = new Map();
   const dayOf = date => { if(!days.has(date)) days.set(date, {lo:null, hi:null, rain:0, prob:null, gust:0, code:null, last:0}); return days.get(date); };
   const temp = (date, t) => { if(!num(t)) return; const d = dayOf(date); d.lo = d.lo == null ? t : Math.min(d.lo, t); d.hi = d.hi == null ? t : Math.max(d.hi, t); };
-  const hourly = {time:[], temperature_2m:[]};
+  const hourly = {time:[], temperature_2m:[], cloud_cover:[], wind_speed_10m:[]};
   const pts = [];
   ts.forEach((e, i) => {
     const t = Date.parse(e.time), next = ts[i + 1] ? Date.parse(ts[i + 1].time) : t + 6 * H, step = Math.max(1, Math.round((next - t) / H));
@@ -319,7 +359,7 @@ function fromMet(j, opt){
     const lt = localTime(t, tz), date = lt.slice(0, 10), hour = +lt.slice(11, 13), d = dayOf(date);
     d.last = Math.max(d.last, hour);
     temp(date, det.air_temperature);
-    if(num(det.air_temperature)) pts.push([t, +det.air_temperature]);
+    if(num(det.air_temperature)) pts.push([t, +det.air_temperature, num(det.cloud_area_fraction) ? +det.cloud_area_fraction : null, num(det.wind_speed) ? +det.wind_speed * 3.6 : null]);
     /* Rain: the hour while the forecast is hourly, then each 6-hour block on the day of its middle. */
     const per = step <= 1 && n1 ? n1 : n6 || n1, span = per === n1 ? 1 : Math.min(step, 6);
     const pd = per && per.details || {}, mid = localTime(t + span / 2 * H, tz).slice(0, 10);
@@ -333,11 +373,14 @@ function fromMet(j, opt){
     const c = metCode(per && per.summary && per.summary.symbol_code);
     if(c != null && hour >= 6 && hour <= 18) dayOf(mid).codes = [...(dayOf(mid).codes || []), c];
   });
+  const mid = (a, b, k, n) => num(a) && num(b) ? Math.round(a + (b - a) * k / n) : num(a) ? Math.round(a) : null;
   for(let i = 0; i + 1 < pts.length; i++){
-    const [ta, a] = pts[i], [tb, b] = pts[i + 1], n = Math.round((tb - ta) / H);
-    for(let k = 0; k < n; k++){ hourly.time.push(localTime(ta + k * H, tz).slice(0, 13) + ":00"); hourly.temperature_2m.push(r1(a + (b - a) * k / n)); }
+    const [ta, a, ca, wa] = pts[i], [tb, b, cb, wb] = pts[i + 1], n = Math.round((tb - ta) / H);
+    for(let k = 0; k < n; k++){ hourly.time.push(localTime(ta + k * H, tz).slice(0, 13) + ":00"); hourly.temperature_2m.push(r1(a + (b - a) * k / n));
+      hourly.cloud_cover.push(mid(ca, cb, k, n)); hourly.wind_speed_10m.push(mid(wa, wb, k, n)); }
   }
-  if(pts.length){ const [t, a] = pts[pts.length - 1]; hourly.time.push(localTime(t, tz).slice(0, 13) + ":00"); hourly.temperature_2m.push(r1(a)); }
+  if(pts.length){ const [t, a, c, w] = pts[pts.length - 1]; hourly.time.push(localTime(t, tz).slice(0, 13) + ":00"); hourly.temperature_2m.push(r1(a));
+    hourly.cloud_cover.push(num(c) ? Math.round(c) : null); hourly.wind_speed_10m.push(num(w) ? Math.round(w) : null); }
   /* Whole days only, apart from today: the last day counts when the forecast reaches its evening. */
   const dates = [...days.keys()].sort().filter((date, i, all) => days.get(date).hi != null && (i < all.length - 1 || days.get(date).last >= 18));
   const daily = {time:dates, temperature_2m_max:[], temperature_2m_min:[], precipitation_sum:[], precipitation_probability_max:[],
@@ -380,12 +423,14 @@ function withPast(j, prev){
   const PH = prev.hourly, h = j.hourly;
   if(PH && Array.isArray(PH.time) && Array.isArray(PH.temperature_2m) && h && h.time.length){
     const fromH = from + "T00:00", idx = PH.time.map((t, i) => i).filter(i => PH.time[i] < h.time[0] && PH.time[i] >= fromH);
-    j.hourly = {time:[...idx.map(i => PH.time[i]), ...h.time], temperature_2m:[...idx.map(i => PH.temperature_2m[i]), ...h.temperature_2m]};
+    const col = k => [...idx.map(i => Array.isArray(PH[k]) ? PH[k][i] ?? null : null), ...(Array.isArray(h[k]) ? h[k] : h.time.map(() => null))];
+    j.hourly = {time:[...idx.map(i => PH.time[i]), ...h.time], temperature_2m:col("temperature_2m"), cloud_cover:col("cloud_cover"), wind_speed_10m:col("wind_speed_10m")};
   }
   j.daily = out;
   return j;
 }
-function splitWeather(daily, today, hourly){
+/* s (the settings), when given: the nights ahead as your garden has them (see nightAdjust). */
+function splitWeather(daily, today, hourly, s){
   if(!daily || !daily.time) return null;
   const idx = daily.time.indexOf(today);
   if(idx < 0) return null;
@@ -396,8 +441,75 @@ function splitWeather(daily, today, hourly){
   const past = [], next = [];
   for(let i = 0; i < idx; i++) past.push(day(i));
   for(let i = idx; i < Math.min(idx + 7, daily.time.length); i++) next.push(day(i));
-  const h = hourly && hourly.time && hourly.temperature_2m ? {time:hourly.time, t:hourly.temperature_2m} : null;
-  return {past, next, hourly:h};
+  const h = hourly && hourly.time && hourly.temperature_2m ? {time:hourly.time, t:hourly.temperature_2m.slice(),
+    cloud:Array.isArray(hourly.cloud_cover) ? hourly.cloud_cover : null, wind:Array.isArray(hourly.wind_speed_10m) ? hourly.wind_speed_10m : null} : null;
+  const W = {past, next, hourly:h};
+  return s ? nightAdjust(W, s) : W;
+}
+/* ---------- Your garden's own nights ---------- */
+/* The night before `date` (18:00 to 08:00): clear and calm, or not, from the hourly cloud cover and wind.
+   null when the forecast has no hourly cloud (MET Norway outside its hourly range, an older forecast, the tests). */
+function nightSky(W, date){
+  const H = W && W.hourly; if(!H || !H.cloud) return null;
+  const from = addDays(date, -1) + "T18:00", to = date + "T08:00", C = RULES.frost.clear;
+  let n = 0, c = 0, w = 0, wn = 0;
+  H.time.forEach((t, i) => { if(t >= from && t <= to && num(H.cloud[i])){ n++; c += +H.cloud[i]; if(H.wind && num(H.wind[i])){ wn++; w += +H.wind[i]; } } });
+  if(n < 6) return null;
+  const cloud = c / n, wind = wn ? w / wn : null;
+  return {clear:cloud < C.cloud && (wind == null || wind < C.wind), cloud:Math.round(cloud), wind:wind == null ? null : Math.round(wind)};
+}
+/* What you told Alvor after cold nights: settings.calib = [{d (the day), f (the forecast low Alvor had), m (your
+   thermometer, °C), fz (true: it froze, false: it didn't), c (true: a clear, calm night; false: not; absent: unknown)}].
+   {clear, other, all}: each {off (°C your garden differs from the forecast, + warmer), n (answers it rests on)}. */
+function calibration(s, today){
+  const C = RULES.calib, list = (Array.isArray(s && s.calib) ? s.calib : []).filter(x => x && num(x.f) && (!today || !x.d || daysBetween(x.d, today) <= C.keep));
+  const obs = list.map(x => {
+    if(num(x.m)) return {v:+x.m - +x.f, c:x.c};
+    if(x.fz === true && +x.f > C.froze) return {v:C.froze - +x.f, c:x.c};
+    if(x.fz === false && +x.f < C.notFrozen) return {v:C.notFrozen - +x.f, c:x.c};
+    return null;
+  }).filter(Boolean);
+  const mean = a => a.length ? {off:Math.round(clamp(a.reduce((t, o) => t + o.v, 0) / a.length, C.lim[0], C.lim[1]) * 10) / 10, n:a.length} : {off:0, n:0};
+  return {clear:mean(obs.filter(o => o.c === true)), other:mean(obs.filter(o => o.c === false)), all:mean(obs)};
+}
+/* How much colder (−) or warmer (+) than the forecast your garden gets on that night, and why. */
+function nightOffset(s, sky, today){
+  const K = calibration(s, today), min = RULES.calib.min;
+  if(sky && sky.clear){
+    if(K.clear.n >= min) return {off:K.clear.off, learned:true, n:K.clear.n};
+    if(K.all.n >= min) return {off:Math.min(K.all.off, -RULES.frost.clearNight), learned:true, n:K.all.n};
+    return {off:-RULES.frost.clearNight, learned:false, n:0};
+  }
+  if(sky && K.other.n >= min) return {off:K.other.off, learned:true, n:K.other.n};
+  /* Answers from nights of an unknown kind: all of it when the sky isn't known, half on a cloudy or windy night
+     (clouds and wind keep frost pockets from forming). */
+  if(K.all.n >= min) return {off:Math.round((sky ? K.all.off / 2 : K.all.off) * 10) / 10, learned:true, n:K.all.n};
+  return {off:0, learned:false, n:0};
+}
+/* The nights ahead as your garden has them: each day's low (and the night's hourly temperatures) moved by the
+   night's offset. d.fmin keeps the forecast's own low, d.adj the difference, d.clear whether it's a clear, calm night,
+   d.learned whether the difference comes from your answers. The past stays as the forecast had it. */
+function nightAdjust(W, s){
+  if(!W || W.adjusted) return W;
+  W.adjusted = true;
+  for(const d of W.next){
+    const sky = nightSky(W, d.date), o = nightOffset(s, sky, W.next[0] && W.next[0].date);
+    d.fmin = d.min; d.adj = o.off; d.clear = sky ? sky.clear : null; d.learned = o.learned;
+    if(!o.off || !num(d.min)) continue;
+    d.min = Math.round((+d.min + o.off) * 10) / 10;
+    if(W.hourly){
+      const from = addDays(d.date, -1) + "T18:00", to = d.date + "T10:00";
+      W.hourly.time.forEach((t, i) => { if(t >= from && t <= to && num(W.hourly.t[i])) W.hourly.t[i] = Math.round((+W.hourly.t[i] + o.off) * 10) / 10; });
+    }
+  }
+  return W;
+}
+/* Why a night is colder or warmer than the forecast, for the reasons under a warning. */
+function nightWhy(d){
+  if(!d || !d.adj) return null;
+  if(d.learned) return d.adj < 0 ? T("your garden runs about {t} colder on nights like this", {t:Math.abs(Math.round(d.adj * 10) / 10) + "°"})
+    : T("your garden runs about {t} warmer on nights like this", {t:Math.round(d.adj * 10) / 10 + "°"});
+  return d.clear ? T("clear, calm night") : null;
 }
 /* Reference evapotranspiration estimated from the temperatures alone (Hargreaves), for days the forecast didn't give it. */
 function hargreaves(d, lat, date){
@@ -422,14 +534,14 @@ function nightHours(W, date, thr, bonus){
 /* ---------- Where a plant is ---------- */
 function placeOf(p){
   const m = p.micro || {}, area = p.area || (p.current === "inside" ? "house" : p.current || "outside");
-  return {area, inside:p.current === "inside", gh:p.current === "greenhouse", porch:area === "porch", balcony:area === "balcony",
+  return {area, inside:p.current === "inside", gh:p.current === "greenhouse", store:p.current === "store" || area === "store", porch:area === "porch", balcony:area === "balcony",
     pot:p.planting !== "ground", sun:p.sun === "partial" ? "partial" : p.sun === "none" ? "none" : "full",
     wall:!!m.wall, tree:!!m.tree, wind:m.wind === "exposed" || m.wind === "sheltered" ? m.wind : "", pm:!!m.pm};
 }
-const outdoors = P => !P.inside && !P.gh;
+const outdoors = P => !P.inside && !P.gh && !P.store;
 function rainReach(p){
   const P = placeOf(p), R = RULES.water.reach;
-  if(P.inside || P.gh || P.porch || p.rainCounts === false) return 0;
+  if(P.inside || P.gh || P.store || P.porch || p.rainCounts === false) return 0;
   if(P.balcony) return p.rainCounts ? R.balcony : 0;
   let k = R.open;
   if(P.wall) k = Math.min(k, R.wall);
@@ -439,7 +551,7 @@ function rainReach(p){
 /* How much warmer than the forecast a plant's spot stays on a cold night. */
 function frostBonus(p, s){
   const P = placeOf(p), B = RULES.frost.bonus;
-  if(P.inside) return 0;
+  if(P.inside || P.store) return 0;
   if(P.gh) return +s.gh || 0;
   let b = 0;
   if(P.porch) b += B.porch;
@@ -456,11 +568,14 @@ function frostBonus(p, s){
 const ghHeat = s => num(s.ghHeat) ? +s.ghHeat : null;
 const ghLow = (t, s) => { const g = t + (+s.gh || 0), h = ghHeat(s); return h == null ? g : Math.max(g, h); };
 const roomLow = (p, s) => { const r = (s.rooms || {})[p.zone || "house-window"]; return num(r) ? +r : null; };
+/* Winter storage (settings.storeLow): its lowest on a cold night; Alvor assumes RULES.store.low when not set. */
+const storeLow = s => num(s.storeLow) ? +s.storeLow : RULES.store.low;
 /* How cold a plant's spot gets when the night outside drops to t, or null when the outside doesn't reach it
    (indoors: rooms only reach their lowest on nights at or below RULES.frost.roomCold outside). */
 function spotLow(p, t, s){
   const P = placeOf(p);
   if(P.inside){ const r = roomLow(p, s); return r != null && t <= RULES.frost.roomCold ? r : null; }
+  if(P.store) return t <= RULES.frost.roomCold ? storeLow(s) : null;
   if(P.gh) return ghLow(t, s);
   return t + frostBonus(p, s);
 }
@@ -468,8 +583,8 @@ const effMin = (p, d, s) => spotLow(p, d.min, s);
 /* ---------- Acclimatisation ---------- */
 /* p.moved, written on every move by moveRecord: {date, from (the zone it left), out (the day it left the house or the
    greenhouse for outdoors), sun (the day it went from shade into full sun), ok (the owner says it's used to it)}. */
-const zoneArea = z => !z ? null : z === "greenhouse" ? "greenhouse" : /^house/.test(z) ? "house" : /^porch/.test(z) ? "porch" : /^balc/.test(z) ? "balcony" : /^out/.test(z) ? "outside" : null;
-const SHELTER = ["house", "greenhouse"], OUT = ["outside", "porch", "balcony"];
+const zoneArea = z => !z ? null : z === "greenhouse" ? "greenhouse" : z === "store" ? "store" : /^house/.test(z) ? "house" : /^porch/.test(z) ? "porch" : /^balc/.test(z) ? "balcony" : /^out/.test(z) ? "outside" : null;
+const SHELTER = ["house", "greenhouse", "store"], OUT = ["outside", "porch", "balcony"];
 const shadyZone = z => SHELTER.includes(zoneArea(z)) || zoneArea(z) === "porch" || /shade$/.test(z || "");
 const sunZone = z => /-sun$/.test(z || "");
 function moveRecord(p, to, today){
@@ -533,7 +648,31 @@ const movedWhen = n => n === 0 ? T("moved today") : n === 1 ? T("moved yesterday
 /* Cold warnings are per plant: off when the owner switched them off, or when no limit is set. */
 const coldOn = p => p.coldAlert !== false && num(p.minTemp);
 /* x = {W, today}: counts acclimatisation (softness) too. The alerts, the forecast badges and the Home chips all pass it. */
-const coldLimit = (p, s, x) => +p.minTemp + +s.margin + (p.planting === "pot" && p.current === "outside" ? RULES.frost.pot : 0) + softness(p, s, x).k;
+const coldLimit = (p, s, x) => {
+  const base = +p.minTemp + +s.margin + (p.planting === "pot" && p.current === "outside" ? RULES.frost.pot : 0) + softness(p, s, x).k;
+  const o = outcomeFloor(p, x && x.today);
+  return o ? Math.max(base, o.t + +s.margin) : base;
+};
+
+/* ---------- Protection and what happened afterwards (from the plant's journal) ---------- */
+/* "Protected from cold" (k "protected", pk: which plan it carried out) counts until "Protection off" (k "unprotected")
+   or RULES.protect.keep days. null, or {d, pk, n, days}. */
+const jAll = (p, k) => (p.journal || []).filter(e => e && !e.del && e.k === k && e.d);
+const jNewer = (a, b) => a.d > b.d || (a.d === b.d && (+a.m || 0) > (+b.m || 0));
+function protection(p, today){
+  if(!today) return null;
+  const on = jAll(p, "protected").filter(e => e.d <= today).reduce((a, e) => !a || jNewer(e, a) ? e : a, null);
+  if(!on || daysBetween(on.d, today) > RULES.protect.keep) return null;
+  if(jAll(p, "unprotected").some(e => e.d <= today && !jNewer(on, e))) return null;
+  return {d:on.d, pk:on.pk || null, n:on.n || "", days:daysBetween(on.d, today)};
+}
+/* The morning after (k "outcome"): o "fine" | "damaged" | "lost", t the low it met, prot whether it was protected.
+   A plant damaged or lost, unprotected, at a temperature it was supposed to take is warned from there on. */
+function outcomeFloor(p, today){
+  const hits = jAll(p, "outcome").filter(e => (e.o === "damaged" || e.o === "lost") && !e.prot && num(e.t) && (!today || daysBetween(e.d, today) <= 3 * 365));
+  return hits.reduce((a, e) => !a || +e.t > a.t ? {t:+e.t, d:e.d} : a, null);
+}
+const cameThrough = p => jAll(p, "outcome").filter(e => e.o === "fine" && num(e.t)).reduce((a, e) => !a || +e.t < a.t ? {t:+e.t, d:e.d, prot:!!e.prot} : a, null);
 
 /* ---------- Watering ---------- */
 /* What feedback taught Alvor: this plant's own factor, or else the factor of other plants in the same spot. */
@@ -557,6 +696,7 @@ function waterState(p, W, ctx, plants){
   const s = ctx.settings || {}, today = ctx.today, Rw = RULES.water, P = placeOf(p);
   const sm = seasonMonth(ctx.month, s), iv = interval(p, sm);
   const care = p.care || {}, snoozed = !!(care.snooze && care.snooze >= today);
+  if(P.store) return {stage:"rest", label:T("Resting"), d:null, days:null, iv, byRain:false, snoozed, reasons:[T("resting in winter storage: water very little, only if the stems shrivel")]};
   let anchor = p.lastWatered ? {date:p.lastWatered, d:0, kind:"water"} : null;
   if(care.check && care.check.date && (!anchor || care.check.date > anchor.date)) anchor = {date:care.check.date, d:num(care.check.d) ? +care.check.d : 0, kind:"check"};
   if(!anchor && W){   // nothing logged, but a real rain reached it: that was a watering
@@ -656,12 +796,15 @@ function feedback(p, kind, W, ctx, plants, opt){
 }
 
 /* ---------- Frost plan for one plant ---------- */
-const COLD_KEYS = ["bringIn","toGh","ghProtect","warmerSpot","potProtect","crownProtect","mulchRoots","groundProtect","springGrowth"];
+const COLD_KEYS = ["bringIn","toGh","ghProtect","warmerSpot","storeCold","potProtect","crownProtect","mulchRoots","groundProtect","springGrowth"];
+/* Plans carried out where the plant stands: "Mark as protected" answers them, and they stay answered (protection). */
+const PROTECT_KEYS = ["potProtect","groundProtect","crownProtect","mulchRoots","springGrowth","ghProtect"];
 /* gh: how cold the greenhouse gets that night, so a plant is only sent there when it's warm enough. */
 function frostAction(p, t, s, hasGh, gh){
   const P = placeOf(p), Tr = traitsFor(p.species, p.genus), min = +p.minTemp, short = min - t;
   const tender = min >= 0;
   if(P.inside) return {key:"warmerSpot"};
+  if(P.store) return {key:"storeCold"};
   if(P.gh) return {key:"ghProtect"};
   if(P.pot){
     if(p.pattern === "mover" || p.pattern === "indoor") return {key:"bringIn", move:"inside"};
@@ -722,7 +865,7 @@ function feedState(p, ctx){
     return r;
   }
   const yearly = L.every >= 180;
-  if(!inSeason && (!L.winter || yearly)){
+  if(placeOf(p).store || (!inSeason && (!L.winter || yearly))){
     r.stage = "rest"; r.next = seasonStartDay(addDays(today, 200), L.from, s);
     r.reasons.push(T("resting until {month}: no feeding in winter", {month:monthName(seasonMonth(L.from, s))}));
     return r;
@@ -807,7 +950,7 @@ function completeTask(x, today){
 const tasksDue = (s, today) => taskList(s).filter(x => ["overdue", "today"].includes(taskState(x, today).stage)).sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
 
 /* ---------- All alerts ---------- */
-const ORDER = [...COLD_KEYS, "heater", "frostOk", "vent", "heat", "wind", "settleSun", "water", "rainWill", "waterUnknown", "feed", "repot", "plan", "goOut"];
+const ORDER = [...COLD_KEYS, "heater", "frostOk", "vent", "heat", "wind", "settleSun", "takeOff", "water", "rainWill", "waterUnknown", "feed", "repot", "plan", "goOut"];
 const RANK = {danger:0, warn:1, heat:2, wind:3, water:4, info:5};
 const BASE = {
   bringIn:() => ({title:T("Bring inside"), text:T("Cold is coming that these can't take outside."), move:"inside"}),
@@ -816,6 +959,7 @@ const BASE = {
     ? T("The heater keeps the greenhouse at about {t}, colder than these take. Raise the heater, add fleece or bring them inside.", {t:degCold(t)})
     : T("The greenhouse could drop to about {t}. Add fleece or turn on a heater.", {t:degCold(t)})}),
   warmerSpot:() => ({title:T("Find a warmer spot"), text:T("Their spot indoors gets colder on cold nights than they take. Move them away from the window or to a warmer room.")}),
+  storeCold:(t) => ({title:T("Storage too cold"), text:T("Your winter storage could drop to about {t}, colder than these take. Add insulation or move them somewhere warmer.", {t:degCold(t)})}),
   potProtect:() => ({title:T("Shelter the pots"), text:T("Move them against a house wall, lift them off the ground and wrap the pots.")}),
   crownProtect:() => ({title:T("Protect the crown"), text:T("Cover the top with fleece and pack the crown with straw. The growing point is the part that mustn't freeze.")}),
   mulchRoots:() => ({title:T("Mulch the roots"), text:T("The leaves or trunk may be damaged, but the roots should survive under a thick mulch. Wrap the stem if you want to keep it.")}),
@@ -826,6 +970,7 @@ const ROOM_WORD = {"house-window":"by the window", "house-low":"away from the wi
 function placeWhy(p){
   const P = placeOf(p), w = [];
   if(P.inside) w.push(T(ROOM_WORD[p.zone] || "indoors"));
+  if(P.store) w.push(T("in winter storage"));
   if(P.porch) w.push(T("on the porch"));
   if(P.balcony) w.push(T("on the balcony"));
   if(P.wall) w.push(T("against a wall"));
@@ -836,12 +981,20 @@ function placeWhy(p){
 /* Frost and heat for one forecast day, for the badges on the forecast and the chips on Home. */
 /* Plants in the Archive (lost, given away, swapped, sold) are out of every alert. */
 const inGarden = plants => (plants || []).filter(p => p && !p.archived);
+/* frost: plants outdoors or under glass that need something done for that night (already protected ones aren't
+   counted); indoor: rooms and winter storage colder than a plant takes (never shown as frost). */
 function dayRisks(plants, d, s, x){
   plants = inGarden(plants);
-  const frost = plants.filter(p => { if(!coldOn(p)) return false; const t = effMin(p, d, s); return t != null && t < coldLimit(p, s, x); });
+  const today = x && x.today;
+  const cold = plants.filter(p => { if(!coldOn(p)) return false; const t = effMin(p, d, s); return t != null && t < coldLimit(p, s, x); });
+  const sheltered = p => { const P = placeOf(p); return P.inside || P.store; };
+  const frost = cold.filter(p => !sheltered(p) && !(protection(p, today) && !needsMove(p)));
+  const indoor = cold.filter(sheltered);
   const heat = plants.filter(p => heatHit(p, d.max, s) || (p.current === "greenhouse" && d.max + RULES.heat.greenhouse >= RULES.heat.ghVent));
-  return {frost, heat};
+  return {frost, heat, indoor};
 }
+/* A pot that should go inside (or to the greenhouse) for the cold: protection where it stands doesn't answer that. */
+const needsMove = p => p.planting !== "ground" && p.current === "outside" && ["mover","indoor","greenhouse"].includes(p.pattern);
 function heatHit(p, max, s){
   const P = placeOf(p);
   if(!outdoors(P) || !P.pot) return false;
@@ -852,7 +1005,7 @@ function heatHit(p, max, s){
 function compute(plants, ctx){
   plants = inGarden(plants);
   if(ctx.lang) setLang(ctx.lang);
-  const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today, ctx.hourly), groups = {};
+  const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today, ctx.hourly, s), groups = {};
   const evening = ctx.mode === "evening", sm = seasonMonth(ctx.month, s);
   const hasGh = s.home !== "apartment", x = {W, today:ctx.today};
   const add = (key, base, item) => {
@@ -862,19 +1015,22 @@ function compute(plants, ctx){
   };
 
   if(W){
-    // Evening: tonight's low is tomorrow's daily minimum. Full: today and the next two days.
-    const look = evening ? W.next.slice(1, 2) : W.next.slice(0, 3);
+    // Evening: tonight's low is tomorrow's daily minimum. Full: today and the next two days; from mid-morning on,
+    // today's low (last night) is over, so the next three nights.
+    const look = evening ? W.next.slice(1, 2) : W.next.slice(num(ctx.hour) && +ctx.hour >= 10 ? 1 : 0, num(ctx.hour) && +ctx.hour >= 10 ? 4 : 3);
     const coldIds = new Set(), near = [];
     let freezing = look.some(d => d.min <= 0);
     const heater = [];
     for(const p of plants){
       if(!coldOn(p)) continue;
-      const inside = p.current === "inside";
+      const P0 = placeOf(p), inside = P0.inside || P0.store;
       if(inside && evening) continue;   // a room's cold is the same every cold night: the morning says it, the evening doesn't nag
       let worst = null;
-      for(const d of look){ const t = spotLow(p, d.min, s); if(t != null && (!worst || t < worst.t)) worst = {t, date:d.date, out:d.min}; }
+      for(const d of look){ const t = spotLow(p, d.min, s); if(t != null && (!worst || t < worst.t)) worst = {t, date:d.date, out:d.min, day:d}; }
       if(!worst) continue;
       const lim = coldLimit(p, s, x), soft = softness(p, s, x), whenTxt = nightWord(worst.date, ctx.today, evening);
+      /* The first night it needs something: the deadline (the worst night is what the plan is for). */
+      const first = (look.find(d => { const t = spotLow(p, d.min, s); return t != null && t < lim; }) || worst).date;
       if(worst.t >= lim){
         const Tr = traitsFor(p.species, p.genus);
         // A heated greenhouse: fine thanks to the heater, but it would be too cold without it.
@@ -892,6 +1048,11 @@ function compute(plants, ctx){
       const A = frostAction(p, worst.t, s, hasGh, ghLow(worst.out, s)), min = +p.minTemp;
       const level = worst.t < min + (p.planting === "pot" && p.current === "outside" ? RULES.frost.pot : 0) ? "danger" : "warn";
       const reasons = [inside ? T("about {t} on cold nights, takes {min}", {t:deg(worst.t), min:deg(min)}) : T("{t} {when}, takes {min}", {t:degCold(worst.t), when:whenTxt, min:deg(min)})];
+      const nw = inside ? null : nightWhy(worst.day);
+      if(nw) reasons.push(nw);
+      const fl = outcomeFloor(p, ctx.today);
+      if(fl && Math.abs(lim - (fl.t + +s.margin)) < 0.01) reasons.push(T("damaged at {t} on {date}", {t:degCold(fl.t), date:shortDate(fl.d)}));
+      else { const ct = cameThrough(p); if(ct && ct.t < min) reasons.push(T("came through {t} before", {t:degCold(ct.t)})); }
       if(p.current === "greenhouse" && ghHeat(s) != null) reasons.push(T("the heater keeps {t}", {t:deg(ghHeat(s))}));
       if(A.ghCold) reasons.push(T("too cold in the greenhouse"));
       const hrs = inside ? null : nightHours(W, worst.date, min, p.current === "greenhouse" ? x => ghLow(x, s) : frostBonus(p, s));
@@ -903,7 +1064,10 @@ function compute(plants, ctx){
       const Tr = traitsFor(p.species, p.genus);
       if(Tr.w && W.next.slice(0, 3).some(d => d.rain >= 2)) reasons.push(T("keep rain off it"));
       if(A.hopeless) reasons.push(T("may not survive outside"));
-      add(A.key, {...BASE[A.key](worst.t, s), level}, {p, t:worst.t, date:worst.date, act:A.key, reasons});
+      /* Protection already in place (fleece, mulch, a wrapped pot) answers a plan carried out where it stands. */
+      const pr = PROTECT_KEYS.includes(A.key) ? protection(p, ctx.today) : null;
+      if(pr) reasons.unshift(T("already protected"));
+      add(A.key, {...BASE[A.key](worst.t, s), level}, {p, t:worst.t, date:worst.date, first, act:A.key, reasons, ...(pr ? {done:true, prot:pr} : {})});
     }
     // The heater carries these tonight: worth a look that it's on.
     if(heater.length){
@@ -925,7 +1089,7 @@ function compute(plants, ctx){
           if(hit) add("plan", {level:"info", title:T("Get ready to move soon"), text:T("Nights are getting close to their limit later this week.")},
             {p, reasons:[`${deg(effMin(p, hit, s))} ${when(hit.date, ctx.today)}`, T("takes {t}", {t:deg(p.minTemp)})]});
         }
-        const sheltered = (p.current === "inside" && p.pattern === "mover") || (p.current === "greenhouse" && p.pattern === "greenhouse");
+        const sheltered = ((p.current === "inside" || p.current === "store") && p.pattern === "mover") || ((p.current === "greenhouse" || p.current === "store") && p.pattern === "greenhouse");
         if(sheltered && sm >= 3 && sm <= 6 && W.next.length){
           const lowest = Math.min(...W.next.map(d => d.min));
           if(lowest >= +p.minTemp + +s.margin + 3)
@@ -972,11 +1136,27 @@ function compute(plants, ctx){
     }
   }
 
+  // The cold has passed: take the fleece off (and in spring, pull the mulch back).
+  if(!evening && W && W.next.length){
+    const ahead = W.next.slice(0, RULES.protect.off);
+    for(const p of plants){
+      const pr = protection(p, ctx.today);
+      if(!pr || pr.days < 1 || !coldOn(p)) continue;
+      const mulch = pr.pk === "mulchRoots";
+      if(mulch && !RULES.repot.months.includes(sm)) continue;   // mulch stays on through winter
+      const lim = coldLimit(p, s, x);
+      if(ahead.every(d => { const t = spotLow(p, d.min, s); return t == null || t >= lim + RULES.protect.offMargin; }))
+        add("takeOff", {level:"info", title:mulch ? T("Pull the mulch back") : T("Take the protection off"),
+          text:mulch ? T("Spring is here and the nights are safe: pull the mulch back from the stems so new growth gets light and air.") : T("The cold has passed: no night this week comes near their limit. Fleece left on too long keeps the light out and traps damp."),
+          feedback:["unprotect"]}, {p, prot:pr, reasons:[pr.days === 0 ? T("protected today") : pr.days === 1 ? T("protected yesterday") : T("protected {n} days ago", {n:pr.days}), T("takes {t}", {t:deg(p.minTemp)})]});
+    }
+  }
+
   if(!evening){
     const soon = W ? W.next.slice(0, 2).reduce((a, d) => a + (d.prob >= RULES.water.rainSkip.prob ? Math.max(0, d.rain - RULES.water.interception) : 0), 0) : 0;
     for(const p of plants){
       const st = waterState(p, W, ctx, plants);
-      if(st.snoozed) continue;
+      if(st.snoozed || st.stage === "rest") continue;
       if(st.stage === "unknown"){ add("waterUnknown", {level:"info", title:T("Not sure about these"), text:T("Alvor doesn't know when these were last watered. Tell it once and it follows them from there."), feedback:["water","fine"]}, {p, stage:st.stage, reasons:st.reasons}); continue; }
       if(st.stage !== "likely" && st.stage !== "urgent") continue;
       const reach = rainReach(p);
@@ -1005,18 +1185,28 @@ function compute(plants, ctx){
 function gardenToday(groups, plants, ctx){
   plants = inGarden(plants);
   if(ctx.lang) setLang(ctx.lang);
-  const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today, ctx.hourly);
+  const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today, ctx.hourly, s);
   const h = num(ctx.hour) ? +ctx.hour : 8;
   const greet = T(h < 12 ? "Good morning" : h < 19 ? "Good afternoon" : "Good evening");
   const by = k => groups.filter(g => (Array.isArray(k) ? k : [k]).includes(g.key));
   const ids = gs => [...new Set(gs.flatMap(g => g.items.map(i => i.p.id)))];
+  const open = gs => gs.map(g => ({...g, items:g.items.filter(i => !i.done)})).filter(g => g.items.length);
   const lines = [];
-  const cold = by(COLD_KEYS.filter(k => k !== "springGrowth")), spring = by("springGrowth");
+  /* Frost and cold outdoors and under glass; rooms and winter storage are their own line (never "frost"). */
+  const coldAll = by(COLD_KEYS.filter(k => !["springGrowth", "warmerSpot", "storeCold"].includes(k))), cold = open(coldAll), spring = open(by("springGrowth"));
+  const nightOf = gs => { const dates = gs.flatMap(g => g.items).map(i => i.first || i.date).filter(Boolean).sort(), first = dates[0];
+    return first ? {date:first, word:nightWord(first, ctx.today, ctx.mode === "evening")} : {date:null, word:T("tonight")}; };
+  const doneN = ids(coldAll) .filter(id => !ids(cold).includes(id)).length;
+  let deadline = null;
   if(cold.length){
-    const items = cold.flatMap(g => g.items), first = items.reduce((a, i) => !a || i.date < a.date ? i : a, null);
-    const w = first && first.date ? nightWord(first.date, ctx.today, ctx.mode === "evening") : T("tonight");
-    const n = ids(cold).length;
-    lines.push({kind:"frost", urgent:true, ids:ids(cold), text:P(n, "1 plant needs protection {when}", "{n} plants need protection {when}", {when:w})});
+    const n = ids(cold).length, w = nightOf(cold);
+    deadline = w.date;
+    lines.push({kind:"frost", urgent:true, ids:ids(cold), date:w.date, done:doneN, text:doneN
+      ? P(n, "1 more plant needs protection {when}", "{n} more plants need protection {when}", {when:w.word})
+      : P(n, "1 plant needs protection {when}", "{n} plants need protection {when}", {when:w.word})});
+  }else if(coldAll.length){
+    const n = ids(coldAll).length, w = nightOf(coldAll);
+    lines.push({kind:"frost", urgent:false, ids:ids(coldAll), date:w.date, done:n, text:P(n, "1 plant protected for {when}", "All {n} plants protected for {when}", {when:w.word})});
   }
   if(spring.length){ const n = ids(spring).length, i = spring[0].items[0];
     lines.push({kind:"frost", urgent:false, ids:ids(spring), text:P(n, "Cover new growth on 1 plant {when}", "Cover new growth on {n} plants {when}", {when:i.date ? nightWord(i.date, ctx.today) : T("tonight")})}); }
@@ -1027,8 +1217,14 @@ function gardenToday(groups, plants, ctx){
   const vent = by("vent"); if(vent.length) lines.push({kind:"heat", urgent:true, ids:ids(vent), text:T("Open the greenhouse {when}", {when:vent[0].date ? when(vent[0].date, ctx.today) : T("today")})});
   const wind = by("wind"); if(wind.length){ const n = ids(wind).length;
     lines.push({kind:"wind", urgent:true, ids:ids(wind), text:P(n, "Gusts {when}: secure 1 plant", "Gusts {when}: secure {n} plants", {when:wind[0].date ? when(wind[0].date, ctx.today) : T("today")})}); }
+  const indoor = by("warmerSpot"); if(indoor.length){ const n = ids(indoor).length;
+    lines.push({kind:"indoor", urgent:false, ids:ids(indoor), text:P(n, "Indoors: move 1 plant away from the cold window", "Indoors: move {n} plants away from the cold windows")}); }
+  const store = by("storeCold"); if(store.length){ const n = ids(store).length;
+    lines.push({kind:"indoor", urgent:true, ids:ids(store), text:P(n, "Winter storage is too cold for 1 plant", "Winter storage is too cold for {n} plants")}); }
   const sunG = by("settleSun"); if(sunG.length){ const n = ids(sunG).length;
     lines.push({kind:"sun", urgent:false, ids:ids(sunG), text:P(n, "1 plant just moved into the sun: shade it at midday", "{n} plants just moved into the sun: shade them at midday")}); }
+  const off = by("takeOff"); if(off.length){ const n = ids(off).length;
+    lines.push({kind:"protect", urgent:false, ids:ids(off), text:P(n, "Take the protection off 1 plant", "Take the protection off {n} plants")}); }
   const water = by("water"); if(water.length){ const n = ids(water).length;
     lines.push({kind:"water", urgent:water[0].items.some(i => i.stage === "urgent"), ids:ids(water), text:P(n, "1 plant likely needs water", "{n} plants likely need water")}); }
   const rain = by("rainWill"); if(rain.length){ const n = ids(rain).length;
@@ -1045,13 +1241,40 @@ function gardenToday(groups, plants, ctx){
   const unk = by("waterUnknown"); if(unk.length){ const n = ids(unk).length; lines.push({kind:"unknown", urgent:false, ids:ids(unk), text:P(n, "Tell Alvor when 1 plant was last watered", "Tell Alvor when {n} plants were last watered")}); }
 
   const urgent = lines.some(l => l.urgent);
+  const soonCold = cold.some(g => g.items.some(i => i.date && daysBetween(ctx.today, i.date) <= 1));
   const head = !lines.length ? T("Your garden is happy today. Nothing needs doing.")
-    : cold.length ? T(cold.some(g => g.items.some(i => i.date && daysBetween(ctx.today, i.date) <= 1)) ? "A cold night is coming." : "Cold is coming.")
+    : cold.length ? T(soonCold ? "A cold night is coming." : "Cold is coming.")
     : urgent ? T("A few plants need you today.") : T("Your garden is mostly happy today.");
   const t = W && W.next[0];
   const weather = t ? (t.rain >= 0.5 ? T("{lo} to {hi}, {rain} mm rain", {lo:deg(t.min), hi:deg(t.max), rain:Math.round(t.rain)}) : T("{lo} to {hi}, dry", {lo:deg(t.min), hi:deg(t.max)})) : "";
   const age = num(ctx.weatherAt) && num(ctx.now) ? Math.floor((+ctx.now - +ctx.weatherAt) / 3600000) : 0;
-  return {greet, head, lines, calm:lines.length ? T("Nothing else is urgent.") : "", weather, stale:age >= 12 ? T("Using the forecast from {n} hours ago.", {n:age}) : ""};
+  return {greet, head, lines, deadline, calm:lines.length ? T("Nothing else is urgent.") : "", weather, stale:age >= 12 ? T("Using the forecast from {n} hours ago.", {n:age}) : ""};
+}
+
+/* ---------- The morning after a cold night ---------- */
+/* Last night (today's low): the plants it took to the lowest they take (risk), and those that came within
+   RULES.after.near of it, with the low at their spot. null when last night took none to its limit (the warning margin
+   doesn't count here: this is about what really happened). Answered plants (an "outcome" entry today) are left out. */
+function morningAfter(plants, ctx){
+  plants = inGarden(plants);
+  const s = ctx.settings, W = splitWeather(ctx.daily, ctx.today, ctx.hourly, s);
+  const d = W && W.next[0]; if(!d || !num(d.min)) return null;
+  const x = {W, today:ctx.today}, items = [];
+  let risk = false;
+  for(const p of plants){
+    if(!coldOn(p)) continue;
+    const P = placeOf(p); if(P.inside || P.store) continue;
+    const t = spotLow(p, d.min, s); if(t == null) continue;
+    const lim = +p.minTemp + (p.planting === "pot" && p.current === "outside" ? RULES.frost.pot : 0);
+    if(t >= lim + RULES.after.near) continue;
+    if(t <= lim) risk = true;
+    if(jAll(p, "outcome").some(e => e.d === ctx.today)) continue;
+    const pr = protection(p, ctx.today);
+    items.push({p, t:Math.round(t * 10) / 10, risk:t <= lim, prot:!!pr, pk:pr && pr.pk});
+  }
+  if(!risk || !items.length) return null;
+  items.sort((a, b) => (b.risk - a.risk) || a.t - b.t);
+  return {date:ctx.today, low:d.min, fmin:num(d.fmin) ? d.fmin : d.min, clear:d.clear, learned:!!d.learned, items};
 }
 
 /* ---------- Phone notifications ---------- */
@@ -1061,8 +1284,10 @@ function gardenToday(groups, plants, ctx){
 const QUIET = ["frostOk", "waterUnknown"], WEEKEND = ["feed", "repot"];
 function summarize(groups, ctx){
   if(ctx.lang) setLang(ctx.lang);
-  const W = splitWeather(ctx.daily, ctx.today, ctx.hourly);
+  const W = splitWeather(ctx.daily, ctx.today, ctx.hourly, ctx.settings);
   const evening = ctx.mode === "evening";
+  /* What's already done (protected where it stands) isn't asked for again. */
+  groups = groups.map(g => ({...g, items:g.items.filter(i => !i.done)})).filter(g => g.items.length);
   const saturday = new Date(utc(ctx.today)).getUTCDay() === 6;
   const loud = groups.filter(g => !QUIET.includes(g.key) && (saturday || !WEEKEND.includes(g.key)));
   const lines = loud.map(g => {
@@ -1083,20 +1308,23 @@ function summarize(groups, ctx){
     if(!cold.length && !heaterG) return null;
     if(!cold.length) return {title:T("Cold tonight: down to {t}", {t:degCold(heaterG.items[0].t)}), body:lines.join("\n"), tag:"garden-evening"};
     const ok = groups.some(g => g.key === "frostOk");
-    return {title:T("Cold tonight: down to {t}", {t:degCold(lowest)}), body:[...lines, ok ? T("No action needed for the others.") : ""].filter(Boolean).join("\n"), tag:"garden-evening"};
+    return {title:T("Cold tonight: down to {t}", {t:degCold(lowest)}), body:[...lines, ok ? T("No action needed for the others.") : ""].filter(Boolean).join("\n"), tag:"garden-evening", hash:"today"};
   }
+  /* Buttons on the notification: "Mark all watered" when watering is due (it opens Alvor and marks them). */
+  const wG = loud.find(g => g.key === "water"), wIds = wG ? wG.items.map(i => i.p.id).slice(0, 40) : [];
+  const actions = wIds.length ? [{action:"water", title:T("Mark all watered"), hash:"act=water&ids=" + wIds.join(",")}] : [];
   const t = W && W.next[0];
   const wLine = t ? (t.rain >= 0.5 ? T("{lo} to {hi}, {rain} mm rain", {lo:deg(t.min), hi:deg(t.max), rain:Math.round(t.rain)}) : T("{lo} to {hi}, dry", {lo:deg(t.min), hi:deg(t.max)})) : "";
   const things = loud.length + (due.length ? 1 : 0);
   if(!things) return {title:T("Nothing to do in the garden today"), body:wLine, tag:"garden-morning"};
   const title = cold.length ? T(lowest <= 0 ? "Frost warning: down to {t}" : "Low temperature warning: down to {t}", {t:degCold(lowest)})
     : things === 1 ? T("1 thing to do in the garden") : T("{n} things to do in the garden", {n:things});
-  return {title, body:[...lines, wLine].filter(Boolean).join("\n"), tag:"garden-morning"};
+  return {title, body:[...lines, wLine].filter(Boolean).join("\n"), tag:"garden-morning", hash:"today", ...(actions.length ? {actions} : {})};
 }
 
 return {VERSION, inGarden, RULES, KB, setLang, ES, LOC, ALLOWED, deg, degCold, nightWord, daysBetween, addDays, speciesKey, traitsFor, intervalsFor,
   weatherUrl, metUrl, fetchForecast, fromMet, withPast, sunTimes, localTime, WX, splitWeather, hargreaves, nightHours, seasonMonth, interval, placeOf, rainReach, frostBonus,
   waterState, waterStatus, feedback, learned, STAGES, STAGE_TEXT, effMin, spotLow, ghLow, roomLow, coldLimit, coldOn, frostAction, dayRisks, heatHit,
-  compute, gardenToday, summarize, COLD_KEYS, moveRecord, settling, softness, sunnyDay, zoneArea,
+  compute, gardenToday, summarize, COLD_KEYS, PROTECT_KEYS, moveRecord, morningAfter, protection, outcomeFloor, cameThrough, calibration, nightOffset, nightSky, nightAdjust, nightWhy, needsMove, storeLow, settling, softness, sunnyDay, zoneArea,
   feedPlan, feedState, repotState, everyText, monthName, TASK_REP, taskList, taskState, completeTask, tasksDue, stepTask, addMonths};
 });

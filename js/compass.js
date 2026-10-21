@@ -62,10 +62,15 @@ function fillMeButtons(){
 document.addEventListener("click", e => {
   const g = e.target.closest("[data-goto]"); if(!g) return;
   const el = document.getElementById(g.dataset.goto); if(!el || el.hidden) return;
+  const sec = el.closest("details"); if(sec) sec.open = true;   // Settings' sections open to show it
   el.scrollIntoView({block:"start", behavior:reduceMotion() ? "auto" : "smooth"});
   const h = el.querySelector("h2"); if(h){ h.tabIndex = -1; h.focus({preventScroll:true}); }
 });
-function fillSetIndex(){ document.querySelectorAll(".set-index [data-need]").forEach(b => { const c = document.getElementById(b.dataset.need); b.hidden = !c || c.hidden; }); }
+/* Settings' sections: Sharing and privacy only with an account, Owner only for the owner. */
+function fillSetIndex(){
+  document.querySelectorAll(".set-sec[data-need]").forEach(d => { const c = document.getElementById(d.dataset.need); d.hidden = !c || c.hidden; });
+  const own = $("#secOwner"); if(own) own.hidden = !(me && me.owner && token);
+}
 
 /* ---------- The whole collection, from Garden or Today ---------- */
 function openAllPlants(focusSearch){
@@ -96,13 +101,14 @@ function hubActions(){
     identify:{label:tr("Identify a plant"), sub:tr("Take a photo and Alvor suggests what it is"),
       off:!net ? tr("Needs a connection. You can still add a plant by its name.") : !acct ? tr("Needs an Alvor account. You can still add a plant by its name.") : ""},
     add:{label:hubZone() ? tr("Add a plant here") : tr("Add a plant"), sub:hubZone() ? tr("In {spot}, by its name", {spot:ZONES[hubZone()].label}) : tr("By its name, with its spot and care")},
-    moment:{label:tr("Add a photo or happy moment"), sub:tr("Flowering, new growth, a photo for its journal"), off:has ? "" : tr("Add a plant first.")},
+    moment:{label:tr("Take a photo"), sub:tr("For a plant's story: how it's growing, a flower, new leaves"), off:has ? "" : tr("Add a plant first.")},
     care:{label:tr("Log care"), sub:tr("Watered, fed, moved, repotted…"), off:has ? "" : tr("Add a plant first.")},
     task:{label:tr("Add a garden task"), sub:tr("Your own reminder: buy compost, plant bulbs…")}
   };
   /* Context first: in Journal a moment, in a place adding a plant there. */
-  const order = rootTab === "journal" && currentTab === "journal" ? ["moment","identify","add","care","task"]
-    : hubZone() ? ["add","identify","care","moment","task"] : ["identify","add","moment","care","task"];
+  /* The camera first (October 2026): a photo of one of your plants, or of a new one to identify. In a place,
+     adding a plant there comes first. */
+  const order = hubZone() ? ["add","moment","identify","care","task"] : ["moment","identify","add","care","task"];
   return order.map(k => ({k, ...A[k]}));
 }
 function openHub(step){
@@ -133,15 +139,19 @@ function renderHub(){
     return;
   }
   if(HUB.step === "pick"){
-    $("#hubTitle").textContent = HUB.kind === "moment" ? tr("Which plant?") : tr("Log care for which plant?");
+    $("#hubTitle").textContent = HUB.kind === "moment" ? tr("A photo of which plant?") : tr("Log care for which plant?");
     const q = fold(HUB.q.trim().toLowerCase());
     const list = state.plants.filter(p => !q || fold([p.name, p.species, p.genus].join(" ").toLowerCase()).includes(q));
-    /* Plants that need something first when logging care, then by name. */
+    /* The likeliest first: plants in the place you're looking at, then those that need something, then the ones
+       you photographed lately; then by name. */
+    const z = HUB.zone, here = p => z && ZONES[z] && p.area === ZONES[z].area ? 0 : 1;
     const need = p => (plantFlags[p.id] || new Set()).size ? 0 : 1;
-    list.sort((a, b) => (HUB.kind === "care" ? need(a) - need(b) : 0) || a.name.localeCompare(b.name));
+    const lastPh = p => { const ph = latestPhoto(p.id); return ph ? -(ph.ts || 0) : 0; };
+    list.sort((a, b) => here(a) - here(b) || need(a) - need(b) || (HUB.kind === "moment" ? lastPh(a) - lastPh(b) : 0) || a.name.localeCompare(b.name));
     const had = document.activeElement && document.activeElement.id === "hubQ";
+    const newOne = HUB.kind === "moment" && !HUB.q ? `<button type="button" class="hub-plant hub-new" data-hub="identify"><span class="initial">${ICON.camera}</span><span class="hp-t"><b>${tr("A new plant")}</b><small>${tr("Take its photo and Alvor suggests what it is")}</small></span></button>` : "";
     body.innerHTML = `<input type="search" id="hubQ" class="hub-q" placeholder="${tr("Search plants")}" aria-label="${tr("Search plants")}" value="${esc(HUB.q)}">
-      <div class="hub-plants" role="list">${list.map(hubPlantRow).join("") || `<p class="status">${tr("No plants match. Clear the search.")}</p>`}</div>`;
+      <div class="hub-plants" role="list">${newOne}${list.map(hubPlantRow).join("") || `<p class="status">${tr("No plants match. Clear the search.")}</p>`}</div>`;
     if(had){ const i = $("#hubQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
     return;
   }
@@ -167,7 +177,7 @@ function hubDo(k){
   if(k === "task") return hubRun(() => openTasks({mode:"form", f:blankTask(), back:"home"}));
   if(k === "moment" || k === "care"){
     if(!state.plants.length) return;
-    HUB = {step:"pick", kind:k, q:""};
+    HUB = {step:"pick", kind:k, q:"", zone:hubZone()};
     if(state.plants.length === 1) return hubPick(state.plants[0].id);   // only one plant: no need to choose
     renderHub(); focusHub();
   }

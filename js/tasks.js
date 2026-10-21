@@ -201,7 +201,7 @@ function renderPlantTasks(){
   if(!box) return;
   if(!p || p.archived){ box.hidden = true; return; }
   const list = myTasks().filter(x => (x.ids || []).includes(p.id) && GA.taskState(x, today()).stage !== "done").sort(byDue);
-  box.hidden = false;
+  box.hidden = !list.length;   // only when there are tasks for it (a task for a plant is added from the tasks list)
   $("#plantTasks").innerHTML = (list.length ? `<div class="tk-list">${list.map(x => taskRow(x)).join("")}</div>` : `<p class="status" style="margin:0">${tr("Prune it in March, check it for pests… Your own reminders for this plant.")}</p>`) +
     `<div class="jr-acts"><button type="button" class="btn small" data-task="new" data-plant="${p.id}">${ICON.plus}${tr("Add a task")}</button></div>`;
 }
