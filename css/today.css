@@ -33,25 +33,41 @@
 .gt-prog b{white-space:nowrap}
 .cold-card .gt-lines{margin-top:12px}
 
-/* The frost line: each plant at the coldest night it can be left as it is, the night as a line */
-.frl{margin:14px 0 4px;padding:0}
-.frl-area{position:relative;margin:22px 4px 0}
-.frl-band{position:absolute;top:-6px;bottom:24px;width:22%;transform:translateX(-50%);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--frost) 16%,transparent),transparent);pointer-events:none}
-.frl-low{position:absolute;top:-22px;bottom:24px;width:2px;background:var(--frost);transform:translateX(-1px)}
-.frl-low b{position:absolute;top:0;left:6px;white-space:nowrap;font-size:.78rem;color:var(--frost);font-weight:800;transform:translateY(-2px)}
-.frl-dot{position:absolute;transform:translateX(-50%);width:32px;height:32px;padding:0;border-radius:50%;border:2px solid var(--surface);background:var(--fern-soft);box-shadow:0 1px 3px rgba(0,0,0,.22);display:grid;place-items:center;cursor:pointer}
-.frl-dot img,.frl-dot .frl-i{width:100%;height:100%;border-radius:50%;object-fit:cover;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:var(--fern)}
-.frl-dot.risk{box-shadow:0 0 0 2.5px var(--frost),0 1px 3px rgba(0,0,0,.22)}
-.frl-dot.done{box-shadow:0 0 0 2.5px var(--fern),0 1px 3px rgba(0,0,0,.22)}
-.frl-ok{position:absolute;right:-5px;bottom:-4px;width:16px;height:16px;border-radius:50%;background:var(--fern);color:var(--on-fern);display:grid;place-items:center}
-.frl-ok svg{width:11px;height:11px}
-.frl-n{position:absolute;top:33px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.68rem;font-weight:700;color:var(--ink);line-height:1.1}
-.frl-axis{position:absolute;left:0;right:0;height:2px;background:var(--line)}
-.frl-tick{position:absolute;transform:translateX(-50%);font-size:.7rem;color:var(--muted);font-weight:600}
-.frl-cap{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:.78rem;font-weight:700}
-.frl-cap span{display:inline-flex;align-items:center;gap:4px;color:var(--fern)}
-.frl-cap .frl-cap-r{color:var(--frost)}
-.frl-cap svg{width:14px;height:14px}
+/* The cold night in two groups: too cold as they are (with a tick once protected), and fine, folded away */
+.frl{margin:14px 0 4px;display:flex;flex-direction:column;gap:10px}
+.frl-g h3,.frl-fine summary{display:flex;align-items:center;gap:8px;margin:0;font-size:.9rem;font-weight:800;line-height:1.25}
+.frl-cold h3{color:var(--frost);margin-bottom:10px}
+.frl-g h3 svg{width:16px;height:16px;flex:none}
+.frl-c{margin-left:auto;min-width:26px;padding:2px 8px;border-radius:999px;font-size:.8rem;text-align:center;background:color-mix(in srgb,currentColor 12%,transparent)}
+.frl-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:12px 4px}
+.frl-p{width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 2px 4px;border:0;border-radius:12px;background:none;font:inherit;color:var(--ink);cursor:pointer;text-align:center}
+.frl-p:focus-visible{outline:2px solid var(--fern);outline-offset:2px}
+.frl-ph{position:relative;display:block;width:46px;height:46px;flex:none;border-radius:50%;background:var(--fern-soft)}
+.frl-ph img,.frl-ph .frl-i{width:100%;height:100%;border-radius:50%;object-fit:cover;display:grid;place-items:center;font-weight:700;font-size:1rem;background:var(--zbg,var(--fern-soft));color:var(--zink,var(--fern))}
+.frl-p.risk .frl-ph{box-shadow:0 0 0 2.5px var(--frost)}
+.frl-p.done .frl-ph{box-shadow:0 0 0 2.5px var(--fern)}
+.frl .frl-ok{position:absolute;right:-4px;bottom:-3px;width:20px;height:20px;border-radius:50%;background:var(--fern);color:var(--on-fern);display:grid;place-items:center;border:2px solid var(--surface)}
+.frl .frl-ok svg{width:11px;height:11px}
+.frl-n{font-size:.76rem;font-weight:700;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;max-width:100%}
+.frl-grid li{display:block;padding:0}
+.frl .frl-p small{display:block;font-size:.72rem;font-weight:600;color:var(--frost);line-height:1.15}
+.frl .frl-p.done small,.frl .frl-fine .frl-p small{color:var(--fern)}
+.frl-more summary{list-style:none;cursor:pointer;margin-top:8px;font-size:.85rem;font-weight:700;color:var(--frost);min-height:44px;display:flex;align-items:center;gap:4px}
+.frl-more summary::-webkit-details-marker{display:none}
+.frl-more .chev{margin-left:0;font-size:1.2rem;transition:transform .15s}
+.frl-more[open] .chev{transform:rotate(90deg)}
+.frl-more .frl-grid{margin-top:8px}
+.frl-fine{border-top:1px solid var(--line);padding-top:10px}
+.frl-fine summary{list-style:none;cursor:pointer;color:var(--fern);min-height:44px}
+.frl-fine summary::-webkit-details-marker{display:none}
+.frl-fine summary .chev{margin-left:2px;font-size:1.2rem;transition:transform .15s}
+.frl-fine[open] .chev{transform:rotate(90deg)}
+.frl-fine .frl-c{margin-left:auto}
+.frl-fine .frl-grid{margin-top:10px}
+.frl-stack{display:flex;flex:none}
+.frl-stack .frl-ph{width:26px;height:26px;box-shadow:0 0 0 2px var(--surface)}
+.frl-stack .frl-ph + .frl-ph{margin-left:-8px}
+.frl-stack .frl-i{font-size:.7rem}
 
 /* ===================== Walk the garden ===================== */
 .walk-card{display:block}

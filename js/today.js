@@ -102,43 +102,42 @@ function frostThreshold(p){
   if(P.gh){ const h = GA.RULES && s.ghHeat != null && isFinite(+s.ghHeat) ? +s.ghHeat : null; if(h != null && h >= lim) return null; return lim - (+s.gh || 0); }
   return lim - GA.frostBonus(p, s);
 }
+/* Two plain groups instead of a chart: the plants that would be too cold that night as they are (each with a tick
+   and what was done once it's protected, otherwise the coldest it takes), then the ones that are fine, folded away.
+   Plants already brought inside for the night stay in the first group, ticked, so it matches the progress bar. */
+const FRL_SHOW = 8;    // more than this in the first group: the rest behind "N more"
 function frostLineHtml(day, jobs){
-  const all = state.plants.map(p => ({p, x:frostThreshold(p)})).filter(o => o.x != null);
-  if(!all.length || !day) return "";
-  const low = day.min, doneIds = new Set(jobs.filter(j => j.done && j.risk).map(j => j.p.id));
-  /* The scale shows the night and what's near it; much hardier plants are only counted at the left edge. */
-  const lo = Math.floor(low - 6), hi = Math.ceil(Math.max(low + 4, Math.min(low + 12, Math.max(...all.map(o => o.x)) + 1)));
-  const pts = all.filter(o => o.x >= lo), hardier = all.length - pts.length;
-  const at = v => Math.max(3, Math.min(97, (v - lo) / (hi - lo) * 100));
-  /* Up to four rows; in each row, a dot and its name keep clear of the others. */
-  const ROWS = 4, rows = Array.from({length:ROWS}, () => []), ROW_H = 46, width = 330;
-  const items = pts.sort((a, b) => b.x - a.x).map(o => {
-    const name = o.p.name.length > 11 ? o.p.name.slice(0, 10).trim() + "…" : o.p.name, x = at(o.x);
-    const half = Math.max(36, name.length * 6.2 + 8) / width * 50;
-    const free = r => rows[r].every(([a, b]) => x + half < a || x - half > b);
-    let r = [...Array(ROWS).keys()].find(free);
-    if(r === undefined) r = rows.map(row => row.length).indexOf(Math.min(...rows.map(row => row.length)));
-    rows[r].push([x - half, x + half]);
-    return {...o, name, left:x, row:r, risk:o.x > low};
-  });
-  const used = Math.max(1, ...items.map(o => o.row + 1));
-  const ticks = []; for(let v = Math.ceil(lo / 5) * 5; v <= hi; v += 5) ticks.push(v);
-  const risky = items.filter(o => o.risk);
-  const say = risky.length ? tr("{n} of your plants would be too cold if left as they are that night: {names}.", {n:risky.length, names:risky.map(o => o.p.name).join(", ")}) : tr("Every plant can be left as it is that night.");
-  return `<figure class="frl" aria-label="${esc(say)}">
-    <div class="frl-area" style="height:${used * ROW_H + 30}px" aria-hidden="true">
-      <div class="frl-band" style="left:${at(low)}%"></div>
-      <div class="frl-low" style="left:${at(low)}%"><b>${esc(cap(dayName(day.date)))} ${degSigned(low)}</b></div>
-      ${items.map(o => { const ph = latestPhoto(o.p.id);
-        return `<button type="button" class="frl-dot ${o.risk ? "risk" : ""} ${doneIds.has(o.p.id) ? "done" : ""}" style="left:${o.left}%;top:${o.row * ROW_H}px" data-act="edit" data-id="${o.p.id}" tabindex="-1">
-          ${ph ? `<img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async">` : `<span class="frl-i a-${o.p.area}">${esc(o.p.name.trim().charAt(0).toUpperCase())}</span>`}
-          ${doneIds.has(o.p.id) ? `<i class="frl-ok">${ICON.check}</i>` : ""}<span class="frl-n">${esc(o.name)}</span></button>`; }).join("")}
-      <div class="frl-axis" style="top:${used * ROW_H + 4}px"></div>
-      ${ticks.map(v => `<span class="frl-tick" style="left:${at(v)}%;top:${used * ROW_H + 8}px">${degSigned(v)}</span>`).join("")}
-    </div>
-    <figcaption class="frl-cap"><span>${ICON.leaf}${hardier ? esc(trn(hardier, "fine left as it is, and {n} hardier", "fine left as it is, and {n} hardier")) : tr("fine left as it is")}</span><span class="frl-cap-r">${tr("too cold")}${ICON.snow}</span></figcaption>
-    <p class="frl-say vh">${esc(say)}</p>
-  </figure>`;
+  if(!day) return "";
+  const low = day.min, coldJobs = jobs.filter(j => j.risk), jobsOf = id => coldJobs.filter(j => j.p.id === id);
+  const all = state.plants.map(p => ({p, x:frostThreshold(p), js:jobsOf(p.id)}));
+  const risk = all.filter(o => o.js.length || (o.x != null && o.x > low))
+    .map(o => ({...o, done:o.js.length > 0 && o.js.every(j => j.done)}))
+    .sort((a, b) => (a.done - b.done) || ((b.x ?? -99) - (a.x ?? -99)) || a.p.name.localeCompare(b.p.name));
+  const fine = all.filter(o => !o.js.length && o.x != null && o.x <= low).sort((a, b) => b.x - a.x || a.p.name.localeCompare(b.p.name));
+  if(!risk.length && !fine.length) return "";
+  const t = degSigned(low);
+  const face = p => { const ph = latestPhoto(p.id);
+    return ph ? `<img src="${phSrc(ph)}" alt="" loading="lazy" decoding="async">` : `<span class="frl-i a-${p.area}">${esc(p.name.trim().charAt(0).toUpperCase())}</span>`; };
+  /* Under each name: what was done once it is protected; otherwise the night it needs (too cold) or takes (fine). */
+  const tile = o => {
+    const note = o.done ? TICK[o.js[0].key] || tr("Done") : o.x == null ? "" : o.risk ? tr("needs {t}", {t:degSigned(o.x)}) : tr("takes {t}", {t:degSigned(o.x)});
+    return `<li><button type="button" class="frl-p ${o.risk ? "risk" : ""} ${o.done ? "done" : ""}" data-act="edit" data-id="${o.p.id}">
+      <span class="frl-ph">${face(o.p)}${o.done ? `<i class="frl-ok">${ICON.check}</i>` : ""}</span>
+      <span class="frl-n">${esc(o.p.name)}</span>${note ? `<small>${esc(note)}</small>` : ""}</button></li>`;
+  };
+  const grid = list => `<ul class="frl-grid">${list.map(tile).join("")}</ul>`;
+  const riskT = risk.map(o => ({...o, risk:true}));
+  return `<div class="frl">
+    ${risk.length ? `<section class="frl-g frl-cold">
+      <h3>${ICON.snow}<span>${esc(tr("Too cold at {t} as they are", {t}))}</span><b class="frl-c">${risk.length}</b></h3>
+      ${grid(riskT.slice(0, FRL_SHOW))}
+      ${riskT.length > FRL_SHOW ? `<details class="frl-more"><summary>${esc(tr("{n} more", {n:riskT.length - FRL_SHOW}))}<span class="chev">›</span></summary>${grid(riskT.slice(FRL_SHOW))}</details>` : ""}
+    </section>` : ""}
+    ${fine.length ? `<details class="frl-g frl-fine"><summary>
+        <span class="frl-stack" aria-hidden="true">${fine.slice(0, 4).map(o => `<span class="frl-ph">${face(o.p)}</span>`).join("")}</span>
+        <span>${esc(tr("Fine at {t} as they are", {t}))}</span><b class="frl-c">${fine.length}</b><span class="chev">›</span></summary>
+      ${grid(fine)}</details>` : ""}
+  </div>`;
 }
 const degSigned = n => `${Math.round(n) < 0 ? "−" + Math.abs(Math.round(n)) : Math.round(n)}°`;
 
