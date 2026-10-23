@@ -913,7 +913,7 @@ window.ALVOR_LANG.es = {
 "People who switched off the small discovery moments":"Personas que desactivaron los pequeños momentos de descubrimiento",
 "Found":"Encontrado",
 /* October 2026 audit: Today built around what to do, the morning after, the plant page in three layers, winter storage */
-"1 has to come in now: it's in Walk the garden below.":"1 tiene que entrar ya: está en Recorre el jardín, más abajo.",
+"1 has to come in now: it's in Walk the garden.":"1 tiene que entrar ya: está en Recorre el jardín.",
 "A clear, calm night: frost at plant height is colder than the forecast's air, so Alvor plans for {t} {when}.":"Noche despejada y sin viento: a la altura de las plantas hiela más que en el aire de la previsión, así que Alvor cuenta con {t} {when}.",
 "A cold night is coming. Alvor needs to know which plants are safe in the greenhouse.":"Llega una noche fría. Alvor necesita saber qué plantas están a salvo en el invernadero.",
 "A garage, cellar or shed where dormant plants spend the winter. Alvor warns you when it could get colder than they take.":"Un garaje, sótano o cobertizo donde las plantas en reposo pasan el invierno. Alvor te avisa cuando podría hacer más frío del que aguantan.",
@@ -1085,7 +1085,7 @@ window.ALVOR_LANG.es = {
 "{d} of {n} done":"{d} de {n} hechas",
 "{d} of {n} in for the winter":"{d} de {n} dentro para el invierno",
 "{name}, {date}":"{name}, {date}",
-"{n} have to come in now: they're in Walk the garden below.":"{n} tienen que entrar ya: están en Recorre el jardín, más abajo.",
+"{n} have to come in now: they're in Walk the garden.":"{n} tienen que entrar ya: están en Recorre el jardín.",
 "{n} plant in the heat":"{n} planta con calor",
 "{n} plant to protect":"{n} planta que proteger",
 "{n} plants in the heat":"{n} plantas con calor",

@@ -14,19 +14,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Styles by area, in this order. ?v= goes up with every new version, so phones never mix old and new files. -->
-<link rel="stylesheet" href="css/base.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/botanical.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/circle.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/look.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/journal.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/archive.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/tasks.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/snapshots.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/health.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/discover.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/themes.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/compass.css?v=2026-10-22-coldcard">
-<link rel="stylesheet" href="css/today.css?v=2026-10-22-coldcard">
+<link rel="stylesheet" href="css/base.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/botanical.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/circle.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/look.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/journal.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/archive.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/tasks.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/snapshots.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/health.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/discover.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/themes.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/compass.css?v=2026-10-23-hierarchy">
+<link rel="stylesheet" href="css/today.css?v=2026-10-23-hierarchy">
 </head>
 <body data-page="today">
 <div class="bg" aria-hidden="true"><div class="bg-photo"></div><div class="bg-sun"></div><div class="bg-tint"></div><canvas id="fx"></canvas><div class="fx-flash"></div></div>
@@ -51,8 +51,6 @@
           <div class="hero-btns"><button class="me-btn hb" data-tab="settings" aria-label="Settings and account"></button></div></div>
         <p class="hero-upd" id="heroUpd" role="status"></p>
       </div>
-      <div id="nowAfter"></div>
-      <div id="nowAsk"></div>
       <div class="alerts" id="alerts" aria-label="Today in your garden" role="region"></div>
       <div class="glass fc-card" role="region" aria-labelledby="fcTitle">
         <div class="sec-h"><h2 id="fcTitle">The week ahead</h2><span class="sec-sub" id="fcSrc"></span></div>
@@ -89,11 +87,11 @@
         <button class="story-link" data-act="openArchiveList" id="arcEntry" hidden><span class="sl-ic k-gone" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"/><path d="M10 13h4"/></svg></span><span class="sl-t"><b>Archive</b><small id="arcCount"></small></span><span class="chev" aria-hidden="true">›</span></button>
         <button class="story-link" id="discEntry" data-disc="open" hidden><span class="sl-ic k-growth" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="6" stroke-dasharray="1.6 2"/><path d="M12 15.5v-4"/><path d="M12 12.5c0-2 1.2-3.2 3-3.2 0 2-1.2 3.2-3 3.2z"/></svg></span><span class="sl-t"><b>Discoveries <i class="disc-dot" id="discDot" hidden><span class="vh">New</span></i></b><small id="discCount"></small></span><span class="chev" aria-hidden="true">›</span></button>
       </div>
+      <div id="jpTop"></div>
       <div class="jp-find">
         <input type="search" id="jpSearch" placeholder="Search by plant or note" aria-label="Search the journal by plant or note">
         <div class="chips" id="jpPlaces" role="group" aria-label="Where"></div>
       </div>
-      <div id="jpTop"></div>
       <div id="journalBody"></div>
     </section>
 
@@ -102,13 +100,13 @@
       <div class="card">
         <div class="prof-av">
           <div class="av big" id="pAv"></div>
-          <div class="btns"><button class="btn small primary" id="pAvBtn">Change photo</button><button class="btn small" id="pAvDel">Remove</button></div>
+          <div class="btns"><button class="btn small" id="pAvBtn">Change photo</button><button class="linkish quiet-del" id="pAvDel">Remove</button></div>
           <input type="file" id="pAvFile" accept="image/*" hidden>
         </div>
         <div class="field"><label for="pName">Your name</label><input id="pName" maxlength="40" autocomplete="name"><span class="hint">How friends see you, e.g. Diogo or Ana G.</span></div>
         <div class="field"><label for="pUser">@username</label><input id="pUser" maxlength="24" autocapitalize="none" autocomplete="username" spellcheck="false"><span class="hint">3 to 24 letters, numbers, dots or dashes, with no spaces.</span></div>
+        <p class="status prof-note">Friends see your name, @username and photo. Never your email.</p>
         <button class="btn primary" id="pSave">Save profile</button>
-        <p class="status">Friends see your name, @username and photo. Never your email.</p>
       </div>
     </section>
 
@@ -208,7 +206,7 @@
       </div>      </details>
       <details class="set-sec" id="secNotif"><summary><span>Notifications<small>Morning summary, evening cold check, friends</small></span></summary>
       <div class="card" id="notifCard">
-        <h2>Notifications</h2>
+        <h2 class="vh">Notifications</h2>
         <div class="row2">
           <div class="field"><label for="sMorning">Morning summary at</label><select id="sMorning"></select></div>
           <div class="field"><label for="sEvening">Evening cold check at</label><select id="sEvening"></select></div>
@@ -224,7 +222,7 @@
       </div>      </details>
       <details class="set-sec" id="secShare" data-need="privCard"><summary><span>Sharing and privacy<small>Who sees your plants, being found, discoveries</small></span></summary>
       <div class="card" id="privCard" hidden>
-        <h2>Sharing and privacy</h2>
+        <h2 class="vh">Sharing and privacy</h2>
         <p class="status" style="margin-top:0">New plants you add are visible to</p>
         <div class="seg small priv-seg" role="group" aria-label="New plants are visible to" id="defVisSeg"></div>
         <p class="status" id="defVisHint"></p>
@@ -235,29 +233,9 @@
         <h2>Discoveries</h2>
         <label class="check" id="discMomentsRow" hidden><input type="checkbox" id="discMomentsOn"><span>Show a small moment when you find a discovery<br><span class="status">At the bottom of the screen, never over a warning. Off: they still collect in Journal, quietly.</span></span></label>
       </div>      </details>
-      <details class="set-sec" id="secData"><summary><span>Your data<small>Download, restore, delete</small></span></summary>
-      <div class="card" id="dataCard" hidden>
-        <h2>Your data and privacy</h2>
-        <p class="status" style="margin-top:0">Get everything Alvor keeps about you in one file: your plants, notes, history, photos, friends and settings. Keep it somewhere safe: it's also your garden's backup.</p>
-        <div class="btn-row"><button class="btn" id="dataBtn">Download my data</button><a class="btn" href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></div>
-        <p class="status" id="dataStatus" role="status"></p>
-      </div>      <div class="card" id="restoreCard">
-        <h2>Restore from a file</h2>
-        <p class="status" style="margin-top:0">Brings back a garden from a Download my data file (.zip), or from a backup made in the old Alvor (.json). It replaces the garden on this phone and in your account.</p>
-        <button class="btn" id="importBtn">Restore from a file</button>
-        <input type="file" id="importFile" accept=".zip,.json,application/zip,application/json" hidden>
-        <p class="status" id="restoreStatus" role="status"></p>
-      </div>      <div class="card" id="delAcctCard" hidden>
-        <h2>Delete my account</h2>
-        <p class="status" style="margin-top:0">Deletes your account and everything in it, from every phone and for good. Download your data first if you'd like a copy.</p>
-        <button class="btn danger" id="delAcctBtn" style="margin-top:10px">Delete my account</button>
-      </div>      <div class="card">
-        <h2>Reset</h2>
-        <button class="btn danger" id="resetBtn">Delete all plants and history</button>
-      </div>      </details>
       <details class="set-sec" id="secAcct"><summary><span>Account<small>Sign in, password, invite</small></span></summary>
       <div class="card" id="accountCard">
-        <h2>Account</h2>
+        <h2 class="vh">Account</h2>
         <p class="status" style="margin-top:0" id="acctLine"></p>
         <p class="status" id="syncStatus"></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
@@ -272,7 +250,27 @@
           <button class="btn primary" id="pwSave">Save new password</button>
         </div>
       </div>      </details>
-      <details class="set-sec" id="secOwner" hidden><summary><span>Owner<small>Only you see this: reports and how Alvor is used</small></span></summary>
+      <details class="set-sec" id="secData"><summary><span>Your data<small>Download, restore, delete</small></span></summary>
+      <div class="card" id="dataCard" hidden>
+        <h2>Your data and privacy</h2>
+        <p class="status" style="margin-top:0">Get everything Alvor keeps about you in one file: your plants, notes, history, photos, friends and settings. Keep it somewhere safe: it's also your garden's backup.</p>
+        <div class="btn-row"><button class="btn" id="dataBtn">Download my data</button><a class="btn" href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></div>
+        <p class="status" id="dataStatus" role="status"></p>
+      </div>      <div class="card" id="restoreCard">
+        <h2>Restore from a file</h2>
+        <p class="status" style="margin-top:0">Brings back a garden from a Download my data file (.zip), or from a backup made in the old Alvor (.json). It replaces the garden on this phone and in your account.</p>
+        <button class="btn" id="importBtn">Restore from a file</button>
+        <input type="file" id="importFile" accept=".zip,.json,application/zip,application/json" hidden>
+        <p class="status" id="restoreStatus" role="status"></p>
+      </div>      <div class="card danger-zone" id="resetCard">
+        <h2>Reset</h2>
+        <button class="btn danger" id="resetBtn">Delete all plants and history</button>
+      </div>      <div class="card danger-zone" id="delAcctCard" hidden>
+        <h2>Delete my account</h2>
+        <p class="status" style="margin-top:0">Deletes your account and everything in it, from every phone and for good. Download your data first if you'd like a copy.</p>
+        <button class="btn danger" id="delAcctBtn" style="margin-top:10px">Delete my account</button>
+      </div>      </details>
+      <details class="set-sec owner-sec" id="secOwner" hidden><summary><span>Owner<small>Only you see this: reports and how Alvor is used</small></span></summary>
       <div class="card" id="adminCard" hidden>
         <h2>Reports <small id="adminCount" class="status"></small></h2>
         <p class="status" style="margin-top:0">Only you see this, as the owner of Alvor. People's reports land here; the person reported isn't told who sent them.</p>
@@ -571,40 +569,40 @@
 <div class="vh" id="discLive" aria-live="polite"></div>
 
 <!-- Scripts in this order; they share one global scope. js/i18n.js (languages) runs before the app, js/start.js last. ?v= as for the styles. -->
-<script src="plant-kb.js?v=2026-10-22-coldcard"></script>
-<script src="alerts.js?v=2026-10-22-coldcard"></script>
-<script src="plant-health.js?v=2026-10-22-coldcard"></script>
-<script src="discoveries.js?v=2026-10-22-coldcard"></script>
-<script src="sync.js?v=2026-10-22-coldcard"></script>
-<script src="species-es.js?v=2026-10-22-coldcard"></script>
-<script src="supabase.js?v=2026-10-22-coldcard"></script>
-<script src="qrcode.js?v=2026-10-22-coldcard"></script>
-<script src="js/lang-es.js?v=2026-10-22-coldcard"></script>
-<script src="js/i18n.js?v=2026-10-22-coldcard"></script>
-<script src="js/core.js?v=2026-10-22-coldcard"></script>
-<script src="js/weather.js?v=2026-10-22-coldcard"></script>
-<script src="js/home.js?v=2026-10-22-coldcard"></script>
-<script src="js/places.js?v=2026-10-22-coldcard"></script>
-<script src="js/plants.js?v=2026-10-22-coldcard"></script>
-<script src="js/journal.js?v=2026-10-22-coldcard"></script>
-<script src="js/archive.js?v=2026-10-22-coldcard"></script>
-<script src="js/tasks.js?v=2026-10-22-coldcard"></script>
-<script src="js/snapshots.js?v=2026-10-22-coldcard"></script>
-<script src="js/discover.js?v=2026-10-22-coldcard"></script>
-<script src="js/story.js?v=2026-10-22-coldcard"></script>
-<script src="js/health.js?v=2026-10-22-coldcard"></script>
-<script src="js/add-plant.js?v=2026-10-22-coldcard"></script>
-<script src="js/settings.js?v=2026-10-22-coldcard"></script>
-<script src="js/account.js?v=2026-10-22-coldcard"></script>
-<script src="js/circle.js?v=2026-10-22-coldcard"></script>
-<script src="js/talk.js?v=2026-10-22-coldcard"></script>
-<script src="js/cuttings.js?v=2026-10-22-coldcard"></script>
-<script src="js/your-data.js?v=2026-10-22-coldcard"></script>
-<script src="js/notifications.js?v=2026-10-22-coldcard"></script>
-<script src="js/themes.js?v=2026-10-22-coldcard"></script>
-<script src="js/today.js?v=2026-10-22-coldcard"></script>
-<script src="js/seasons.js?v=2026-10-22-coldcard"></script>
-<script src="js/compass.js?v=2026-10-22-coldcard"></script>
-<script src="js/start.js?v=2026-10-22-coldcard"></script>
+<script src="plant-kb.js?v=2026-10-23-hierarchy"></script>
+<script src="alerts.js?v=2026-10-23-hierarchy"></script>
+<script src="plant-health.js?v=2026-10-23-hierarchy"></script>
+<script src="discoveries.js?v=2026-10-23-hierarchy"></script>
+<script src="sync.js?v=2026-10-23-hierarchy"></script>
+<script src="species-es.js?v=2026-10-23-hierarchy"></script>
+<script src="supabase.js?v=2026-10-23-hierarchy"></script>
+<script src="qrcode.js?v=2026-10-23-hierarchy"></script>
+<script src="js/lang-es.js?v=2026-10-23-hierarchy"></script>
+<script src="js/i18n.js?v=2026-10-23-hierarchy"></script>
+<script src="js/core.js?v=2026-10-23-hierarchy"></script>
+<script src="js/weather.js?v=2026-10-23-hierarchy"></script>
+<script src="js/home.js?v=2026-10-23-hierarchy"></script>
+<script src="js/places.js?v=2026-10-23-hierarchy"></script>
+<script src="js/plants.js?v=2026-10-23-hierarchy"></script>
+<script src="js/journal.js?v=2026-10-23-hierarchy"></script>
+<script src="js/archive.js?v=2026-10-23-hierarchy"></script>
+<script src="js/tasks.js?v=2026-10-23-hierarchy"></script>
+<script src="js/snapshots.js?v=2026-10-23-hierarchy"></script>
+<script src="js/discover.js?v=2026-10-23-hierarchy"></script>
+<script src="js/story.js?v=2026-10-23-hierarchy"></script>
+<script src="js/health.js?v=2026-10-23-hierarchy"></script>
+<script src="js/add-plant.js?v=2026-10-23-hierarchy"></script>
+<script src="js/settings.js?v=2026-10-23-hierarchy"></script>
+<script src="js/account.js?v=2026-10-23-hierarchy"></script>
+<script src="js/circle.js?v=2026-10-23-hierarchy"></script>
+<script src="js/talk.js?v=2026-10-23-hierarchy"></script>
+<script src="js/cuttings.js?v=2026-10-23-hierarchy"></script>
+<script src="js/your-data.js?v=2026-10-23-hierarchy"></script>
+<script src="js/notifications.js?v=2026-10-23-hierarchy"></script>
+<script src="js/themes.js?v=2026-10-23-hierarchy"></script>
+<script src="js/today.js?v=2026-10-23-hierarchy"></script>
+<script src="js/seasons.js?v=2026-10-23-hierarchy"></script>
+<script src="js/compass.js?v=2026-10-23-hierarchy"></script>
+<script src="js/start.js?v=2026-10-23-hierarchy"></script>
 </body>
 </html>

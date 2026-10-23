@@ -36,7 +36,7 @@ function campaignHtml(){
       <div class="a-main"><span class="a-lab">${ICON.move}${tr("Autumn move-in")}</span>
         <h2 class="gt-h">${tr("{d} of {n} in for the winter", {d:inN, n:total})}</h2>
         <div class="gt-prog"><span class="pbar"><i style="width:${Math.round(inN / total * 100)}%"></i></span></div>
-        ${nowN ? `<p class="a-lead">${esc(trn(nowN, "1 has to come in now: it's in Walk the garden below.", "{n} have to come in now: they're in Walk the garden below."))}</p>` : ""}
+        ${nowN ? `<p class="a-lead">${esc(trn(nowN, "1 has to come in now: it's in Walk the garden.", "{n} have to come in now: they're in Walk the garden."))}</p>` : ""}
         <ul class="jobs">${later.slice(0, 6).map(p => `<li class="job"><span class="job-ph">${latestPhoto(p.id) ? `<img src="${phSrc(latestPhoto(p.id))}" alt="" loading="lazy">` : `<span class="initial a-${p.area}">${esc(p.name.charAt(0).toUpperCase())}</span>`}</span>
           <span class="job-t"><button type="button" class="pn" data-act="edit" data-id="${p.id}">${esc(p.name)}</button><small>${esc(tr("Takes {t}", {t:deg(p.minTemp)}) + " · " + tr("{where}, {when}", {where:dest(p), when:due(p)}))}</small></span>
           <button type="button" class="btn small" data-act="move" data-id="${p.id}">${tr("Move")}</button></li>`).join("")}</ul>

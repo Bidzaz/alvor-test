@@ -18,7 +18,6 @@
 .hero-now .hn-wait{font-size:.86rem;font-weight:600;max-width:16em}
 .hero-upd{min-height:0}
 .hero-upd:empty{display:none}
-#nowAfter:not(:empty),#nowAsk:not(:empty){display:flex;flex-direction:column;gap:12px;margin:4px 0 12px}
 
 /* ===================== The decision card ===================== */
 .gt-h{font-size:1.28rem;font-weight:700;letter-spacing:-.015em;margin:2px 0 6px;line-height:1.25}
@@ -233,3 +232,53 @@
 /* Fields inside an opened section (Settings, the plant page) ran past their card: the section's content box doesn't
    take part in "box-sizing:inherit", so its children fell back to content-box. Everything is border-box. */
 *,*::before,*::after{box-sizing:border-box}
+
+/* ===================== Hierarchy pass (October 2026): one decision leads, everything else steps back ===================== */
+/* The question sits under the decision it sharpens: a quieter card, so the decision stays the loudest thing on Today. */
+#alerts > .ask-card{background:var(--surface-2);box-shadow:none;border:1px solid var(--line)}
+#alerts > .ask-card .a-lab{color:var(--muted)}
+/* The season's move comes after the walk: the wider picture, not today's job list. */
+#alerts > .season-card{box-shadow:none;border:1px solid var(--line)}
+/* The plant sheet: what it needs now, then the actions for it, then quieter help. */
+.ps-acts{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.ps-do{display:flex;flex-wrap:wrap;gap:8px}
+.ps-do:empty{display:none}
+.ps-do .btn{flex:1 1 auto}
+.ps-acts .ps-quiet{flex:none;align-self:flex-start;background:transparent;border-color:transparent;box-shadow:none;color:var(--muted);padding-left:8px;padding-right:10px;min-height:44px}
+.ps-acts .ps-quiet:hover{color:var(--ink);background:var(--surface-2)}
+.ps-acts .ps-quiet svg{width:16px;height:16px}
+
+/* Journal: Add a moment leads; Snapshots, Archive and Discoveries are one quiet row of related tools; this season's
+   photos come next, then search and filters right above the timeline they filter. */
+.jp-add{margin:-4px 0 10px}
+.jp-links{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.jp-links .story-link{width:auto;flex:0 1 auto;min-height:44px;padding:5px 14px 5px 5px;gap:8px;border-radius:999px;box-shadow:none;background:var(--surface);border:1px solid var(--line)}
+.jp-links .sl-ic{width:34px;height:34px}
+.jp-links .sl-ic svg{width:18px;height:18px}
+.jp-links .sl-t b{font-size:.92rem}
+.jp-links .sl-t small{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.jp-links .story-link .chev{display:none}
+#jpTop:not(:empty){margin-bottom:6px}
+#jpTop .jp-season{margin-top:4px}
+.jp-find{margin-top:4px}
+
+/* Circle: with no friends yet, growing the circle leads; the empty cards below it stay small and quiet. */
+.f-card.f-quiet{box-shadow:none;padding-top:12px;padding-bottom:12px}
+.f-card.f-quiet h2{font-size:1rem;margin-bottom:2px}
+.f-card.f-quiet .f-empty{font-size:.88rem}
+.f-grow .f-reset{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+/* Settings: the routine sections first; resetting and deleting sit last in Your data, marked apart; Owner stands
+   apart from everyone's settings. */
+.set-sec .card.danger-zone{background:color-mix(in srgb,#C2410C 5%,var(--surface))}
+.set-sec .card.danger-zone h2{color:#A33A16}
+:root[data-theme="dark"] .set-sec .card.danger-zone h2{color:#F0A487}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .set-sec .card.danger-zone h2{color:#F0A487}}
+.set-sec .card.danger-zone + .card.danger-zone{border-top:1px dashed color-mix(in srgb,#C2410C 30%,var(--line))!important}
+.set-sec.owner-sec{margin-top:26px;border-style:dashed;box-shadow:none;background:transparent}
+
+/* Profile: one primary action (Save, after the fields and the note on what friends see); the photo's own buttons quieter */
+.prof-av .quiet-del{color:var(--muted);font-weight:600;min-height:40px;padding:0 6px}
+.prof-note{margin:2px 0 12px}
+/* The morning after: "optional" fits its small box on a phone */
+.af-temps input::placeholder{font-size:.82rem;font-weight:600}

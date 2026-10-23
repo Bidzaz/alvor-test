@@ -38,12 +38,20 @@ function renderPlants(){
   counts.archive = (state.archive || []).length;
   if(plantFilter === "vault" && !counts.vault) plantFilter = "all";
   if(plantFilter === "archive" && !counts.archive) plantFilter = "all";
-  const chips = ["all", ...ALL_AREAS.filter(a => counts[a]), ...myPlaces().map(L => "pl:" + L.id).filter(k => counts[k] || plantFilter === k), ...(counts.vault ? ["vault"] : []), ...(counts.archive ? ["archive"] : [])];
-  if(ZONES[plantFilter] && plantFilter !== "greenhouse") chips.push(plantFilter);
+  const chips = ["all", ...ALL_AREAS.filter(a => counts[a] || plantFilter === a), ...myPlaces().map(L => "pl:" + L.id).filter(k => counts[k] || plantFilter === k), ...(counts.vault ? ["vault"] : []), ...(counts.archive ? ["archive"] : [])];
+  if(ZONES[plantFilter] && !chips.includes(plantFilter)) chips.push(plantFilter);   // a spot: its own chip, once
+  /* Opened from Garden's Outside card (the garden and the porch together): one chip for it, lit, so the list always
+     shows which filter it is under. */
+  if(plantFilter === "garden"){
+    const at = chips.findIndex(k => k === "porch" || k === "outside");
+    counts.garden = state.plants.filter(p => inArea(p, "outside") || inArea(p, "porch")).length;
+    chips.splice(0, chips.length, ...chips.filter(k => k !== "porch" && k !== "outside"));
+    chips.splice(at < 0 ? 1 : at, 0, "garden");
+  }
   $("#chips").innerHTML = (idsFilter ? `<button class="chip" data-act="clearIds" aria-pressed="true">${tr("From the alert: {n}", {n:idsFilter.length})} ✕</button>` : "") +
     chips.map(k => {
-      const label = k === "all" ? tr("All") : k === "vault" ? `${ICON.lock}${tr("Vault")}` : k === "archive" ? `${ARC_ICON}${tr("Archive")}` : plKey(k) ? esc(plKey(k).n) : AREAS[k] ? areaLabel(k) : ZONES[k].label;
-      const n = k === "all" || k === "vault" || k === "archive" || plKey(k) ? counts[k] : AREAS[k] ? counts[k] : state.plants.filter(p => p.zone === k && !plPlace(p)).length;
+      const label = k === "all" ? tr("All") : k === "garden" ? LOC_TITLE.garden : k === "vault" ? `${ICON.lock}${tr("Vault")}` : k === "archive" ? `${ARC_ICON}${tr("Archive")}` : plKey(k) ? esc(plKey(k).n) : AREAS[k] ? areaLabel(k) : ZONES[k].label;
+      const n = k === "all" || k === "garden" || k === "vault" || k === "archive" || plKey(k) ? counts[k] : AREAS[k] ? counts[k] : state.plants.filter(p => p.zone === k && !plPlace(p)).length;
       return `<button class="chip" data-act="filter" data-f="${k}" aria-pressed="${!idsFilter && plantFilter === k}">${label} ${n}</button>`;
     }).join("");
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === plantView));
@@ -697,7 +705,8 @@ $("#fMicro").addEventListener("click", e => {
 const cleanMicro = m => { const o = {}; ["wall","tree","pm"].forEach(k => { if(m[k]) o[k] = true; }); if(m.wind) o.wind = m.wind; return o; };
 /* ---------- The plant page, layer 1: the plant, where it is, what it needs now, and the actions that fit ----------
    One status sentence: Alvor's most important job for this plant right now (from the same jobs as Today), or else
-   how its watering stands. The first action is that job's own tick; then Watered, Move, a photo, Something wrong. */
+   how its watering stands. The first action is that job's own tick (or Watered, when watering is due); then Watered;
+   Something wrong? sits under them, quieter. Adding a moment is the first tile of Its story, just below. */
 function plantJob(p){ return (typeof JOBS !== "undefined" ? JOBS : []).find(j => j.p.id === p.id && !j.done) || null; }
 function psTopHtml(p){
   const ph = latestPhoto(p.id), W = wx(), st = waterStatus(p, W);
@@ -712,16 +721,17 @@ function psTopHtml(p){
   const small = j ? j.why : doneJ ? doneJ.why : [st.reasons && st.reasons[0], st.stage !== "rest" ? tr("an estimate") : ""].filter(Boolean).join(" · ");
   const icon = K === "frost" ? ICON.snow : K === "heat" ? ICON.heat : K === "water" ? ICON.drop : ICON.leaf;
   const tick = j ? `<button class="btn primary" data-today="tick" data-job="${esc(j.id)}">${ICON.check}${esc(j.tick.label)}</button>` : "";
-  const waterBtn = !j || j.key !== "water" ? `<button class="btn ${j ? "" : "primary"}" data-act="water" data-id="${p.id}">${ICON.drop}${tr("Watered")}</button>` : "";
+  /* Watered leads only when watering is what's due: a plant that's "Fine for now" doesn't get a task-looking button. */
+  const thirsty = !j && ["consider", "likely", "urgent"].includes(st.stage);
+  const waterBtn = !j || j.key !== "water" ? `<button class="btn ${thirsty ? "primary" : ""}" data-act="water" data-id="${p.id}">${ICON.drop}${tr("Watered")}</button>` : "";
   return `<div class="ps-hero ${ph ? "has-ph" : ""}">${ph ? `<button class="ps-img" data-act="viewPhoto" data-ph="${ph.id}" aria-label="${tr("Open the newest photo of {name}", {name:esc(p.name)})}"><img src="${phSrc(ph)}" data-full="${ph.id}" alt=""></button>`
       : `<span class="ps-img ps-none a-${p.area}" aria-hidden="true">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</span>`}
     <div class="ps-id">${p.species ? `<i>${esc(p.species)}</i>` : ""}${common && common !== p.name && common !== p.species ? `<small>${esc(common)}</small>` : ""}
       ${vis ? `<span class="ps-vis">${vis.icon}${esc(vis.short)}</span>` : ""}</div></div>
     <div class="ps-where">${zi(p.zone)}<span><b>${esc(zoneLabel(p))}</b><small>${esc(PAT_WORD[p.pattern] || "")}</small></span><button class="btn small" data-act="move" data-id="${p.id}">${ICON.move}${tr("Move")}</button></div>
     <div class="ps-status k-${K}" role="status">${icon}<span><b>${esc(cap(head))}</b><small>${esc(small)}</small></span></div>
-    <div class="ps-acts">${tick}${waterBtn}
-      <button class="btn" data-j="add">${ICON.camera}${tr("Add a moment")}</button>
-      <button class="btn" data-act="health" data-id="${p.id}">${ICON.warn}${tr("Something wrong?")}</button>
+    <div class="ps-acts"><div class="ps-do">${tick}${waterBtn}</div>
+      <button class="btn small ps-quiet" data-act="health" data-id="${p.id}">${ICON.warn}${tr("Something wrong?")}</button>
     </div>`;
 }
 /* Layer 3: one line each, saying where it stands, so the page reads at a glance before anything is opened. */
@@ -918,6 +928,7 @@ function openDialog(id){
   if(p){ drawFeedChoices(p); fillRowSums(p); }
   setEditing(!p);
   dlg.showModal();
+  dlg.scrollTop = 0;   // a plant always opens at its top (who it is, where, what it needs), not where the last one was left
   if(!p) $("#fName").focus();
 }
 

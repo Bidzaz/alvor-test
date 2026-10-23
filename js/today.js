@@ -1,8 +1,8 @@
 /* Alvor · Today, built around what to do and where (the audit's "Now").
-   From the top: the morning after a cold night (how did they do?), a question Alvor needs answered now (is the
-   greenhouse heated?), the decision with its deadline and the frost line (each plant at the coldest it can be
-   left at, the night as a line), the season's move in or out, Walk the garden (the jobs grouped by where you'll
-   be, each with a tick), and the week ahead with the jobs on their days (js/home.js renderForecast).
+   From the top: the decision with its deadline and the frost line (each plant at the coldest it can be left at,
+   the night as a line), a question Alvor needs answered now (is the greenhouse heated?), Walk the garden (the jobs
+   grouped by where you'll be, each with a tick), the morning after a cold night (how did they do?), the season's
+   move in or out, and the week ahead with the jobs on their days (js/home.js renderForecast).
    Everything comes from the care engine (alerts.js) through buildAlerts(); nothing here decides anything new.
    Plain script (no build step): loaded by index.html in a fixed order and sharing one global scope. */
 "use strict";
@@ -293,8 +293,6 @@ function askHtml(){
 /* ---------- Today, put together ---------- */
 function renderToday(groups){
   const el = $("#alerts");
-  $("#nowAfter").innerHTML = afterHtml();
-  $("#nowAsk").innerHTML = state.plants.length ? askHtml() : "";
   if(!state.plants.length){
     JOBS = [];
     el.innerHTML = `<div class="acard t-info first-run"><div class="a-ic">${ICON.sprout}</div><div class="a-main"><h2 class="a-h">${tr("Start with your plants")}</h2><p class="a-lead">${tr("Add each plant once. Alerts and watering reminders then appear here every day.")}</p></div>
@@ -302,7 +300,9 @@ function renderToday(groups){
     return;
   }
   JOBS = buildJobs(groups);
-  el.innerHTML = decisionHtml(groups, JOBS) + campaignHtml() + walkHtml(JOBS);
+  /* One column, in the order you'd act: the decision, the one question that sharpens it, the jobs with where and why
+     (Walk the garden), then how last night went (the garden learns), then the season's move as the wider picture. */
+  el.innerHTML = decisionHtml(groups, JOBS) + askHtml() + walkHtml(JOBS) + afterHtml() + campaignHtml();
 }
 const jobOf = id => JOBS.find(j => j.id === id);
 document.addEventListener("click", e => {

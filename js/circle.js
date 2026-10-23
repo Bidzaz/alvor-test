@@ -165,29 +165,33 @@ function renderFriends(){
   const C = circle, link = myLink ? friendLinkUrl(myLink) : "";
   const focused = document.activeElement && document.activeElement.id === "fSearch";
   let h = navigator.onLine === false ? `<p class="f-offline">${ICON.warn}${tr("You're offline. What you see here may be out of date, and changes need a connection.")}</p>` : "";
-  /* Circle, in order: who's asking to join, what's new, your friends' gardens, cuttings, then growing the circle. */
+  /* Circle, in order: who's asking to join, what's new, your friends' gardens, cuttings, then growing the circle.
+     With no friends yet, growing the circle is the one next step, so it comes first and the empty cards stay small. */
   if(C && C.incoming.length) h += `<div class="card f-card"><h2>${tr("Friend requests")} <small>${C.incoming.length}</small></h2>
     <div class="people">${C.incoming.map(p => personRow(p, `<button class="btn small primary" data-fact="accept" data-id="${p.id}">${tr("Accept")}</button>${moreBtn(p)}`, "request")).join("")}</div></div>`;
-  h += `<div class="card f-card"><h2>${tr("What's new")}</h2><div id="feedBox">${feedHtml()}</div></div>`;
   const fr = C ? C.friends : [];
-  h += `<div class="card f-card"><h2>${tr("Your friends' gardens")} ${fr.length ? `<small>${fr.length}</small>` : ""}</h2>
+  const alone = !!C && !fr.length;
+  const news = `<div class="card f-card ${alone ? "f-quiet" : ""}"><h2>${tr("What's new")}</h2><div id="feedBox">${feedHtml()}</div></div>`;
+  const gardens = `<div class="card f-card ${alone ? "f-quiet" : ""}"><h2>${tr("Your friends' gardens")} ${fr.length ? `<small>${fr.length}</small>` : ""}</h2>
     ${!C ? `<p class="f-empty">${tr("Loading…")}</p>` : fr.length ? `<div class="people">${fr.map(p => personRow(p, moreBtn(p), "friend")).join("")}</div>`
       : `<p class="f-empty">${tr("No friends yet. Share your link to start your circle.")}</p>`}
     ${C && C.outgoing.length ? `<h3 class="group-h" style="font-size:1rem">${tr("Waiting for an answer")}</h3>
       <div class="people">${C.outgoing.map(p => personRow(p, `<button class="btn small" data-fact="cancel" data-id="${p.id}">${tr("Cancel")}</button>`, "sent")).join("")}</div>` : ""}
   </div>`;
-  h += cuttingsCardHtml() || `<div id="cutCard" hidden></div>`;
-  h += `<div class="card f-card"><h2>${tr("Grow your circle")}</h2>
+  const cuts = cuttingsCardHtml() || `<div id="cutCard" hidden></div>`;
+  const grow = `<div class="card f-card f-grow"><h2>${tr("Grow your circle")}</h2>
     <p class="f-lead">${tr("Send your friend link to people you know. Whoever opens it becomes your friend straight away, and if they don't have Alvor yet, it's their invitation too.")}</p>
     <div class="f-btns"><button class="btn primary" data-fact="shareLink" ${link ? "" : "disabled"}>${tr("Share my link")}</button>
       <button class="btn" data-fact="qr" ${link ? "" : "disabled"} aria-expanded="${showQr}">${showQr ? tr("Hide QR code") : tr("QR code")}</button></div>
+    ${link ? "" : `<p class="f-note" role="status">${esc(myLinkErr || tr("Getting your link…"))}</p>`}
     ${showQr && link ? `<div class="qr-box"><div class="qr" role="img" aria-label="${tr("QR code of your friend link")}">${qrSvg(link)}</div><p>${tr("Your friend scans it with their phone's camera.")}</p></div>` : ""}
-    <p class="f-note">${link ? "" : esc(myLinkErr || tr("Getting your link…")) + " "}${tr("Sent it to the wrong person?")} <button class="linkish" data-fact="resetLink" ${link ? "" : "disabled"}>${tr("Reset my link")}</button> ${tr("and the old one stops working.")}</p>
     <h3 class="f-sub">${tr("Find people")}</h3>
     <input type="search" class="f-search" id="fSearch" placeholder="${tr("Name or @username")}" aria-label="${tr("Find people by name or @username")}" autocomplete="off" autocapitalize="none" spellcheck="false" value="${esc(fSearch.q)}">
     <div id="fResults">${searchResultsHtml()}</div>
     ${me.findable ? "" : `<p class="f-note">${tr("You're hidden from search: only people with your link can add you.")} <button class="linkish" data-fact="findable">${tr("Let people find me")}</button></p>`}
+    <p class="f-note f-reset">${tr("Sent it to the wrong person?")} <button class="linkish" data-fact="resetLink" ${link ? "" : "disabled"}>${tr("Reset my link")}</button> ${tr("and the old one stops working.")}</p>
   </div>`;
+  h += alone ? grow + news + gardens + cuts : news + gardens + cuts + grow;
   h += `<div class="f-prefs"><button class="chip" data-fact="prefs">${ICON.gear}${tr("Notifications from friends")}</button><button class="chip" data-fact="privacy">${ICON.lock}${tr("Sharing and privacy")}</button></div>`;
   if(C && C.blocked.length) h += `<details class="card f-blocked"><summary>${tr("Blocked ({n})", {n:C.blocked.length})}</summary>
     <div class="people">${C.blocked.map(p => personRow(p, `<button class="btn small" data-fact="unblock" data-id="${p.id}">${tr("Unblock")}</button>`, "blocked")).join("")}</div></details>`;

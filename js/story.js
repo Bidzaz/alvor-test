@@ -117,7 +117,8 @@ function renderJournalPage(){
   if(JP.place && !order.includes(JP.place)) JP.place = "";
   $("#jpPlaces").innerHTML = order.length > 1 ? [`<button type="button" class="chip" data-jpp="" aria-pressed="${!JP.place}">${tr("All places")}</button>`, ...order.map(k => `<button type="button" class="chip" data-jpp="${k}" aria-pressed="${JP.place === k}">${PL[k]}</button>`)].join("") : "";
   $("#jpSearch").value = JP.q;
-  $("#jpTop").innerHTML = JP.q || JP.place ? "" : jpTopHtml();
+  /* This season's photos sit above the search and the filters, so they stay put (and never jump) while you filter. */
+  $("#jpTop").innerHTML = jpTopHtml();
   $("#journalBody").innerHTML = storyHtml(JP, true);
 }
 /* Photos first: last month's snapshot early in a month, then the season's newest photos across the garden. */
