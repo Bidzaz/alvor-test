@@ -272,20 +272,27 @@ function locPicSrc(k){
 const locPicDlg = $("#locPicDlg");
 let locPicFor = null, locPicBusy = false;
 const locLabel = k => (LOCS().find(L => L.k === k) || {label:tr("Location")}).label;
+/* The small round button on a place's picture: + to add your own photo, a camera to change it. Alvor's places and yours. */
+function locPicBtn(L){
+  const on = !!(look().locs && look().locs[L.k]), place = L.place ? L.label : L.label.toLowerCase();
+  return `<button class="loc-pic ${on ? "on" : ""}" data-locpic="${esc(L.k)}" aria-label="${esc(on ? tr("Change your own {place} photo", {place}) : tr("Add your own {place} photo", {place}))}">${on ? ICON.camera : ICON.plus}</button>`;
+}
 function openLocPic(k){
   locPicFor = k;
   const has = !!(look().locs && look().locs[k]), src = locPicSrc(k), st = styleOf(look().style);
+  const L = LOCS().find(x => x.k === k), cls = (L && L.loc) || k;   // your own place: its kind's picture
   $("#lpTitle").textContent = tr("{place} photo", {place:locLabel(k)});
   const prev = $("#lpPrev");
-  prev.className = `lp-prev loc-${k}`;
-  prev.style.cssText = src ? "" : locStyle(look().style, k).replace("--img:", "background-image:");
+  prev.className = `lp-prev loc-${cls}`;
+  prev.style.cssText = src ? "" : locStyle(look().style, cls).replace("--img:", "background-image:");
   prev.innerHTML = src ? `<img src="${src}" alt="">` : "";
   $("#lpPhone").textContent = has ? tr("Change: from the phone") : tr("From the phone");
   $("#lpPlants").textContent = has ? tr("Change: my plant photos") : tr("From my plant photos");
   $("#lpPlants").hidden = !Object.values(photos).some(l => l.length);
   $("#lpReset").hidden = !has;
   $("#lpReset").textContent = tr("Back to the {style} picture", {style:st.label});
-  $("#lpNote").textContent = tr("Friends see this photo on your {place} tile when they visit your garden.", {place:locLabel(k)});
+  $("#lpNote").textContent = L && L.place ? tr("This photo is for your own Garden: friends visiting see Alvor's places, not the ones you added.")
+    : tr("Friends see this photo on your {place} tile when they visit your garden.", {place:locLabel(k)});
   [$("#lpPhone"), $("#lpPlants"), $("#lpReset")].forEach(b => b.disabled = false);
   locPicDlg.showModal();
 }
@@ -296,7 +303,7 @@ async function saveLocPic(k, src){
   $("#lpNote").textContent = tr("Saving…");
   try{
     const data = (await drawJpeg(src, 1400, 0.82)).toDataURL("image/jpeg", 0.82);
-    const path = `${me.id}/loc-${k}-${Date.now()}.jpg`;
+    const path = `${me.id}/loc-${k.replace(/[^a-z0-9-]/gi, "-")}-${Date.now()}.jpg`;   // "pl:<id>" → "pl-<id>"
     must(await sb.storage.from("backdrops").upload(path, await dataToBlob(data), {contentType:"image/jpeg", upsert:false}));
     const old = look().locs && look().locs[k];
     if(old) sb.storage.from("backdrops").remove([old]).catch(() => {});

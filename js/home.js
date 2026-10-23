@@ -232,7 +232,7 @@ function renderLocations(W){
     const temp = tempChip(L.k);
     const status = (risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk from the cold", {n:risk})}</span>` : thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : "")
       + (temp ? `<button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button>` : "");
-    const mine = L.place ? null : locPicSrc(L.k), canPic = !L.place && online && !!me && !!token, cls = L.loc || L.k, to = L.place ? L.k : L.k === "garden" ? "garden" : L.areas[0];
+    const mine = locPicSrc(L.k), canPic = online && !!me && !!token, cls = L.loc || L.k, to = L.place ? L.k : L.k === "garden" ? "garden" : L.areas[0];
     /* A place with no plants yet is offered, not claimed: a slim card with a way to start it. */
     if(!list.length) return `<div class="loc loc-${cls} ${L.place ? "loc-mine" : ""} empty slim">
       <button class="loc-main" data-loc="${esc(to)}"><span class="loc-ic" aria-hidden="true">${ICON[L.icon]}</span>
@@ -240,7 +240,7 @@ function renderLocations(W){
       ${temp ? `<div class="loc-status"><button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button></div>` : ""}</div>`;
     return `<div class="loc loc-${cls} ${L.place ? "loc-mine" : ""} ${mine ? "has-img" : ""}" style="${mine ? "" : locStyle(look().style, cls)}">
       ${mine ? `<img class="loc-img" src="${mine}" alt="">` : `<span class="loc-art">${ICON[L.icon]}</span>`}
-      ${canPic ? `<button class="loc-pic ${look().locs && look().locs[L.k] ? "on" : ""}" data-locpic="${L.k}" aria-label="${look().locs && look().locs[L.k] ? tr("Change your own {place} photo", {place:L.label.toLowerCase()}) : tr("Add your own {place} photo", {place:L.label.toLowerCase()})}">${look().locs && look().locs[L.k] ? ICON.camera : ICON.plus}</button>` : ""}
+      ${canPic ? locPicBtn(L) : ""}
       <button class="loc-main" data-loc="${esc(to)}">
         <span class="loc-ic" aria-hidden="true">${ICON[L.icon]}</span>
         <span class="loc-t"><b>${esc(L.label)}</b><small>${esc(L.sub)} · ${list.length ? trn(list.length, "{n} plant", "{n} plants") : tr("no plants yet")}</small></span>

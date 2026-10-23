@@ -90,6 +90,8 @@ function deletePlace(id){
   if(!confirm(list.length ? trn(list.length, "Delete {name}? Its {n} plant stays where it is, in {where}.", "Delete {name}? Its {n} plants stay where they are, in {where}.", {name:L.n, where})
     : tr("Delete {name}?", {name:L.n}))) return;
   list.forEach(p => { delete p.place; });
+  const pic = look().locs && look().locs["pl:" + id];
+  if(pic){ if(sb && token) sb.storage.from("backdrops").remove([pic]).catch(() => {}); const locs = {...look().locs}; delete locs["pl:" + id]; setLook({locs}); keepLocPics(); }
   state.settings = {...state.settings, places:state.settings.places.map(x => x && x.id === id ? {id, del:1, m:Date.now()} : x)};
   save(); placeDlg.close();
   if(plantFilter === "pl:" + id){ plantFilter = "all"; showTab("locations"); }

@@ -408,6 +408,7 @@ window.ALVOR_LANG.es = {
 /* ---- Locations: your own pictures ---- */
 "{place} photo":"Foto de {place}", "Back to the {style} picture":"Volver a la imagen del estilo {style}", "Back to the style picture":"Volver a la imagen del estilo",
 "Friends see this photo on your {place} tile when they visit your garden.":"Tus amigos ven esta foto en tu recuadro de {place} cuando visitan tu jardín.",
+"This photo is for your own Garden: friends visiting see Alvor's places, not the ones you added.":"Esta foto es para tu propio Jardín: los amigos que te visitan ven los lugares de Alvor, no los que has añadido tú.",
 "{place} photo saved":"Foto de {place} guardada", "Your photo":"Tu foto",
 
 /* ---- More: profile ---- */

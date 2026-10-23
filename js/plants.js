@@ -14,9 +14,9 @@ function renderPlantsCtx(){
   if(!L){ el.innerHTML = ""; return; }
   const list = state.plants.filter(p => locHas(L, p));
   const risk = list.filter(p => (plantFlags[p.id] || new Set()).has("frost")).length, thirsty = list.filter(p => (plantFlags[p.id] || new Set()).has("water")).length;
-  const temp = tempChip(L.k), mine = L.place ? null : locPicSrc(L.k), cls = L.loc || L.k;
+  const temp = tempChip(L.k), mine = locPicSrc(L.k), cls = L.loc || L.k, canPic = online && !!me && !!token;
   el.innerHTML = `<div class="pctx loc-${cls} ${mine ? "has-img" : ""}" style="${mine ? `--img:url('${mine}')` : locStyle(look().style, cls)}">
-      <span class="pctx-ic" aria-hidden="true">${ICON[L.icon]}</span>
+      <span class="pctx-ic" aria-hidden="true">${ICON[L.icon]}</span>${canPic ? locPicBtn(L) : ""}
       <div class="pctx-st">${risk ? `<span class="lchip frost">${ICON.snow}${tr("{n} at risk from the cold", {n:risk})}</span>` : ""}${thirsty ? `<span class="lchip water">${ICON.drop}${trn(thirsty, "{n} needs water", "{n} need water")}</span>` : ""}
         ${temp ? `<button class="lchip temp" data-loctemp="${L.k}" aria-label="${tr("{place} temperature", {place:L.label})}: ${esc(temp)}">${ICON.thermo}${esc(temp)}</button>` : ""}
         ${!risk && !thirsty && list.length ? `<span class="lchip calm">${ICON.leaf}${tr("Nothing needs doing here")}</span>` : ""}</div>
@@ -25,6 +25,7 @@ function renderPlantsCtx(){
 }
 $("#plantsCtx").addEventListener("click", e => {
   const th = e.target.closest("[data-loctemp]"); if(th) return openLocTemp(th.dataset.loctemp);
+  const pic = e.target.closest("[data-locpic]"); if(pic) return openLocPic(pic.dataset.locpic);
   const ed = e.target.closest("[data-place-edit]"); if(ed) openPlace(ed.dataset.placeEdit);
 });
 function renderPlants(){
